@@ -239,7 +239,130 @@ const CodeManagerPage: React.FC = () => {
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
           </Alert>
-          <Button variant="contained" onClick={() => router.push('/'                  )}
+          <Button variant="contained" onClick={() => router.push('/')}>
+            대시보드로 돌아가기
+          </Button>
+        </Box>
+      </Container>
+    );
+  }
+  
+  return (
+    <Container maxWidth="lg">
+      <Box sx={{ my: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h4" component="h1">
+            코드 관리자
+          </Typography>
+          
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+          >
+            새 코드 스니펫
+          </Button>
+        </Box>
+        
+        {question && (
+          <Alert severity="info" sx={{ mb: 3 }}>
+            <Typography variant="subtitle1">
+              "{question.content.substring(0, 100)}..." 질문에 대한 코드 스니펫을 관리하고 있습니다.
+            </Typography>
+          </Alert>
+        )}
+        
+        {/* 검색 및 필터링 */}
+        <Paper elevation={3} sx={{ p: 2, mb: 3 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="코드 검색"
+                variant="outlined"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth variant="outlined">
+                <InputLabel>언어 필터</InputLabel>
+                <Select
+                  value={selectedLanguage}
+                  onChange={(e) => setSelectedLanguage(e.target.value)}
+                  label="언어 필터"
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <FilterIcon />
+                    </InputAdornment>
+                  }
+                >
+                  <MenuItem value="">모든 언어</MenuItem>
+                  {Object.entries(LANGUAGE_INFO).map(([key, value]) => (
+                    <MenuItem key={key} value={key}>
+                      {value.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+          
+          {/* 태그 필터 */}
+          {selectedTags.length > 0 && (
+            <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+              {selectedTags.map((tag) => (
+                <Chip
+                  key={tag}
+                  label={tag}
+                  onDelete={() => handleRemoveTagFilter(tag)}
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                />
+              ))}
+            </Box>
+          )}
+        </Paper>
+        
+        {/* 스니펫 목록 */}
+        {filteredSnippets.length === 0 ? (
+          <Alert severity="info">
+            {searchTerm || selectedLanguage || selectedTags.length > 0 
+              ? '검색 조건에 맞는 코드 스니펫이 없습니다.' 
+              : '저장된 코드 스니펫이 없습니다.'}
+          </Alert>
+        ) : (
+          <Grid container spacing={3}>
+            {filteredSnippets.map((snippet) => (
+              <Grid item xs={12} md={6} key={snippet.id}>
+                <Card elevation={3}>
+                  <CardHeader
+                    title={snippet.title}
+                    subheader={`${LANGUAGE_INFO[snippet.language].name} • 버전 ${snippet.version}`}
+                    sx={{
+                      backgroundColor: `${LANGUAGE_INFO[snippet.language].color}10`,
+                      '& .MuiCardHeader-title': {
+                        fontWeight: 'bold'
+                      }
+                    }}
+                  />
+                  
+                  {snippet.description && (
+                    <CardContent sx={{ pt: 1, pb: 1 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        {snippet.description}
+                      </Typography>
+                    </CardContent>
+                  )}
                   
                   <CardContent>
                     <Box 
@@ -423,311 +546,4 @@ const CodeManagerPage: React.FC = () => {
   );
 };
 
-export default CodeManagerPage;>
-            대시보드로 돌아가기
-          </Button>
-        </Box>
-      </Container>
-    );
-  }
-  
-  return (
-    <Container maxWidth="lg">
-      <Box sx={{ my: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4" component="h1">
-            코드 관리자
-          </Typography>
-          
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-          >
-            새 코드 스니펫
-          </Button>
-        </Box>
-        
-        {question && (
-          <Alert severity="info" sx={{ mb: 3 }}>
-            <Typography variant="subtitle1">
-              "{question.content.substring(0, 100)}..." 질문에 대한 코드 스니펫을 관리하고 있습니다.
-            </Typography>
-          </Alert>
-        )}
-        
-        {/* 검색 및 필터링 */}
-        <Paper elevation={3} sx={{ p: 2, mb: 3 }}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="코드 검색"
-                variant="outlined"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
-            
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth variant="outlined">
-                <InputLabel>언어 필터</InputLabel>
-                <Select
-                  value={selectedLanguage}
-                  onChange={(e) => setSelectedLanguage(e.target.value)}
-                  label="언어 필터"
-                  startAdornment={
-                    <InputAdornment position="start">
-                      <FilterIcon />
-                    </InputAdornment>
-                  }
-                >
-                  <MenuItem value="">모든 언어</MenuItem>
-                  {Object.entries(LANGUAGE_INFO).map(([key, value]) => (
-                    <MenuItem key={key} value={key}>
-                      {value.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-          
-          {/* 태그 필터 */}
-          {selectedTags.length > 0 && (
-            <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-              {selectedTags.map((tag) => (
-                <Chip
-                  key={tag}
-                  label={tag}
-                  onDelete={() => handleRemoveTagFilter(tag)}
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                />
-              ))}
-            </Box>
-          )}
-        </Paper>
-        
-        {/* 스니펫 목록 */}
-        {filteredSnippets.length === 0 ? (
-            <Alert severity="info">
-              {searchTerm || selectedLanguage || selectedTags.length > 0 
-                ? '검색 조건에 맞는 코드 스니펫이 없습니다.' 
-                : '저장된 코드 스니펫이 없습니다.'}
-            </Alert>
-          ) : (
-            <Grid container spacing={3}>
-              {filteredSnippets.map((snippet) => (
-                <Grid item xs={12} md={6} key={snippet.id}>
-                  <Card elevation={3}>
-                    <CardHeader
-                      title={snippet.title}
-                      subheader={`${LANGUAGE_INFO[snippet.language].name} • 버전 ${snippet.version}`}
-                      sx={{
-                        backgroundColor: `${LANGUAGE_INFO[snippet.language].color}10`,
-                        '& .MuiCardHeader-title': {
-                          fontWeight: 'bold'
-                        }
-                      }}
-                    />
-                    
-                    {snippet.description && (
-                      <CardContent sx={{ pt: 1, pb: 1 }}>
-                        <Typography variant="body2" color="text.secondary">
-                          {snippet.description}
-                        </Typography>
-                      </CardContent>
-                    )}
-                    
-                    <CardContent>
-                      <Box 
-                        sx={{ 
-                          bgcolor: '#f5f5f5', 
-                          p: 1.5, 
-                          borderRadius: 1,
-                          maxHeight: '200px',
-                          overflow: 'auto',
-                          fontFamily: 'monospace',
-                          fontSize: '0.875rem',
-                          whiteSpace: 'pre-wrap'
-                        }}
-                      >
-                        {snippet.content.length > 500 
-                          ? `${snippet.content.substring(0, 500)}...` 
-                          : snippet.content}
-                      </Box>
-                      
-                      {snippet.tags.length > 0 && (
-                        <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                          {snippet.tags.map((tag, index) => (
-                            <Chip
-                              key={index}
-                              label={tag}
-                              size="small"
-                              variant="outlined"
-                              onClick={() => handleAddTagFilter(tag)}
-                            />
-                          ))}
-                        </Box>
-                      )}
-                    </CardContent>
-                    
-                    <CardActions sx={{ justifyContent: 'flex-end' }}>
-                      <Tooltip title="코드 복사">
-                        <IconButton 
-                          size="small" 
-                          onClick={() => handleCopyCode(snippet.content)}
-                        >
-                          <CopyIcon />
-                        </IconButton>
-                      </Tooltip>
-                      
-                      <Tooltip title="GitHub에 저장">
-                        <IconButton 
-                          size="small"
-                          onClick={() => handleSaveToGitHub(snippet.id!)}
-                          color="primary"
-                        >
-                          <GitHubIcon />
-                        </IconButton>
-                      </Tooltip>
-                      
-                      <Tooltip title="수정">
-                        <IconButton 
-                          size="small"
-                          onClick={() => handleOpenEditDialog(snippet)}
-                          color="secondary"
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      </Tooltip>
-                    </CardActions>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-          )}
-        </Box>
-        
-        {/* 스니펫 편집 다이얼로그 */}
-        <Dialog
-          open={editDialogOpen}
-          onClose={handleCloseEditDialog}
-          fullWidth
-          maxWidth="md"
-        >
-          <DialogTitle>
-            코드 스니펫 편집
-          </DialogTitle>
-          
-          <DialogContent>
-            <TextField
-              label="제목"
-              fullWidth
-              value={editedTitle}
-              onChange={(e) => setEditedTitle(e.target.value)}
-              margin="normal"
-              required
-            />
-            
-            <TextField
-              label="설명"
-              fullWidth
-              value={editedDescription}
-              onChange={(e) => setEditedDescription(e.target.value)}
-              margin="normal"
-              multiline
-              rows={2}
-            />
-            
-            <FormControl fullWidth margin="normal">
-              <InputLabel>언어</InputLabel>
-              <Select
-                value={editedLanguage}
-                onChange={(e) => setEditedLanguage(e.target.value as CodeLanguage)}
-                label="언어"
-              >
-                {Object.entries(LANGUAGE_INFO).map(([key, value]) => (
-                  <MenuItem key={key} value={key}>
-                    {value.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            
-            <TextField
-              label="코드"
-              fullWidth
-              value={editedContent}
-              onChange={(e) => setEditedContent(e.target.value)}
-              margin="normal"
-              multiline
-              rows={10}
-              required
-              inputProps={{
-                style: { fontFamily: 'monospace' }
-              }}
-            />
-            
-            <Box sx={{ mt: 2 }}>
-              <TextField
-                label="태그 추가"
-                size="small"
-                value={currentTag}
-                onChange={(e) => setCurrentTag(e.target.value)}
-                onKeyPress={handleTagKeyPress}
-                placeholder="태그 입력 후 엔터"
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={handleAddTag}
-                        disabled={!currentTag.trim()}
-                        edge="end"
-                      >
-                        <AddIcon />
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', mt: 1, gap: 0.5 }}>
-                {editedTags.map((tag, index) => (
-                  <Chip
-                    key={index}
-                    label={tag}
-                    onDelete={() => handleDeleteTag(tag)}
-                    size="small"
-                  />
-                ))}
-              </Box>
-            </Box>
-          </DialogContent>
-          
-          <DialogActions>
-            <Button onClick={handleCloseEditDialog}>취소</Button>
-            <Button 
-              onClick={handleSaveSnippet} 
-              variant="contained" 
-              color="primary"
-              startIcon={<SaveIcon />}
-            >
-              저장
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Container>
-    );
-  };
-  
-  export default CodeManagerPage;
+export default CodeManagerPage;
