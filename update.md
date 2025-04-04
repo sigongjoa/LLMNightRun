@@ -392,3 +392,98 @@ API 통신
 
 ---
 
+
+**Manus 에이전트 통합 요약**
+
+## 구현된 기능
+
+1. **백엔드 에이전트 시스템**
+   - 기본 에이전트 클래스 (`BaseAgent`)
+   - ReAct 패턴 에이전트 (`ReActAgent`)
+   - 도구 호출 에이전트 (`ToolCallAgent`)
+   - Manus 범용 에이전트 (`Manus`)
+
+2. **도구 모듈**
+   - 기본 도구 클래스 (`BaseTool`)
+   - 도구 컬렉션 (`ToolCollection`)
+   - Python 실행 도구 (`PythonExecute`)
+   - 문자열 대체 에디터 도구 (`StrReplaceEditor`)
+   - GitHub 도구 (`GitHubTool`)
+   - 종료 도구 (`Terminate`)
+
+3. **샌드박스 시스템**
+   - 샌드박스 클라이언트 인터페이스
+
+4. **API 엔드포인트**
+   - 에이전트 생성 (`POST /agent/create`)
+   - 에이전트 실행 (`POST /agent/{agent_id}/run`)
+   - 에이전트 상태 조회 (`GET /agent/{agent_id}/status`)
+   - 에이전트 삭제 (`DELETE /agent/{agent_id}`)
+
+5. **프론트엔드 컴포넌트**
+   - 에이전트 콘솔 컴포넌트 (`AgentConsole`)
+   - 에이전트 페이지 (`agent.tsx`)
+   - 레이아웃 업데이트 (메뉴 항목 추가)
+
+## 통합 방법
+
+1. **백엔드 통합**
+   - 에이전트 모듈: `/backend/agent/`
+   - 도구 모듈: `/backend/tool/`
+   - 설정 모듈: `/backend/config.py`
+   - 로깅 모듈: `/backend/logger.py`
+   - 스키마 모듈: `/backend/schema.py`
+   - 예외 모듈: `/backend/exceptions.py`
+   - API 라우터: `/backend/routers/agent.py`
+
+2. **프론트엔드 통합**
+   - 컴포넌트: `/frontend/components/Agent/`
+   - 페이지: `/frontend/pages/agent.tsx`
+   - 레이아웃 업데이트: `/frontend/components/Layout.tsx`
+
+## 사용 방법
+
+1. 백엔드 서버 실행:
+   ```bash
+   cd backend
+   uvicorn main:app --reload
+   ```
+
+2. 프론트엔드 실행:
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+
+3. 브라우저에서 `/agent` 페이지 접속
+
+4. 에이전트와 대화하여 다양한 작업 수행:
+   - Python 코드 실행
+   - 파일 편집
+   - GitHub 저장소 관리
+
+## 추가 개발 사항
+
+1. **에이전트 상태 영속화**
+   - 현재는 메모리에 에이전트 인스턴스 저장
+   - 데이터베이스나 Redis 등을 사용하여 영속화 필요
+
+2. **도구 확장**
+   - 브라우저 자동화 도구 추가
+   - 데이터 분석 도구 추가
+   - 이미지 생성/편집 도구 추가
+
+3. **파일 공유 시스템**
+   - 에이전트와 사용자 간 파일 공유 기능
+   - 작업 공간 관리 시스템
+
+4. **보안 강화**
+   - 샌드박스 보안 강화
+   - 권한 관리 시스템 구현
+
+5. **UI 개선**
+   - 도구 실행 결과 시각화
+   - 코드 하이라이팅
+   - 이미지 미리보기
+   
+---

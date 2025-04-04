@@ -22,6 +22,7 @@ from .llm_api import get_llm_response
 from .github_uploader import upload_to_github
 from .codebase_api import router as codebase_router
 from .indexing_api import router as indexing_router
+from .routers.agent import router as agent_router
 
 # 환경 변수 로드
 load_dotenv()
@@ -249,11 +250,9 @@ async def upload_response_to_github(question_id: int, db=Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# 코드베이스 API 라우터 등록
 app.include_router(codebase_router)
-# 인덱싱 API 라우터 등록
 app.include_router(indexing_router)
-
+app.include_router(agent_router)
 
 if __name__ == "__main__":
     uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
