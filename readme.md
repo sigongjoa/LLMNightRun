@@ -71,7 +71,8 @@ pip install -r requirements.txt
 
 ```bash
 cd backend
-uvicorn main:app --reload
+# uvicorn main:app --reload
+python -m backend.main --reload
 ```
 
 서버가 시작되면 `http://localhost:8000`에서 API 문서를 확인할 수 있습니다.

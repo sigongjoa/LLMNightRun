@@ -6,9 +6,10 @@ import os
 from dotenv import load_dotenv
 
 # 내부 모듈 가져오기
-from models import Question, Response, LLMType, CodeSnippet
-from database.connection import get_db
-from database.operations import (
+# 상대 경로 임포트로 변경
+from .models import Question, Response, LLMType, CodeSnippet
+from .database.connection import get_db
+from .database.operations import (
     get_questions,
     create_question,
     get_responses,
@@ -16,8 +17,8 @@ from database.operations import (
     get_code_snippets,
     create_code_snippet
 )
-from llm_api import get_llm_response
-from github_uploader import upload_to_github
+from .llm_api import get_llm_response
+from .github_uploader import upload_to_github
 
 # 환경 변수 로드
 load_dotenv()
@@ -127,4 +128,4 @@ async def upload_response_to_github(question_id: int, db=Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)

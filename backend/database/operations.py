@@ -3,7 +3,8 @@ from typing import List, Optional, Union
 from datetime import datetime
 
 from . import models
-from .. import models as pydantic_models
+# from .. import models as pydantic_models
+from backend import models as pydantic_models
 
 # 질문 관련 함수
 def get_questions(
