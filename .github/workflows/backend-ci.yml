@@ -1,0 +1,54 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      # SQLite를 사용하고 있으므로 추가 서비스 필요 없음
+      # 추후 PostgreSQL이나 다른 DB로 전환 시 여기에 추가
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pytest
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    
+    - name: Lint with flake8
+      run: |
+        # Python 구문 오류나 정의되지 않은 이름만 체크
+        flake8 backend --count --select=E9,F63,F7,F82 --show-source --statistics
+        # 모든 경고를 출력하지만 CI를 중단하지는 않음
+        flake8 backend --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    
+    - name: Test with pytest
+      run: |
+        pytest backend/tests/
+      env:
+        # 테스트용 환경 변수 설정
+        DATABASE_URL: sqlite:///./test.db
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        GITHUB_USERNAME: ${{ secrets.GH_USERNAME }}
+        GITHUB_REPO: ${{ secrets.GH_REPO }}

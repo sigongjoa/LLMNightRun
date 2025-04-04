@@ -1,0 +1,45 @@
+# ------------------------
+# 🔹 Python (FastAPI 백엔드)
+# ------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.sqlite3
+*.log
+*.db
+.env
+.env.*
+
+# mypy, pytest 등
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# VSCode 등 IDE 설정
+.vscode/
+.idea/
+
+# Uvicorn/Starlette 등에서 생성하는 임시파일
+instance/
+*.pid
+*.db-journal
+
+# ------------------------
+# 🔹 Node.js (Next.js 프론트엔드)
+# ------------------------
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+frontend/.env.development
+frontend/.env.production
+frontend/.env.test
+frontend/.turbo/
+frontend/.vercel/
+
+# ------------------------
+# 🔹 시스템 파일
+# ------------------------
+.DS_Store
+Thumbs.db

@@ -1,29 +1,41 @@
 {
-    "name": "llmnightrun-frontend",
-    "version": "0.1.0",
-    "private": true,
-    "scripts": {
-      "dev": "next dev",
-      "build": "next build",
-      "start": "next start",
-      "lint": "next lint"
-    },
-    "dependencies": {
-      "@emotion/react": "^11.10.6",
-      "@emotion/styled": "^11.10.6",
-      "@mui/icons-material": "^5.11.16",
-      "@mui/material": "^5.12.1",
-      "axios": "^1.3.6",
-      "next": "13.3.1",
-      "react": "18.2.0",
-      "react-dom": "18.2.0",
-      "typescript": "5.0.4"
-    },
-    "devDependencies": {
-      "@types/node": "18.16.0",
-      "@types/react": "18.0.38",
-      "@types/react-dom": "18.0.11",
-      "eslint": "8.39.0",
-      "eslint-config-next": "13.3.1"
-    }
+  "name": "llmnightrun-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:ci": "jest --ci --coverage",
+    "cypress": "cypress open",
+    "cypress:headless": "cypress run"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.10.6",
+    "@emotion/styled": "^11.10.6",
+    "@mui/icons-material": "^5.11.16",
+    "@mui/material": "^5.12.1",
+    "axios": "^1.3.6",
+    "next": "13.3.1",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "typescript": "5.0.4"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^14.0.0",
+    "@testing-library/user-event": "^14.4.3",
+    "@types/jest": "^29.5.0",
+    "@types/node": "18.16.0",
+    "@types/react": "18.0.38",
+    "@types/react-dom": "18.0.11",
+    "cypress": "^12.10.0",
+    "eslint": "8.39.0",
+    "eslint-config-next": "13.3.1",
+    "jest": "^29.5.0",
+    "jest-environment-jsdom": "^29.5.0"
   }
+}

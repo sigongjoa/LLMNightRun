@@ -1,0 +1,55 @@
+name: Test Failure Analyzer
+
+on:
+  workflow_run:
+    workflows: [Backend CI, Frontend CI]
+    types:
+      - completed
+
+jobs:
+  analyze_test_failures:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    permissions:
+      issues: write
+      
+    steps:
+      - name: Download workflow artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: ${{ github.event.workflow_run.workflow_id }}
+          run_id: ${{ github.event.workflow_run.id }}
+          name: test-results
+          path: test-results
+          
+      - name: Check if test results exist
+        id: check_files
+        run: |
+          if [ -d "test-results" ] && [ "$(ls -A test-results)" ]; then
+            echo "has_results=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_results=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Python
+        if: steps.check_files.outputs.has_results == 'true'
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Install dependencies
+        if: steps.check_files.outputs.has_results == 'true'
+        run: |
+          python -m pip install openai anthropic requests
+          
+      - name: Analyze test failures
+        if: steps.check_files.outputs.has_results == 'true'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          python .github/scripts/analyze_test_failures.py

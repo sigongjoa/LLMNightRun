@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 import uvicorn
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv  
+import datetime
 
 # 내부 모듈 가져오기
 # 상대 경로 임포트로 변경
@@ -126,6 +127,30 @@ async def upload_response_to_github(question_id: int, db=Depends(get_db)):
         return {"message": "GitHub에 성공적으로 업로드되었습니다", "url": github_url}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/health", tags=["Monitoring"])
+async def health_check():
+    """
+    시스템 헬스 체크 엔드포인트.
+    쿠버네티스, 도커 또는 기타 모니터링 도구에서 사용할 수 있습니다.
+    """
+    try:
+        # 데이터베이스 연결 확인
+        db = SessionLocal()
+        db.execute("SELECT 1")
+        db.close()
+        
+        return {
+            "status": "healthy",
+            "version": "0.1.0",  # 애플리케이션 버전
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": datetime.utcnow().isoformat()
+        }, 500
 
 if __name__ == "__main__":
     uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
