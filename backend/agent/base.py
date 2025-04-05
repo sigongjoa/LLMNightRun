@@ -206,4 +206,112 @@ class BaseAgent(BaseModel, ABC):
         """에이전트 메모리의 메시지 목록 설정"""
         self.memory.messages = value
 
+
+        # 로깅 관련 기능 추가
+def initialize_agent(self) -> "BaseAgent":
+    """Initialize agent with default settings if not provided."""
+    if self.llm is None or not isinstance(self.llm, LLM):
+        self.llm = LLM(config_name=self.name.lower())
+    if not isinstance(self.memory, Memory):
+        self.memory = Memory()
+    
+    # 세션 ID 생성
+    self.session_id = getattr(self, 'session_id', str(uuid.uuid4()))
+    
+    # 로그 저장소 초기화
+    self.logs = getattr(self, 'logs', [])
+    
+    return self
+
+# 아래 메서드를 BaseAgent 클래스에 추가:
+def log_step(
+    self, 
+    phase: str, 
+    input_data: Optional[Union[str, Dict]] = None, 
+    output_data: Optional[Union[str, Dict]] = None, 
+    tool_calls: Optional[List[Dict]] = None, 
+    error: Optional[str] = None
+) -> None:
+    """
+    Agent 실행 단계를 로깅합니다.
+    
+    Args:
+        phase: 실행 단계 (think, act, observe 등)
+        input_data: 입력 데이터
+        output_data: 출력 데이터
+        tool_calls: 도구 호출 정보
+        error: 오류 내용
+    """
+    log_entry = {
+        "session_id": self.session_id,
+        "agent_type": self.name,
+        "timestamp": datetime.utcnow().isoformat(),
+        "step": self.current_step,
+        "phase": phase,
+        "input_data": input_data,
+        "output_data": output_data,
+        "tool_calls": tool_calls,
+        "error": error
+    }
+    
+    # 메모리에 로그 저장
+    self.logs.append(log_entry)
+    
+    # 파일 시스템에 로그 저장 (선택 사항)
+    self._save_log_to_file(log_entry)
+    
+    # 데이터베이스 로그 저장 함수 호출 (선택 사항)
+    # 백엔드 서버와 통합되어 있을 경우 활성화
+    # 이 함수는 아직 구현되어 있지 않으므로 주석 처리
+    # self._save_log_to_database(log_entry)
+
+def _save_log_to_file(self, log_entry: Dict[str, Any]) -> None:
+    """로그를 파일에 저장"""
+    try:
+        import os
+        import json
+        
+        # 로그 디렉토리 생성
+        log_dir = os.path.join("storage", "logs")
+        os.makedirs(log_dir, exist_ok=True)
+        
+        # 로그 파일 경로
+        log_file = os.path.join(log_dir, f"agent_{self.session_id}.json")
+        
+        # 기존 로그 파일 읽기 (있는 경우)
+        existing_logs = []
+        if os.path.exists(log_file):
+            with open(log_file, 'r') as f:
+                existing_logs = json.load(f)
+        
+        # 새 로그 추가
+        existing_logs.append(log_entry)
+        
+        # 로그 파일 작성
+        with open(log_file, 'w') as f:
+            json.dump(existing_logs, f, indent=2)
+    except Exception as e:
+        logger.error(f"로그 파일 저장 오류: {e}")
+
+# 기존 step 메서드를 수정하여 로깅 추가
+async def step(self) -> str:
+    """Execute a single step in the agent's workflow."""
+    try:
+        self.log_step(phase="start", input_data={"step": self.current_step})
+        
+        # 기존 단계 로직 실행
+        step_result = await self._execute_step()
+        
+        self.log_step(phase="complete", output_data={"result": step_result})
+        return step_result
+    except Exception as e:
+        self.log_step(phase="error", error=str(e))
+        raise e
+
+# 이 메서드는 실제 단계 실행 로직을 포함 (원래 step 메서드의 내용)
+@abstractmethod
+async def _execute_step(self) -> str:
+    """Execute a single step in the agent's workflow."""
+    pass
+
         

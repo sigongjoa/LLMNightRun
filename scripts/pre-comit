@@ -1,0 +1,43 @@
+#!/bin/sh
+#
+# Git 커밋 전 훅 스크립트
+# 변경사항을 분석하고 필요한 경우 문서를 자동으로 업데이트합니다.
+#
+# 설치 방법:
+# 이 파일을 복사하여 .git/hooks/pre-commit로 저장하고 실행 권한을 부여하세요:
+# cp scripts/pre-commit .git/hooks/pre-commit
+# chmod +x .git/hooks/pre-commit
+
+# 스크립트 중단 시 훅 실패 처리
+set -e
+
+echo "문서 자동 생성 훅 실행 중..."
+
+# 저장소 루트 디렉토리 저장
+REPO_ROOT=$(git rev-parse --show-toplevel)
+
+# 현재 브랜치 확인 (docs 브랜치면 무한 루프 방지를 위해 스킵)
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+if [ "$CURRENT_BRANCH" = "docs" ]; then
+    echo "docs 브랜치에서 실행 중입니다. 문서 생성을 건너뜁니다."
+    exit 0
+fi
+
+# 문서 생성 스크립트 실행
+SCRIPT_PATH="$REPO_ROOT/scripts/generate_docs.py"
+if [ -f "$SCRIPT_PATH" ]; then
+    # 스크립트 실행 (저장소 경로 전달)
+    python "$SCRIPT_PATH" --repo-path "$REPO_ROOT"
+    
+    # 스크립트 실행 결과 확인
+    if [ $? -ne 0 ]; then
+        echo "문서 생성에 실패했습니다. 커밋을 중단합니다."
+        exit 1
+    fi
+else
+    echo "문서 생성 스크립트를 찾을 수 없습니다: $SCRIPT_PATH"
+    echo "스크립트를 찾을 수 없어 문서 생성을 건너뜁니다."
+fi
+
+# 커밋 계속 진행
+exit 0
