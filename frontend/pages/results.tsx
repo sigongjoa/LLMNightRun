@@ -25,6 +25,7 @@ import {
 } from '@mui/icons-material';
 import { Question, Response, LLMType } from '../types';
 import { fetchQuestion, fetchResponses, uploadToGitHub } from '../utils/api';
+import ExportButton, { ExportType } from '../components/ExportButton';
 
 // LLM 유형별 아이콘 및 색상
 const LLM_ICONS: Record<LLMType, { name: string; color: string }> = {
@@ -229,6 +230,49 @@ const ResultsPage: React.FC = () => {
               >
                 {uploadSuccess ? '업로드됨' : 'GitHub에 저장'}
               </Button>
+            </Box>
+            <Box>
+                {question.tags && question.tags.length > 0 && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {question.tags.map((tag, index) => (
+                      <Chip key={index} label={tag} size="small" variant="outlined" />
+                    ))}
+                  </Box>
+                )}
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                  작성일: {formatDate(question.created_at)}
+                </Typography>
+              </Box>
+              
+              <Box>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<CodeIcon />}
+                  onClick={handleExtractCode}
+                  sx={{ mr: 1 }}
+                >
+                  코드 추출
+                </Button>
+                
+                <ExportButton 
+                  type={ExportType.QUESTION}
+                  id={question.id!}
+                  buttonVariant="outlined"
+                  buttonSize="medium"
+                  sx={{ mr: 1 }}
+                />
+                
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={uploadLoading ? <CircularProgress size={20} color="inherit" /> : <UploadIcon />}
+                  onClick={handleGitHubUpload}
+                  disabled={uploadLoading || uploadSuccess}
+                >
+                  {uploadSuccess ? '업로드됨' : 'GitHub에 저장'}
+                </Button>
+              </Box>
             </Box>
           </Box>
           

@@ -304,5 +304,49 @@ def update_codebase_model():
     # CodebaseFile에 역참조 추가
     models.CodebaseFile.embeddings = relationship("CodeEmbedding", back_populates="file")
 
+
+class AgentPhaseEnum(enum.Enum):
+    think = "think"
+    act = "act"
+    observe = "observe"
+    initialize = "initialize"
+    finish = "finish"
+    error = "error"
+
+
+class AgentSession(Base):
+    """Agent 세션 테이블"""
+    __tablename__ = "agent_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(String(64), unique=True, index=True, nullable=False)
+    agent_type = Column(String(50), nullable=False)
+    start_time = Column(DateTime, default=datetime.utcnow)
+    end_time = Column(DateTime)
+    status = Column(String(20), default="running")
+    total_steps = Column(Integer, default=0)
+    parameters = Column(JSON, default=dict)
+    
+    # 관계 정의
+    logs = relationship("AgentLog", back_populates="session")
+
+
+class AgentLog(Base):
+    """Agent 로그 테이블"""
+    __tablename__ = "agent_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(String(64), ForeignKey("agent_sessions.session_id"), nullable=False)
+    step = Column(Integer, nullable=False)
+    phase = Column(Enum(AgentPhaseEnum), nullable=False)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    input_data = Column(JSON)
+    output_data = Column(JSON)
+    tool_calls = Column(JSON)
+    error = Column(Text)
+    
+    # 관계 정의
+    session = relationship("AgentSession", back_populates="logs")
+
 # 데이터베이스 초기화 시 모델 관계 업데이트
 update_codebase_model()

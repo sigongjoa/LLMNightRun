@@ -12,6 +12,9 @@ from . import models
 from backend import models as pydantic_models
 from backend.models import IndexingStatus, IndexingFrequency
 
+from ..models.agent_log import AgentSession as DBAgentSession, AgentLog as DBAgentLog, AgentPhaseEnum
+from ...models.agent_log import AgentSession, AgentLog, AgentPhase
+
 # 질문 관련 함수
 def get_questions(
     db: Session, 
@@ -862,3 +865,241 @@ def get_codebase_embeddings_stats(
         "last_indexed_at": latest_run.end_time if latest_run and latest_run.end_time else None,
         "last_index_status": latest_run.status.value if latest_run else None
     }
+
+def get_agent_sessions(
+    db: Session, 
+    session_id: Optional[str] = None,
+    agent_type: Optional[str] = None,
+    status: Optional[str] = None,
+    skip: int = 0, 
+    limit: int = 100
+) -> List[AgentSession]:
+    """
+    Agent 세션 목록 조회
+    
+    Args:
+        db: 데이터베이스 세션
+        session_id: 특정 세션 ID로 필터링
+        agent_type: Agent 유형으로 필터링
+        status: 상태로 필터링
+        skip: 건너뛸 항목 수
+        limit: 최대 반환 항목 수
+    
+    Returns:
+        Agent 세션 목록
+    """
+    query = db.query(DBAgentSession)
+    
+    if session_id:
+        query = query.filter(DBAgentSession.session_id == session_id)
+    
+    if agent_type:
+        query = query.filter(DBAgentSession.agent_type == agent_type)
+    
+    if status:
+        query = query.filter(DBAgentSession.status == status)
+    
+    query = query.order_by(DBAgentSession.start_time.desc())
+    
+    return query.offset(skip).limit(limit).all()
+
+
+def get_agent_session(
+    db: Session, 
+    session_id: str
+) -> Optional[AgentSession]:
+    """
+    특정 Agent 세션 조회
+    
+    Args:
+        db: 데이터베이스 세션
+        session_id: 세션 ID
+    
+    Returns:
+        Agent 세션 또는 None
+    """
+    return db.query(DBAgentSession).filter(DBAgentSession.session_id == session_id).first()
+
+
+def create_agent_session(
+    db: Session,
+    session: AgentSession
+) -> AgentSession:
+    """
+    새 Agent 세션 생성
+    
+    Args:
+        db: 데이터베이스 세션
+        session: 생성할 세션 정보
+    
+    Returns:
+        생성된 Agent 세션
+    """
+    db_session = DBAgentSession(
+        session_id=session.session_id,
+        agent_type=session.agent_type,
+        start_time=session.start_time or datetime.utcnow(),
+        status=session.status,
+        parameters=session.parameters or {}
+    )
+    
+    db.add(db_session)
+    db.commit()
+    db.refresh(db_session)
+    
+    return db_session
+
+
+def update_agent_session(
+    db: Session,
+    session_id: str,
+    update_data: Dict[str, Any]
+) -> Optional[AgentSession]:
+    """
+    Agent 세션 업데이트
+    
+    Args:
+        db: 데이터베이스 세션
+        session_id: 세션 ID
+        update_data: 업데이트할 데이터 필드
+    
+    Returns:
+        업데이트된 Agent 세션 또는 None
+    """
+    db_session = db.query(DBAgentSession).filter(DBAgentSession.session_id == session_id).first()
+    
+    if not db_session:
+        return None
+    
+    for key, value in update_data.items():
+        if hasattr(db_session, key):
+            setattr(db_session, key, value)
+    
+    db.commit()
+    db.refresh(db_session)
+    
+    return db_session
+
+
+def finish_agent_session(
+    db: Session,
+    session_id: str,
+    status: str = "completed"
+) -> Optional[AgentSession]:
+    """
+    Agent 세션 종료 처리
+    
+    Args:
+        db: 데이터베이스 세션
+        session_id: 세션 ID
+        status: 종료 상태 (completed, error 등)
+    
+    Returns:
+        업데이트된 Agent 세션 또는 None
+    """
+    return update_agent_session(
+        db,
+        session_id,
+        {
+            "status": status,
+            "end_time": datetime.utcnow()
+        }
+    )
+
+
+def get_agent_logs(
+    db: Session,
+    session_id: Optional[str] = None,
+    phase: Optional[Union[AgentPhase, str]] = None,
+    step: Optional[int] = None,
+    has_error: Optional[bool] = None,
+    skip: int = 0,
+    limit: int = 100
+) -> List[AgentLog]:
+    """
+    Agent 로그 목록 조회
+    
+    Args:
+        db: 데이터베이스 세션
+        session_id: 세션 ID로 필터링
+        phase: 특정 단계로 필터링
+        step: 특정 스텝으로 필터링
+        has_error: 오류 발생 여부로 필터링
+        skip: 건너뛸 항목 수
+        limit: 최대 반환 항목 수
+    
+    Returns:
+        Agent 로그 목록
+    """
+    query = db.query(DBAgentLog)
+    
+    if session_id:
+        query = query.filter(DBAgentLog.session_id == session_id)
+    
+    if phase:
+        if isinstance(phase, str):
+            phase = AgentPhaseEnum[phase]
+        query = query.filter(DBAgentLog.phase == phase)
+    
+    if step is not None:
+        query = query.filter(DBAgentLog.step == step)
+    
+    if has_error is not None:
+        if has_error:
+            query = query.filter(DBAgentLog.error.isnot(None))
+        else:
+            query = query.filter(DBAgentLog.error.is_(None))
+    
+    query = query.order_by(DBAgentLog.timestamp.asc())
+    
+    return query.offset(skip).limit(limit).all()
+
+
+def create_agent_log(
+    db: Session,
+    log: AgentLog
+) -> AgentLog:
+    """
+    새 Agent 로그 생성
+    
+    Args:
+        db: 데이터베이스 세션
+        log: 생성할 로그 정보
+    
+    Returns:
+        생성된 Agent 로그
+    """
+    # 세션 확인 및 업데이트
+    db_session = db.query(DBAgentSession).filter(DBAgentSession.session_id == log.session_id).first()
+    
+    if db_session:
+        # 총 스텝 수 업데이트
+        if log.step > db_session.total_steps:
+            db_session.total_steps = log.step
+    else:
+        # 세션이 없으면 자동으로 생성
+        db_session = DBAgentSession(
+            session_id=log.session_id,
+            agent_type=log.agent_type,
+            start_time=datetime.utcnow(),
+            status="running"
+        )
+        db.add(db_session)
+    
+    # 로그 생성
+    db_log = DBAgentLog(
+        session_id=log.session_id,
+        step=log.step,
+        phase=AgentPhaseEnum[log.phase],
+        timestamp=log.timestamp or datetime.utcnow(),
+        input_data=log.input_data,
+        output_data=log.output_data,
+        tool_calls=log.tool_calls,
+        error=log.error
+    )
+    
+    db.add(db_log)
+    db.commit()
+    db.refresh(db_log)
+    
+    return db_log

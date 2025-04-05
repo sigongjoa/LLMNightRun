@@ -5,6 +5,7 @@ import uvicorn
 import os
 from dotenv import load_dotenv  
 import datetime
+from .routes import export
 
 # 내부 모듈 가져오기
 # 상대 경로 임포트로 변경
@@ -253,6 +254,7 @@ async def upload_response_to_github(question_id: int, db=Depends(get_db)):
 app.include_router(codebase_router)
 app.include_router(indexing_router)
 app.include_router(agent_router)
+app.include_router(export.router)
 
 if __name__ == "__main__":
     uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)

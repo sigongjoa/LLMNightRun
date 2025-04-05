@@ -42,6 +42,7 @@ import {
 } from '@mui/icons-material';
 import { CodeSnippet, CodeLanguage, Response, Question } from '../types';
 import { fetchCodeSnippets, createCodeSnippet, fetchResponses, fetchQuestion } from '../utils/api';
+import ExportButton, { ExportType } from '../components/ExportButton';
 
 // 언어별 구문 강조 및 아이콘
 const LANGUAGE_INFO: Record<CodeLanguage, { color: string; icon: string; name: string }> = {
@@ -416,6 +417,15 @@ const CodeManagerPage: React.FC = () => {
                         <GitHubIcon />
                       </IconButton>
                     </Tooltip>
+
+                    <ExportButton
+                      type={ExportType.CODE_SNIPPET}
+                      id={snippet.id!}
+                      buttonText=""
+                      buttonVariant="text"
+                      buttonSize="small"
+                      tooltip="내보내기"
+                    />
                     
                     <Tooltip title="수정">
                       <IconButton 

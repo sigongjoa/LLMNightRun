@@ -13,6 +13,8 @@ from pydantic import BaseModel, Field, model_validator
 from backend.logger import get_logger
 from backend.llm import LLM
 from backend.schema import AgentState, Memory, Message, ROLE_TYPE
+import uuid
+from typing import Dict, Any, Optional, List, Union
 
 logger = get_logger(__name__)
 
