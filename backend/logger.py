@@ -8,48 +8,86 @@ import logging
 import os
 import sys
 from pathlib import Path
+from datetime import datetime
+import logging.handlers
 
-from backend.config import config
+from .config import settings
 
 
-# 로그 디렉토리 생성
-log_dir = config.base_dir / "logs"
-log_dir.mkdir(exist_ok=True)
-log_file = log_dir / "llmnightrun.log"
-
-# 로깅 포맷 설정
-LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-LOG_LEVEL = logging.DEBUG if config.debug else logging.INFO
-
-# 루트 로거 설정
-logging.basicConfig(
-    level=LOG_LEVEL,
-    format=LOG_FORMAT,
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler(log_file),
-    ],
-)
-
-# 외부 라이브러리 로깅 레벨 조정
-logging.getLogger("urllib3").setLevel(logging.WARNING)
-logging.getLogger("selenium").setLevel(logging.WARNING)
-logging.getLogger("docker").setLevel(logging.WARNING)
-
-# 애플리케이션 로거 생성
-logger = logging.getLogger("llmnightrun")
+def setup_logging(log_level=None):
+    """
+    애플리케이션 로깅을 설정합니다.
+    
+    Args:
+        log_level: 로그 레벨 (None인 경우 config 설정 사용)
+        
+    Returns:
+        logger: 설정된 루트 로거
+    """
+    # 로그 레벨 설정
+    if log_level is None:
+        log_level = logging.DEBUG if settings.debug else logging.INFO
+    
+    # 로그 디렉토리 생성
+    log_dir = settings.base_dir / "logs"
+    os.makedirs(log_dir, exist_ok=True)
+    
+    # 로그 파일 경로
+    log_file = log_dir / f"llmnightrun_{datetime.now().strftime('%Y-%m-%d')}.log"
+    
+    # 로깅 포맷 설정
+    log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    formatter = logging.Formatter(log_format)
+    
+    # 루트 로거 설정
+    root_logger = logging.getLogger()
+    root_logger.setLevel(log_level)
+    
+    # 핸들러 초기화 (중복 방지)
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+    
+    # 콘솔 핸들러 추가
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(ColorFormatter(log_format))
+    console_handler.setLevel(log_level)
+    root_logger.addHandler(console_handler)
+    
+    # 파일 핸들러 추가 (일별 로그 파일)
+    file_handler = logging.handlers.TimedRotatingFileHandler(
+        log_file,
+        when="midnight",
+        backupCount=30,  # 최대 30일분 보관
+        encoding="utf-8"
+    )
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(log_level)
+    root_logger.addHandler(file_handler)
+    
+    # 외부 라이브러리 로깅 레벨 조정
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("sqlalchemy").setLevel(logging.WARNING)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("requests").setLevel(logging.WARNING)
+    
+    # 애플리케이션 로거 생성
+    app_logger = logging.getLogger("llmnightrun")
+    app_logger.setLevel(log_level)
+    
+    app_logger.info("로깅 시스템 초기화 완료")
+    return app_logger
 
 
 class ColorFormatter(logging.Formatter):
     """색상이 적용된 로그 포맷터"""
     
     COLORS = {
-        "DEBUG": "\033[36m",    # 청록색
-        "INFO": "\033[32m",     # 녹색
-        "WARNING": "\033[33m",  # 노란색
-        "ERROR": "\033[31m",    # 빨간색
-        "CRITICAL": "\033[41m", # 빨간 배경
-        "RESET": "\033[0m",     # 리셋
+        "DEBUG": "\033[36m",     # 청록색
+        "INFO": "\033[32m",      # 녹색
+        "WARNING": "\033[33m",   # 노란색
+        "ERROR": "\033[31m",     # 빨간색
+        "CRITICAL": "\033[41m",  # 빨간 배경
+        "RESET": "\033[0m",      # 리셋
     }
     
     def format(self, record):
@@ -60,12 +98,6 @@ class ColorFormatter(logging.Formatter):
             )
             record.msg = f"{self.COLORS[record.levelname.strip()]}{record.msg}{self.COLORS['RESET']}"
         return super().format(record)
-
-
-# 터미널 출력에 색상 추가
-for handler in logger.handlers:
-    if isinstance(handler, logging.StreamHandler):
-        handler.setFormatter(ColorFormatter(LOG_FORMAT))
 
 
 def get_logger(name):

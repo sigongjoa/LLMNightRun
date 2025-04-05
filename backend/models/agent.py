@@ -1,43 +1,15 @@
 """
-LLMNightRun 스키마 정의 모듈
+에이전트 관련 모델 정의 모듈
 
-에이전트 및 LLM 상호작용에 필요한 데이터 구조를 정의합니다.
+에이전트, 메시지, 도구 호출 등의 데이터 구조를 정의합니다.
 """
 
-import base64
-import enum
-import json
-import uuid
+from pydantic import BaseModel, Field
+from typing import Dict, List, Optional, Union, Any
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, Field, model_validator
-
-
-# 기본 타입 정의
-ROLE_TYPE = Literal["user", "assistant", "system", "tool"]
-TOOL_CHOICE_TYPE = Union[Literal["none", "auto", "required"], Dict[str, Any]]
-
-
-class AgentState(str, enum.Enum):
-    """에이전트 상태"""
-    IDLE = "idle"           # 대기 상태
-    RUNNING = "running"     # 실행 중
-    FINISHED = "finished"   # 작업 완료
-    ERROR = "error"         # 오류 발생
-
-
-class ToolChoice(str, enum.Enum):
-    """도구 선택 모드"""
-    NONE = "none"           # 도구 사용 안함
-    AUTO = "auto"           # 필요시 자동 선택
-    REQUIRED = "required"   # 항상 도구 사용 필수
-
-
-class ToolSchema(BaseModel):
-    """도구 스키마 정의"""
-    type: str = "function"
-    function: Dict[str, Any]
+from .base import IdentifiedModel
+from .enums import AgentPhase, AgentState
 
 
 class ToolCallFunction(BaseModel):
@@ -48,14 +20,14 @@ class ToolCallFunction(BaseModel):
 
 class ToolCall(BaseModel):
     """도구 호출 정보"""
-    id: str = Field(default_factory=lambda: f"call_{uuid.uuid4().hex[:8]}")
+    id: str
     type: str = "function"
     function: ToolCallFunction
 
 
 class Message(BaseModel):
     """대화 메시지"""
-    role: ROLE_TYPE
+    role: str  # user, assistant, system, tool
     content: Optional[str] = None
     name: Optional[str] = None
     tool_calls: Optional[List[ToolCall]] = None
@@ -88,26 +60,43 @@ class Message(BaseModel):
             base64_image=base64_image,
         )
 
-    @classmethod
-    def from_tool_calls(cls, content: Optional[str], tool_calls: List[ToolCall]) -> "Message":
-        """도구 호출 메시지 생성"""
-        return cls(role="assistant", content=content, tool_calls=tool_calls)
+
+class AgentSession(IdentifiedModel):
+    """에이전트 세션 모델"""
+    session_id: str
+    agent_type: str
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    status: str = "running"
+    total_steps: int = 0
+    parameters: Dict[str, Any] = Field(default_factory=dict)
 
 
-class Memory(BaseModel):
-    """에이전트 메모리"""
-    messages: List[Message] = Field(default_factory=list)
-    max_history: int = 100
+class AgentLog(IdentifiedModel):
+    """에이전트 로그 모델"""
+    session_id: str
+    step: int
+    phase: AgentPhase
+    timestamp: Optional[datetime] = None
+    input_data: Optional[Dict[str, Any]] = None
+    output_data: Optional[Dict[str, Any]] = None
+    tool_calls: Optional[List[Dict[str, Any]]] = None
+    error: Optional[str] = None
 
-    def add_message(self, message: Message) -> None:
-        """메시지 추가"""
-        self.messages.append(message)
-        if len(self.messages) > self.max_history:
-            self.messages = self.messages[-self.max_history:]
 
-    def clear(self) -> None:
-        """메모리 초기화"""
-        self.messages.clear()
+class AgentRequest(BaseModel):
+    """에이전트 요청 모델"""
+    prompt: str
+    workspace: Optional[str] = None
+    max_steps: Optional[int] = None
+
+
+class AgentResponse(BaseModel):
+    """에이전트 응답 모델"""
+    agent_id: str
+    state: AgentState
+    messages: List[Dict] = Field(default_factory=list)
+    result: str = ""
 
 
 class ToolResult(BaseModel):

@@ -1,39 +1,34 @@
-from fastapi import FastAPI, HTTPException, Depends
-from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Optional
+"""
+LLMNightRun API 메인 애플리케이션 모듈
+
+FastAPI 애플리케이션의 진입점입니다.
+"""
+
 import uvicorn
-import os
-from dotenv import load_dotenv  
-import datetime
-from .routes import export
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from datetime import datetime
 
-# 내부 모듈 가져오기
-# 상대 경로 임포트로 변경
-from .models import Question, Response, LLMType, CodeSnippet
-from .database.connection import get_db
-from .database.operations import (
-    get_questions,
-    create_question,
-    get_responses,
-    create_response,
-    get_code_snippets,
-    create_code_snippet
+from .config import settings
+from .logger import setup_logging
+from .exceptions import LLMNightRunError, LLMError
+from .database.connection import create_tables
+from .api import question, response, code, agent, indexing, export
+
+
+# 로깅 설정
+logger = setup_logging()
+
+# FastAPI 애플리케이션 생성
+app = FastAPI(
+    title="LLMNightRun API",
+    description="멀티 LLM 통합 자동화 플랫폼 API",
+    version="0.1.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    debug=settings.debug
 )
-from .llm_api import get_llm_response
-from .github_uploader import upload_to_github
-from .codebase_api import router as codebase_router
-from .indexing_api import router as indexing_router
-from .routers.agent import router as agent_router
-
-# 환경 변수 로드
-load_dotenv()
-
-app = FastAPI(title="LLMNightRun API", description="멀티 LLM 통합 자동화 플랫폼 API")
-
-
-@app.get("/")
-async def root():
-    return {"message": "LLMNightRun API에 오신 것을 환영합니다!"}
 
 # CORS 설정
 app.add_middleware(
@@ -44,217 +39,74 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 전역 예외 핸들러
+@app.exception_handler(LLMNightRunError)
+async def llm_night_run_exception_handler(request: Request, exc: LLMNightRunError):
+    """사용자 정의 예외 처리"""
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc)},
+    )
+
+@app.exception_handler(LLMError)
+async def llm_exception_handler(request: Request, exc: LLMError):
+    """LLM 관련 예외 처리"""
+    return JSONResponse(
+        status_code=503,
+        content={"detail": str(exc)},
+    )
+
+# 메인 엔드포인트
 @app.get("/")
 async def root():
+    """루트 경로"""
     return {"message": "LLMNightRun API에 오신 것을 환영합니다!"}
 
-# 질문 관련 엔드포인트
-@app.post("/questions/", response_model=Question)
-async def submit_question(question: Question, db=Depends(get_db)):
-    """새로운 질문을 제출합니다."""
-    return create_question(db, question)
-
-@app.get("/questions/", response_model=List[Question])
-async def list_questions(skip: int = 0, limit: int = 100, db=Depends(get_db)):
-    """모든 질문을 조회합니다."""
-    return get_questions(db, skip=skip, limit=limit)
-
-# 응답 관련 엔드포인트
-@app.post("/responses/", response_model=Response)
-async def submit_response(response: Response, db=Depends(get_db)):
-    """새로운 응답을 저장합니다. (수동 등록용)"""
-    return create_response(db, response)
-
-@app.get("/responses/", response_model=List[Response])
-async def list_responses(
-    question_id: Optional[int] = None, 
-    llm_type: Optional[LLMType] = None,
-    skip: int = 0, 
-    limit: int = 100, 
-    db=Depends(get_db)
-):
-    """응답을 조회합니다. 선택적으로 질문 ID나 LLM 유형으로 필터링 가능합니다."""
-    return get_responses(db, question_id=question_id, llm_type=llm_type, skip=skip, limit=limit)
-
-# LLM API 요청 엔드포인트
-@app.post("/ask/{llm_type}")
-async def ask_llm(llm_type: LLMType, question: Question, db=Depends(get_db)):
-    """LLM API에 질문을 요청하고 결과를 저장합니다."""
-    try:
-        # 질문 저장
-        saved_question = create_question(db, question)
-        # LLM에 질문 요청
-        response_text = get_llm_response(llm_type, question.content)
-        
-        # 응답 생성 및 저장
-        response = Response(
-            question_id=saved_question.id,
-            llm_type=llm_type,
-            content=response_text
-        )
-        saved_response = create_response(db, response)
-        
-        return {
-            "question": saved_question,
-            "response": saved_response
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# 코드 스니펫 관련 엔드포인트
-@app.post("/code-snippets/", response_model=CodeSnippet)
-async def create_code(code_snippet: CodeSnippet, db=Depends(get_db)):
-    """새로운 코드 스니펫을 생성합니다."""
-    return create_code_snippet(db, code_snippet)
-
-@app.get("/code-snippets/", response_model=List[CodeSnippet])
-async def list_code_snippets(
-    language: Optional[str] = None,
-    tag: Optional[str] = None,
-    skip: int = 0,
-    limit: int = 100,
-    db=Depends(get_db)
-):
-    """코드 스니펫을 조회합니다. 언어나 태그로 필터링 가능합니다."""
-    return get_code_snippets(db, language=language, tag=tag, skip=skip, limit=limit)
-
-# GitHub 업로드 엔드포인트
-@app.post("/github/upload")
-async def upload_response_to_github(question_id: int, db=Depends(get_db)):
-    """특정 질문의 모든 응답을 GitHub에 업로드합니다."""
-    try:
-        # 질문과 모든 응답 조회
-        question = get_questions(db, question_id=question_id, single=True)
-        responses = get_responses(db, question_id=question_id)
-        
-        if not question:
-            raise HTTPException(status_code=404, detail="질문을 찾을 수 없습니다")
-        
-        # GitHub에 업로드
-        github_url = upload_to_github(question, responses)
-        
-        return {"message": "GitHub에 성공적으로 업로드되었습니다", "url": github_url}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+# 헬스 체크 엔드포인트
 @app.get("/health", tags=["Monitoring"])
 async def health_check():
     """
     시스템 헬스 체크 엔드포인트.
     쿠버네티스, 도커 또는 기타 모니터링 도구에서 사용할 수 있습니다.
     """
-    try:
-        # 데이터베이스 연결 확인
-        db = SessionLocal()
-        db.execute("SELECT 1")
-        db.close()
-        
-        return {
-            "status": "healthy",
-            "version": "0.1.0",  # 애플리케이션 버전
-            "timestamp": datetime.utcnow().isoformat()
-        }
-    except Exception as e:
-        return {
-            "status": "unhealthy",
-            "error": str(e),
-            "timestamp": datetime.utcnow().isoformat()
-        }, 500
+    # 현재 버전 정보
+    version = "0.1.0"
+    
+    return {
+        "status": "healthy",
+        "version": version,
+        "timestamp": datetime.utcnow().isoformat()
+    }
 
-
-# 질문 관련 엔드포인트
-@app.post("/questions/", response_model=Question)
-async def submit_question(question: Question, db=Depends(get_db)):
-    """새로운 질문을 제출합니다."""
-    return create_question(db, question)
-
-@app.get("/questions/", response_model=List[Question])
-async def list_questions(skip: int = 0, limit: int = 100, db=Depends(get_db)):
-    """모든 질문을 조회합니다."""
-    return get_questions(db, skip=skip, limit=limit)
-
-# 응답 관련 엔드포인트
-@app.post("/responses/", response_model=Response)
-async def submit_response(response: Response, db=Depends(get_db)):
-    """새로운 응답을 저장합니다. (수동 등록용)"""
-    return create_response(db, response)
-
-@app.get("/responses/", response_model=List[Response])
-async def list_responses(
-    question_id: Optional[int] = None, 
-    llm_type: Optional[LLMType] = None,
-    skip: int = 0, 
-    limit: int = 100, 
-    db=Depends(get_db)
-):
-    """응답을 조회합니다. 선택적으로 질문 ID나 LLM 유형으로 필터링 가능합니다."""
-    return get_responses(db, question_id=question_id, llm_type=llm_type, skip=skip, limit=limit)
-
-# LLM API 요청 엔드포인트
-@app.post("/ask/{llm_type}")
-async def ask_llm(llm_type: LLMType, question: Question, db=Depends(get_db)):
-    """LLM API에 질문을 요청하고 결과를 저장합니다."""
-    try:
-        # 질문 저장
-        saved_question = create_question(db, question)
-        # LLM에 질문 요청
-        response_text = get_llm_response(llm_type, question.content)
-        
-        # 응답 생성 및 저장
-        response = Response(
-            question_id=saved_question.id,
-            llm_type=llm_type,
-            content=response_text
-        )
-        saved_response = create_response(db, response)
-        
-        return {
-            "question": saved_question,
-            "response": saved_response
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# 코드 스니펫 관련 엔드포인트
-@app.post("/code-snippets/", response_model=CodeSnippet)
-async def create_code(code_snippet: CodeSnippet, db=Depends(get_db)):
-    """새로운 코드 스니펫을 생성합니다."""
-    return create_code_snippet(db, code_snippet)
-
-@app.get("/code-snippets/", response_model=List[CodeSnippet])
-async def list_code_snippets(
-    language: Optional[str] = None,
-    tag: Optional[str] = None,
-    skip: int = 0,
-    limit: int = 100,
-    db=Depends(get_db)
-):
-    """코드 스니펫을 조회합니다. 언어나 태그로 필터링 가능합니다."""
-    return get_code_snippets(db, language=language, tag=tag, skip=skip, limit=limit)
-
-# GitHub 업로드 엔드포인트
-@app.post("/github/upload")
-async def upload_response_to_github(question_id: int, db=Depends(get_db)):
-    """특정 질문의 모든 응답을 GitHub에 업로드합니다."""
-    try:
-        # 질문과 모든 응답 조회
-        question = get_questions(db, question_id=question_id, single=True)
-        responses = get_responses(db, question_id=question_id)
-        
-        if not question:
-            raise HTTPException(status_code=404, detail="질문을 찾을 수 없습니다")
-        
-        # GitHub에 업로드
-        github_url = upload_to_github(question, responses)
-        
-        return {"message": "GitHub에 성공적으로 업로드되었습니다", "url": github_url}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-app.include_router(codebase_router)
-app.include_router(indexing_router)
-app.include_router(agent_router)
+# 라우터 등록
+app.include_router(question.router)
+app.include_router(response.router)
+app.include_router(code.router)
+app.include_router(agent.router)
+app.include_router(indexing.router)
 app.include_router(export.router)
 
+# 애플리케이션 시작 이벤트
+@app.on_event("startup")
+async def startup_event():
+    """애플리케이션 시작 시 실행"""
+    logger.info("LLMNightRun API 서버 시작")
+    
+    # 데이터베이스 테이블 생성
+    create_tables()
+
+# 애플리케이션 종료 이벤트
+@app.on_event("shutdown")
+async def shutdown_event():
+    """애플리케이션 종료 시 실행"""
+    logger.info("LLMNightRun API 서버 종료")
+
+
+# 직접 실행 시
 if __name__ == "__main__":
-    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(
+        "backend.main:app",
+        host=settings.host,
+        port=settings.port,
+        reload=settings.debug
+    )
