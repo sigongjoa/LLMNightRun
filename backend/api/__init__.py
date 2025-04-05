@@ -10,6 +10,7 @@ from . import code
 from . import agent
 from . import indexing
 from . import export
+from . import auto_debug
 
 __all__ = [
     "question",
@@ -17,5 +18,6 @@ __all__ = [
     "code",
     "agent",
     "indexing",
-    "export"
+    "export",
+    "auto_debug"
 ]
