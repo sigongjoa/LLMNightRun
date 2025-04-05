@@ -1316,4 +1316,796 @@ async function askLLM(llmType: string, content: string, tags: string[]): Promise
 }
 ```
 
-프론트엔드에서는 이 응답을 캐치하고 적절히 처리해야 합니다.
+# API 명세서 업데이트
+
+## 12. 자동 문서 생성 API
+
+프로젝트 코드베이스를 분석하여 자동으로 문서를 생성하는 API입니다.
+
+### 문서 생성 요청
+
+자동 문서 생성 작업을 시작합니다.
+
+- **URL**: `/auto-docs/generate`
+- **Method**: `POST`
+- **요청 본문**:
+
+```json
+{
+  "codebase_id": 1,
+  "doc_types": ["readme", "api", "models", "architecture", "testing", "changelog", "configuration"],
+  "output_format": "markdown",
+  "git_branch": "main",
+  "commit_changes": false
+}
+```
+
+- **응답**:
+
+```json
+{
+  "task_id": "doc_gen_12345",
+  "status": "pending",
+  "message": "문서 생성 작업이 시작되었습니다.",
+  "estimated_time": 120
+}
+```
+
+### 문서 생성 상태 조회
+
+문서 생성 작업의 상태를 조회합니다.
+
+- **URL**: `/auto-docs/status/{task_id}`
+- **Method**: `GET`
+- **URL 파라미터**:
+  - `task_id`: 문서 생성 작업 ID
+
+- **응답**:
+
+```json
+{
+  "task_id": "doc_gen_12345",
+  "status": "in_progress",
+  "progress": 65,
+  "message": "API 문서 생성 중...",
+  "completed_docs": ["readme", "models"],
+  "pending_docs": ["api", "architecture", "testing", "changelog", "configuration"]
+}
+```
+
+### 생성된 문서 조회
+
+생성된 문서를 조회합니다.
+
+- **URL**: `/auto-docs/{task_id}/{doc_type}`
+- **Method**: `GET`
+- **URL 파라미터**:
+  - `task_id`: 문서 생성 작업 ID
+  - `doc_type`: 문서 유형 (readme, api, models 등)
+
+- **응답**: 문서 내용이 반환됩니다. 형식은 요청 시 지정한 output_format에 따라 달라집니다.
+
+### 생성된 문서 커밋
+
+생성된 문서를 GitHub 저장소에 커밋합니다.
+
+- **URL**: `/auto-docs/{task_id}/commit`
+- **Method**: `POST`
+- **URL 파라미터**:
+  - `task_id`: 문서 생성 작업 ID
+- **요청 본문**:
+
+```json
+{
+  "doc_types": ["readme", "api", "models"],
+  "commit_message": "Update documentation",
+  "branch": "docs-update",
+  "create_pr": true,
+  "pr_title": "Documentation Updates",
+  "pr_description": "Automatically generated documentation updates"
+}
+```
+
+- **응답**:
+
+```json
+{
+  "success": true,
+  "message": "문서가 성공적으로 커밋되었습니다.",
+  "commit_url": "https://github.com/username/repo/commit/abcdef123456",
+  "pr_url": "https://github.com/username/repo/pull/42"
+}
+```
+
+## 13. GitHub 통합 API
+
+GitHub 저장소와의 통합을 위한 API입니다.
+
+### 저장소 연결
+
+GitHub 저장소를 연결합니다.
+
+- **URL**: `/github/connect`
+- **Method**: `POST`
+- **요청 본문**:
+
+```json
+{
+  "github_token": "ghp_1234567890abcdefghijklmnopqrstuvwxyz",
+  "github_username": "username",
+  "github_repo": "repository-name"
+}
+```
+
+- **응답**:
+
+```json
+{
+  "success": true,
+  "message": "GitHub 저장소 연결 성공",
+  "repo_info": {
+    "name": "repository-name",
+    "owner": "username",
+    "default_branch": "main",
+    "private": false,
+    "url": "https://github.com/username/repository-name"
+  }
+}
+```
+
+### 파일 업로드
+
+파일을 GitHub 저장소에 업로드합니다.
+
+- **URL**: `/github/upload`
+- **Method**: `POST`
+- **요청 본문**:
+
+```json
+{
+  "filepath": "docs/README.md",
+  "content": "# 프로젝트 제목\n\n이 프로젝트는...",
+  "branch": "main",
+  "commit_message": "Update README.md"
+}
+```
+
+- **응답**:
+
+```json
+{
+  "success": true,
+  "message": "파일 'docs/README.md'이(가) 성공적으로 업로드되었습니다.",
+  "file_url": "https://github.com/username/repository-name/blob/main/docs/README.md"
+}
+```
+
+### 브랜치 생성
+
+GitHub 저장소에 새 브랜치를 생성합니다.
+
+- **URL**: `/github/branches`
+- **Method**: `POST`
+- **요청 본문**:
+
+```json
+{
+  "branch": "feature/new-feature",
+  "source_branch": "main"
+}
+```
+
+- **응답**:
+
+```json
+{
+  "success": true,
+  "message": "브랜치 'feature/new-feature'이(가) 성공적으로 생성되었습니다.",
+  "branch_url": "https://github.com/username/repository-name/tree/feature/new-feature"
+}
+```
+
+### PR 생성
+
+GitHub 저장소에 Pull Request를 생성합니다.
+
+- **URL**: `/github/pull-requests`
+- **Method**: `POST`
+- **요청 본문**:
+
+```json
+{
+  "title": "새로운 기능 추가",
+  "body": "이 PR은 새로운 기능을 추가합니다...",
+  "head_branch": "feature/new-feature",
+  "base_branch": "main"
+}
+```
+
+- **응답**:
+
+```json
+{
+  "success": true,
+  "message": "PR이 성공적으로 생성되었습니다.",
+  "pr_url": "https://github.com/username/repository-name/pull/42",
+  "pr_number": 42
+}
+```
+
+### 저장소 콘텐츠 조회
+
+GitHub 저장소의 콘텐츠를 조회합니다.
+
+- **URL**: `/github/contents/{path}`
+- **Method**: `GET`
+- **URL 파라미터**:
+  - `path`: 저장소 내 경로 (선택 사항)
+- **쿼리 파라미터**:
+  - `branch`: 브랜치 이름 (기본값: main)
+
+- **응답**:
+
+```json
+[
+  {
+    "name": "src",
+    "path": "src",
+    "type": "dir",
+    "size": 0,
+    "url": "https://api.github.com/repos/username/repository-name/contents/src"
+  },
+  {
+    "name": "README.md",
+    "path": "README.md",
+    "type": "file",
+    "size": 1024,
+    "url": "https://api.github.com/repos/username/repository-name/contents/README.md"
+  }
+]
+```
+
+### 파일 내용 조회
+
+GitHub 저장소의 특정 파일 내용을 조회합니다.
+
+- **URL**: `/github/files/{filepath}`
+- **Method**: `GET`
+- **URL 파라미터**:
+  - `filepath`: 파일 경로
+- **쿼리 파라미터**:
+  - `branch`: 브랜치 이름 (기본값: main)
+
+- **응답**:
+
+```json
+{
+  "name": "README.md",
+  "path": "README.md",
+  "type": "file",
+  "size": 1024,
+  "content": "IyDtlITroZzsp4DtirggUkVBRE1FCgrmrKPsnbTsnbQg66qo7JWE7J2065+w64KY7KeA66eMIOu2gO2EsO2VmOufveuLiOuLpC4=",
+  "decoded_content": "# 프로젝트 README\n\n이 파일은 프로젝트를 설명합니다.",
+  "sha": "abcdef1234567890",
+  "url": "https://api.github.com/repos/username/repository-name/contents/README.md"
+}
+```
+
+### 커밋 내역 조회
+
+GitHub 저장소의 커밋 내역을 조회합니다.
+
+- **URL**: `/github/commits`
+- **Method**: `GET`
+- **쿼리 파라미터**:
+  - `branch`: 브랜치 이름 (기본값: main)
+  - `path`: 특정 파일 경로 (선택 사항)
+  - `limit`: 최대 조회 개수 (기본값: 10)
+
+- **응답**:
+
+```json
+[
+  {
+    "sha": "abcdef1234567890",
+    "commit": {
+      "message": "Update README.md",
+      "author": {
+        "name": "User Name",
+        "date": "2023-05-25T10:30:00Z"
+      }
+    },
+    "html_url": "https://github.com/username/repository-name/commit/abcdef1234567890"
+  },
+  {
+    "sha": "0987654321fedcba",
+    "commit": {
+      "message": "Initial commit",
+      "author": {
+        "name": "User Name",
+        "date": "2023-05-20T09:15:00Z"
+      }
+    },
+    "html_url": "https://github.com/username/repository-name/commit/0987654321fedcba"
+  }
+]
+```
+
+### PR 변경 내용 분석
+
+Pull Request의 변경 내용을 분석합니다.
+
+- **URL**: `/github/pull-requests/{pr_number}/analysis`
+- **Method**: `GET`
+- **URL 파라미터**:
+  - `pr_number`: Pull Request 번호
+
+- **응답**:
+
+```json
+{
+  "added_count": 3,
+  "added_files": ["src/new-file.js", "docs/guide.md", "tests/test.js"],
+  "modified_count": 2,
+  "modified_files": ["src/main.js", "README.md"],
+  "deleted_count": 1,
+  "deleted_files": ["old-file.txt"],
+  "total_changes": 6,
+  "total_additions": 125,
+  "total_deletions": 42,
+  "extensions": {
+    "js": 3,
+    "md": 2,
+    "txt": 1
+  },
+  "summary": "이 PR은 3개 파일을 추가하고 2개 파일을 수정하며 1개 파일을 삭제했습니다. 주로 JavaScript 관련 변경이 많습니다."
+}
+```
+
+## 14. 코드 베이스 인덱싱 API
+
+코드베이스를 인덱싱하고 검색할 수 있는 API입니다.
+
+### 인덱싱 설정 조회
+
+코드베이스의 인덱싱 설정을 조회합니다.
+
+- **URL**: `/codebases/{codebase_id}/indexing/settings`
+- **Method**: `GET`
+- **URL 파라미터**:
+  - `codebase_id`: 코드베이스 ID
+
+- **응답**:
+
+```json
+{
+  "is_enabled": true,
+  "frequency": "on_commit",
+  "excluded_patterns": ["*.log", "node_modules/*", "*.pyc"],
+  "priority_patterns": ["src/main/*", "*.py"],
+  "embedding_model": "openai/text-embedding-ada-002",
+  "chunk_size": 1000,
+  "chunk_overlap": 200,
+  "include_comments": true,
+  "max_files_per_run": 100,
+  "created_at": "2023-05-15T10:00:00.123456",
+  "updated_at": "2023-05-15T10:00:00.123456"
+}
+```
+
+### 인덱싱 설정 업데이트
+
+코드베이스의 인덱싱 설정을 업데이트합니다.
+
+- **URL**: `/codebases/{codebase_id}/indexing/settings`
+- **Method**: `PATCH`
+- **URL 파라미터**:
+  - `codebase_id`: 코드베이스 ID
+- **요청 본문**:
+
+```json
+{
+  "is_enabled": true,
+  "frequency": "daily",
+  "excluded_patterns": ["*.log", "node_modules/*", "*.pyc", "tmp/*"],
+  "priority_patterns": ["src/main/*", "*.py", "*.ts"],
+  "include_comments": false
+}
+```
+
+- **응답**:
+
+```json
+{
+  "success": true,
+  "message": "인덱싱 설정이 업데이트되었습니다",
+  "settings": {
+    "is_enabled": true,
+    "frequency": "daily",
+    "excluded_patterns": ["*.log", "node_modules/*", "*.pyc", "tmp/*"],
+    "priority_patterns": ["src/main/*", "*.py", "*.ts"],
+    "embedding_model": "openai/text-embedding-ada-002",
+    "chunk_size": 1000,
+    "chunk_overlap": 200,
+    "include_comments": false,
+    "max_files_per_run": 100,
+    "updated_at": "2023-05-15T15:30:45.123456"
+  }
+}
+```
+
+### 인덱싱 상태 조회
+
+코드베이스의 인덱싱 상태를 조회합니다.
+
+- **URL**: `/codebases/{codebase_id}/indexing/status`
+- **Method**: `GET`
+- **URL 파라미터**:
+  - `codebase_id`: 코드베이스 ID
+
+- **응답**:
+
+```json
+{
+  "settings": {
+    "is_enabled": true,
+    "frequency": "daily",
+    "excluded_patterns": ["*.log", "node_modules/*", "*.pyc", "tmp/*"],
+    "priority_patterns": ["src/main/*", "*.py", "*.ts"],
+    "embedding_model": "openai/text-embedding-ada-002",
+    "chunk_size": 1000,
+    "chunk_overlap": 200,
+    "include_comments": false,
+    "max_files_per_run": 100,
+    "last_updated": "2023-05-15T15:30:45.123456"
+  },
+  "status": {
+    "is_indexing_now": false,
+    "current_run_id": null,
+    "last_run": {
+      "id": 5,
+      "status": "completed",
+      "start_time": "2023-05-15T16:00:00.123456",
+      "end_time": "2023-05-15T16:05:30.123456",
+      "files_processed": 120,
+      "files_indexed": 98,
+      "files_skipped": 22,
+      "error_message": null
+    },
+    "recent_runs": [
+      {
+        "id": 5,
+        "status": "completed",
+        "start_time": "2023-05-15T16:00:00.123456",
+        "end_time": "2023-05-15T16:05:30.123456",
+        "is_full_index": false,
+        "files_indexed": 98
+      },
+      {
+        "id": 4,
+        "status": "completed",
+        "start_time": "2023-05-14T16:00:00.123456",
+        "end_time": "2023-05-14T16:10:15.123456",
+        "is_full_index": true,
+        "files_indexed": 350
+      }
+    ]
+  },
+  "statistics": {
+    "total_embeddings": 12580,
+    "indexed_files": 350,
+    "last_indexed_at": "2023-05-15T16:05:30.123456",
+    "last_index_status": "completed"
+  }
+}
+```
+
+### 인덱싱 트리거
+
+코드베이스 인덱싱을 트리거합니다.
+
+- **URL**: `/codebases/{codebase_id}/indexing/trigger`
+- **Method**: `POST`
+- **URL 파라미터**:
+  - `codebase_id`: 코드베이스 ID
+- **요청 본문**:
+
+```json
+{
+  "is_full_index": false,
+  "priority_files": [123, 456, 789]
+}
+```
+
+- **응답**:
+
+```json
+{
+  "run_id": 6,
+  "status": "pending",
+  "message": "인덱싱이 시작되었습니다.",
+  "start_time": null
+}
+```
+
+### 코드 검색
+
+인덱싱된 코드베이스에서 코드를 검색합니다.
+
+- **URL**: `/codebases/{codebase_id}/indexing/search`
+- **Method**: `POST`
+- **URL 파라미터**:
+  - `codebase_id`: 코드베이스 ID
+- **요청 본문**:
+
+```json
+{
+  "query": "파일 업로드 함수",
+  "limit": 5,
+  "threshold": 0.7,
+  "file_patterns": ["*.py", "*.js"],
+  "exclude_patterns": ["test/*"]
+}
+```
+
+- **응답**:
+
+```json
+{
+  "query": "파일 업로드 함수",
+  "result_count": 3,
+  "results": [
+    {
+      "file_id": 123,
+      "file_path": "src/utils/file_upload.py",
+      "chunk_id": "src/utils/file_upload.py:10-25",
+      "content": "def upload_file(file_path, destination):\n    \"\"\"파일을 지정된 위치에 업로드합니다.\"\"\"\n    with open(file_path, 'rb') as f:\n        # 파일 내용 읽기\n        content = f.read()\n        \n        # 목적지에 파일 저장\n        with open(destination, 'wb') as dest_file:\n            dest_file.write(content)\n            \n    return True",
+      "similarity_score": 0.89,
+      "metadata": {
+        "file_name": "file_upload.py",
+        "language": "python",
+        "code_elements": {
+          "functions": ["upload_file"],
+          "classes": [],
+          "variables": []
+        }
+      }
+    },
+    {
+      "file_id": 456,
+      "file_path": "src/api/uploads.js",
+      "chunk_id": "src/api/uploads.js:25-40",
+      "content": "/**\n * 파일 업로드 처리 함수\n */\nasync function handleFileUpload(req, res) {\n  try {\n    const uploadedFile = req.files.file;\n    const destination = path.join(uploadDir, uploadedFile.name);\n    \n    await uploadedFile.mv(destination);\n    return res.status(200).json({ success: true });\n  } catch (error) {\n    return res.status(500).json({ error: error.message });\n  }\n}",
+      "similarity_score": 0.82,
+      "metadata": {
+        "file_name": "uploads.js",
+        "language": "javascript",
+        "code_elements": {
+          "functions": ["handleFileUpload"],
+          "classes": [],
+          "variables": ["uploadedFile", "destination"]
+        }
+      }
+    },
+    {
+      "file_id": 789,
+      "file_path": "src/components/FileUploader.js",
+      "chunk_id": "src/components/FileUploader.js:15-30",
+      "content": "function uploadFiles(files) {\n  const formData = new FormData();\n  \n  for (let i = 0; i < files.length; i++) {\n    formData.append('files', files[i]);\n  }\n  \n  return fetch('/api/upload', {\n    method: 'POST',\n    body: formData\n  }).then(response => response.json());\n}",
+      "similarity_score": 0.75,
+      "metadata": {
+        "file_name": "FileUploader.js",
+        "language": "javascript",
+        "code_elements": {
+          "functions": ["uploadFiles"],
+          "classes": [],
+          "variables": ["formData"]
+        }
+      }
+    }
+  ]
+}
+```
+
+## 15. CI/CD 통합 API
+
+CI/CD 파이프라인 통합을 위한 API입니다.
+
+### 코드 변경 분석
+
+CI/CD 파이프라인에서 감지된 코드 변경 내용을 분석합니다.
+
+- **URL**: `/ci/analyze-changes`
+- **Method**: `POST`
+- **요청 본문**:
+
+```json
+{
+  "repository": "username/repo-name",
+  "branch": "feature/new-feature",
+  "commit_sha": "abcdef1234567890",
+  "changed_files": [
+    {"path": "src/main.py", "type": "modified"},
+    {"path": "src/utils.py", "type": "modified"},
+    {"path": "test/test_main.py", "type": "added"}
+  ]
+}
+```
+
+- **응답**:
+
+```json
+{
+  "analysis": {
+    "summary": "이 변경은 주로 Python 코드의 기능 추가와 테스트를 포함합니다.",
+    "complexity_change": "중간",
+    "test_coverage_impact": "긍정적",
+    "suggestions": [
+      "src/utils.py의 변경은 여러 모듈에 영향을 줄 수 있으므로 추가 테스트를 고려하세요."
+    ]
+  },
+  "file_analyses": [
+    {
+      "path": "src/main.py",
+      "change_type": "modified",
+      "analysis": "함수 'process_data'에 새로운 매개변수 추가",
+      "suggestions": ["매개변수 문서화 필요"]
+    },
+    {
+      "path": "src/utils.py",
+      "change_type": "modified",
+      "analysis": "오류 처리 개선",
+      "suggestions": []
+    },
+    {
+      "path": "test/test_main.py",
+      "change_type": "added",
+      "analysis": "새로운 테스트 케이스 5개 추가",
+      "suggestions": []
+    }
+  ]
+}
+```
+
+### 변경 내용 설명 생성
+
+코드 변경 내용에 대한 설명을 자동으로 생성합니다.
+
+- **URL**: `/ci/generate-description`
+- **Method**: `POST`
+- **요청 본문**:
+
+```json
+{
+  "repository": "username/repo-name",
+  "branch": "feature/new-feature",
+  "commit_sha": "abcdef1234567890",
+  "diff": "diff --git a/src/main.py b/src/main.py\nindex 1234567..abcdef0 100644\n--- a/src/main.py\n+++ b/src/main.py\n@@ -10,7 +10,10 @@ def process_data(data):\n     result = []\n     for item in data:\n         # 처리 로직\n-        processed = item * 2\n+        processed = transform_item(item)\n         result.append(processed)\n     \n     return result\n+\n+def transform_item(item):\n+    return item * 2"
+}
+```
+
+- **응답**:
+
+```json
+{
+  "description": "이 변경 사항은 데이터 처리 로직을 개선합니다:\n\n1. `process_data` 함수의 내부 로직을 별도의 `transform_item` 함수로 분리\n2. 이를 통해 코드 재사용성 향상 및 가독성 개선\n\n이 변경으로 인해 데이터 처리 방식이 모듈화되어 향후 확장이 용이해집니다.",
+  "commit_message": "Refactor process_data to use separate transform function",
+  "technical_details": "하드코딩된 데이터 변환을 재사용 가능한 함수로 추출했습니다."
+}
+```
+
+### 유닛 테스트 실행
+
+코드베이스의 유닛 테스트를 실행합니다.
+
+- **URL**: `/ci/run-tests`
+- **Method**: `POST`
+- **요청 본문**:
+
+```json
+{
+  "repository": "username/repo-name",
+  "branch": "feature/new-feature",
+  "test_path": "tests/",
+  "test_framework": "pytest",
+  "coverage": true
+}
+```
+
+- **응답**:
+
+```json
+{
+  "success": true,
+  "test_results": {
+    "total": 42,
+    "passed": 40,
+    "failed": 1,
+    "skipped": 1,
+    "execution_time": 3.5
+  },
+  "coverage": {
+    "overall": 87.5,
+    "by_file": [
+      {"path": "src/main.py", "coverage": 95.2},
+      {"path": "src/utils.py", "coverage": 82.1}
+    ]
+  },
+  "failed_tests": [
+    {
+      "name": "test_edge_case",
+      "file": "tests/test_utils.py",
+      "line": 42,
+      "error": "AssertionError: Expected 5, got 4"
+    }
+  ]
+}
+```
+
+### 애니메이션 생성
+
+MotionGPT를 이용한 애니메이션 생성 API입니다.
+
+- **URL**: `/motion/generate`
+- **Method**: `POST`
+- **요청 본문**:
+
+```json
+{
+  "description": "캐릭터가 점프한 후 달리기 시작",
+  "duration": 5,
+  "style": "cartoon",
+  "format": "fbx"
+}
+```
+
+- **응답**:
+
+```json
+{
+  "success": true,
+  "message": "애니메이션이 성공적으로 생성되었습니다.",
+  "animation_url": "https://api.llmnightrun.com/animations/12345.fbx",
+  "preview_url": "https://api.llmnightrun.com/animations/12345_preview.gif",
+  "metadata": {
+    "frames": 150,
+    "duration": 5,
+    "framerate": 30
+  }
+}
+```
+
+### 코밋 메시지 자동 생성
+
+git commit 시 커밋 메시지를 자동으로 생성합니다.
+
+- **URL**: `/git/generate-commit-message`
+- **Method**: `POST`
+- **요청 본문**:
+
+```json
+{
+  "diff": "diff --git a/src/main.py b/src/main.py\n...",
+  "repository": "username/repo-name",
+  "branch": "feature/new-feature",
+  "changed_files": [
+    {"path": "src/main.py", "type": "modified"},
+    {"path": "src/utils.py", "type": "modified"}
+  ],
+  "commit_style": "conventional"
+}
+```
+
+- **응답**:
+
+```json
+{
+  "commit_message": "feat(core): implement new data transformation function",
+  "description": "- Extract data transformation logic to separate function\n- Improve code reusability\n- Prepare for future extensions",
+  "suggested_tags": ["feature", "refactor", "core"],
+  "references": {
+    "issues": ["#123", "#145"],
+    "docs": ["API.md"]
+  }
+}
+```
