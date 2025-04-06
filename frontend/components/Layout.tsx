@@ -19,19 +19,11 @@ import {
   QuestionAnswer as QuestionIcon,
   Code as CodeIcon,
   Settings as SettingsIcon,
-  Menu as MenuIcon
-} from '@mui/icons-material';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
-
-import {
-  Dashboard as DashboardIcon,
-  QuestionAnswer as QuestionIcon,
-  Code as CodeIcon,
-  Settings as SettingsIcon,
   Menu as MenuIcon,
   SmartToy as SmartToyIcon // 추가된 import
 } from '@mui/icons-material';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
 
 interface LayoutProps {
   children: ReactNode;
@@ -57,9 +49,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { text: '대시보드', icon: <DashboardIcon />, href: '/' },
     { text: '질문 제출', icon: <QuestionIcon />, href: '/submit' },
     { text: '코드 관리', icon: <CodeIcon />, href: '/code-manager' },
-    { text: '설정', icon: <SettingsIcon />, href: '/settings' },
     { text: 'Manus 에이전트', icon: <SmartToyIcon />, href: '/agent' },
-    { text: '설정', icon: <SettingsIcon />, href: '/settings' },
+    { text: '설정', icon: <SettingsIcon />, href: '/settings' }
   ];
 
   const isActive = (href: string) => router.pathname === href;
