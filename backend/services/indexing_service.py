@@ -716,4 +716,4 @@ class IndexingService:
             "end_time": run.end_time,
             "is_full_index": run.is_full_index,
             "files_indexed": run.files_indexed
-        }"
+        }

@@ -4,14 +4,14 @@
 SQLAlchemy ORM 모델을 정의합니다.
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, JSON, Boolean, Float, ARRAY
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, JSON, Boolean, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from datetime import datetime
 import enum
 
 from .connection import Base
-from ..models.enums import LLMType, CodeLanguage, IndexingStatus, IndexingFrequency, AgentPhase
+from backend.models.enums import LLMType, CodeLanguage, IndexingStatus, IndexingFrequency, AgentPhase
 
 
 # 데이터베이스용 열거형
@@ -111,7 +111,7 @@ class CodeSnippet(Base):
     question = relationship("Question", back_populates="code_snippets")
     response = relationship("Response", back_populates="code_snippets")
     children = relationship("CodeSnippet", 
-                           backref=ForeignKey("parent_id"), 
+                           backref="parent", 
                            remote_side=[id])
 
 
@@ -239,8 +239,8 @@ class CodeEmbedding(Base):
     chunk_id = Column(String(255), nullable=False)  # 파일 내 청크 식별자
     content = Column(Text, nullable=False)  # 원본 코드 청크
     embedding_key = Column(String(255), nullable=True)  # 외부 벡터 DB에서의 키
-    embedding = Column(ARRAY(Float), nullable=True)  # 내부 저장 시 임베딩 벡터
-    metadata = Column(JSON, default=dict)
+    embedding = Column(JSON, nullable=True)  # 내부 저장 시 임베딩 벡터
+    meta_info = Column(JSON, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

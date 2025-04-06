@@ -10,9 +10,9 @@ from typing import Dict, List, Optional
 
 import requests
 
-from backend.config import config
+from backend.config import settings
 from backend.logger import get_logger
-from backend.schema import ToolResult
+from backend.models.agent import ToolResult
 from backend.tool.base import BaseTool
 
 
@@ -35,9 +35,9 @@ class GitHubTool(BaseTool):
     
     def __init__(self):
         """GitHub 도구 초기화"""
-        self.token = config.github.token
-        self.username = config.github.username
-        self.repo = config.github.repo
+        self.token = settings.github.token
+        self.username = settings.github.username
+        self.repo = settings.github.repo
         
         # 기본 헤더
         self.headers = {

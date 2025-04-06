@@ -12,7 +12,8 @@ from typing import Dict, Optional
 
 from ..database.connection import get_db
 from ..models.agent import AgentRequest, AgentResponse
-from ..schema import AgentState, Message
+from ..models.enums import AgentState
+from ..models.agent import Message
 from ..agent.toolcall import ToolCallAgent
 from ..tool.base import ToolCollection
 from ..tool.github_tool import GitHubTool

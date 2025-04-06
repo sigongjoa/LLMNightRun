@@ -8,9 +8,9 @@ import os
 from pathlib import Path
 from typing import Optional
 
-from backend.config import config
+from backend.config import settings
 from backend.logger import get_logger
-from backend.schema import ToolResult
+from backend.models.agent import ToolResult
 from backend.tool.base import BaseTool
 
 
@@ -37,7 +37,7 @@ class StrReplaceEditor(BaseTool):
         Args:
             workspace_root: 작업 공간 루트 경로 (선택 사항)
         """
-        self.workspace_root = workspace_root or config.workspace_root
+        self.workspace_root = workspace_root or settings.workspace_root
     
     async def execute(
         self,

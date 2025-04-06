@@ -8,6 +8,8 @@ from backend.agent.base import BaseAgent
 from backend.agent.manus import Manus
 from backend.agent.react import ReActAgent
 from backend.agent.toolcall import ToolCallAgent
+from backend.agent.brower import BrowserAgent
+from backend.agent.mcp import MCPAgent
 
 
 __all__ = [
@@ -15,4 +17,6 @@ __all__ = [
     "Manus",
     "ReActAgent",
     "ToolCallAgent",
+    "BrowserAgent",
+    "MCPAgent",
 ]

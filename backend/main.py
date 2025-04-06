@@ -10,11 +10,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from datetime import datetime
 
-from .config import settings
-from .logger import setup_logging
-from .exceptions import LLMNightRunError, LLMError
-from .database.connection import create_tables
-from .api import question, response, code, agent, indexing, export, auto_debug, auto_debug
+from backend.config import settings
+from backend.logger import setup_logging
+from backend.exceptions import LLMNightRunError, LLMError
+from backend.database.connection import create_tables
+from backend.api import question, response, code, agent, indexing, export, auto_debug
 
 
 # 로깅 설정

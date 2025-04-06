@@ -910,16 +910,16 @@ JSON 형식으로 응답해주세요.
             
             # 환경 설정 파일 패턴
             env_file_patterns = [
-                r'requirements\.txt,
-                r'setup\.py,
-                r'pyproject\.toml,
-                r'Pipfile,
-                r'environment\.ya?ml,
-                r'\.env,
-                r'runtime\.txt,
-                r'conda_environment\.ya?ml,
-                r'docker-compose\.ya?ml,
-                r'Dockerfile
+                r'requirements\.txt',
+                r'setup\.py',
+                r'pyproject\.toml',
+                r'Pipfile',
+                r'environment\.ya?ml',
+                r'\.env',
+                r'runtime\.txt',
+                r'conda_environment\.ya?ml',
+                r'docker-compose\.ya?ml',
+                r'Dockerfile'
             ]
             
             for file in files:

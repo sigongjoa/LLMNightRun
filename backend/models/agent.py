@@ -50,6 +50,15 @@ class Message(BaseModel):
         return cls(role="system", content=content)
 
     @classmethod
+    def from_tool_calls(cls, content: Optional[str], tool_calls: List[ToolCall]) -> "Message":
+        """도구 호출을 포함하는 어시스턴트 메시지 생성"""
+        return cls(
+            role="assistant", 
+            content=content, 
+            tool_calls=tool_calls
+        )
+
+    @classmethod
     def tool_message(cls, content: str, tool_call_id: str = "", name: str = "", base64_image: Optional[str] = None) -> "Message":
         """도구 응답 메시지 생성"""
         return cls(

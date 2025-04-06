@@ -11,7 +11,8 @@ from pydantic import Field
 
 from backend.agent.base import BaseAgent
 from backend.llm import LLM
-from backend.schema import AgentState, Memory
+from backend.models.enums import AgentState
+from backend.agent.base import Memory
 
 
 class ReActAgent(BaseAgent, ABC):

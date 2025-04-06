@@ -13,7 +13,8 @@ from pydantic import Field
 from backend.agent.react import ReActAgent
 from backend.exceptions import TokenLimitExceeded
 from backend.logger import get_logger
-from backend.schema import AgentState, Message, ToolCall, ToolChoice
+from backend.models.enums import AgentState, ToolChoice
+from backend.models.agent import Message, ToolCall
 from backend.tool.base import ToolCollection
 
 logger = get_logger(__name__)

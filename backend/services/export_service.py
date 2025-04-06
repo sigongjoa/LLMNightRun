@@ -18,7 +18,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel
 
 from ..database.operations.question import get_questions
-from ..database.operations.respone import get_responses
+from ..database.operations.response import get_responses
 from ..database.operations.code import get_code_snippets
 from ..database.operations.agent import get_agent_logs, get_agent_session
 

@@ -1,121 +1,188 @@
 """
-LLMNightRun 문자열 대체 에디터 도구 모듈
+LLMNightRun Python 실행 도구 모듈
 
-파일 내용을 수정하는 문자열 대체 에디터 도구를 정의합니다.
+Python 코드를 안전하게 실행하는 도구를 정의합니다.
 """
 
 import os
+import subprocess
+import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
 
-from backend.config import config
+from backend.config import settings
 from backend.logger import get_logger
-from backend.schema import ToolResult
+from backend.models.agent import ToolResult
 from backend.tool.base import BaseTool
 
 
 logger = get_logger(__name__)
 
 
-class StrReplaceEditor(BaseTool):
-    """문자열 대체 에디터 도구
+class PythonExecute(BaseTool):
+    """Python 실행 도구
     
-    파일 내용을 문자열 대체 방식으로 수정하는 도구입니다.
-    특정 문자열을 다른 문자열로 바꾸거나, 전체 내용을 새로운 내용으로 교체할 수 있습니다.
+    Python 코드를 안전하게 실행하는 도구입니다.
+    코드는 임시 파일에 작성되어 별도의 프로세스에서 실행됩니다.
     """
     
-    name: str = "str_replace_editor"
+    name: str = "python_execute"
     description: str = """
-    파일을 편집하는 도구입니다.
-    특정 문자열을 다른 문자열로 바꾸거나, 전체 내용을 새로운 내용으로 교체할 수 있습니다.
-    작업 공간 경로를 기준으로 상대 경로나 절대 경로를 사용할 수 있습니다.
+    Python 코드를 실행하는 도구입니다.
+    제공된 코드를 실행하고 결과를 반환합니다.
+    작업 공간의 파일을 읽거나 수정할 수 있습니다.
     """
     
-    def __init__(self, workspace_root: Optional[Path] = None):
-        """에디터 도구 초기화
+    def __init__(self, workspace_root: Optional[Path] = None, timeout: int = 30):
+        """Python 실행 도구 초기화
         
         Args:
             workspace_root: 작업 공간 루트 경로 (선택 사항)
+            timeout: 실행 시간 제한 (초)
         """
-        self.workspace_root = workspace_root or config.workspace_root
+        self.workspace_root = workspace_root or settings.workspace_root
+        self.timeout = timeout
     
     async def execute(
         self,
-        filepath: str,
-        old_str: Optional[str] = None,
-        new_str: Optional[str] = None,
-        new_content: Optional[str] = None,
+        code: str,
+        args: Optional[Dict[str, Any]] = None,
+        save_to: Optional[str] = None,
+        pip_install: Optional[str] = None,
     ) -> ToolResult:
         """도구 실행
         
         Args:
-            filepath: 파일 경로
-            old_str: 대체할 문자열 (new_str와 함께 사용)
-            new_str: 새 문자열 (old_str와 함께 사용)
-            new_content: 전체 내용을 대체할 새 내용
+            code: 실행할 Python 코드
+            args: 코드에 전달할 인자 (선택 사항)
+            save_to: 코드를 저장할 파일 경로 (선택 사항)
+            pip_install: 설치할 패키지 목록 (선택 사항)
             
         Returns:
             ToolResult: 실행 결과
             
         Raises:
-            ValueError: 파라미터가 잘못된 경우
-            FileNotFoundError: 파일이 없는 경우
+            ValueError: 잘못된 인자인 경우
+            TimeoutError: 실행 시간 초과인 경우
         """
-        # 절대 경로 해석
-        abs_path = self._resolve_path(filepath)
-        
-        # 파일 존재 여부 확인
-        if not os.path.isfile(abs_path):
+        # 인자 확인
+        if not code or not code.strip():
             return ToolResult(
                 output="",
-                error=f"파일을 찾을 수 없습니다: {filepath}"
+                error="실행할 코드가 제공되지 않았습니다."
             )
         
-        # 파일 읽기
-        try:
-            with open(abs_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-        except Exception as e:
-            return ToolResult(
-                output="",
-                error=f"파일 읽기 오류: {str(e)}"
-            )
+        # 패키지 설치 (필요한 경우)
+        if pip_install:
+            install_result = await self._install_packages(pip_install)
+            if install_result.error:
+                return install_result
         
-        # 편집 모드 결정
-        if new_content is not None:
-            # 전체 내용 교체 모드
-            updated_content = new_content
-            changes = f"전체 내용이 새로운 내용으로 대체되었습니다."
-        elif old_str is not None and new_str is not None:
-            # 부분 대체 모드
-            if old_str not in content:
+        # 코드 저장 (필요한 경우)
+        if save_to:
+            abs_path = self._resolve_path(save_to)
+            try:
+                os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+                with open(abs_path, 'w', encoding='utf-8') as f:
+                    f.write(code)
+                logger.info(f"코드를 파일에 저장했습니다: {abs_path}")
+            except Exception as e:
                 return ToolResult(
                     output="",
-                    error=f"지정한 문자열을 찾을 수 없습니다: '{old_str}'"
+                    error=f"코드 저장 오류: {str(e)}"
                 )
-            updated_content = content.replace(old_str, new_str)
-            changes = f"'{old_str}'가 '{new_str}'로 대체되었습니다."
-        else:
+        
+        # 인자 처리
+        args_str = ""
+        if args:
+            args_str = f"import json; args = json.loads('''{json.dumps(args)}''')\n"
+        
+        # 환경 변수 설정
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(Path(self.workspace_root).parent)
+        
+        # 임시 파일에 코드 쓰기
+        with tempfile.NamedTemporaryFile(suffix='.py', delete=False, mode='w', encoding='utf-8') as temp:
+            temp.write(args_str)
+            temp.write(code)
+            temp_name = temp.name
+        
+        try:
+            # 코드 실행
+            result = subprocess.run(
+                ["python", temp_name],
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=self.timeout
+            )
+            
+            # 결과 처리
+            stdout = result.stdout.strip()
+            stderr = result.stderr.strip()
+            
+            if result.returncode != 0:
+                return ToolResult(
+                    output=stdout,
+                    error=f"코드 실행 오류 (종료 코드 {result.returncode}):\n{stderr}"
+                )
+            
+            # 성공 결과
+            output = stdout
+            if stderr:
+                output += f"\n\n경고:\n{stderr}"
+            
+            return ToolResult(output=output)
+            
+        except subprocess.TimeoutExpired:
             return ToolResult(
                 output="",
-                error="old_str와 new_str 모두 또는 new_content를 지정해야 합니다."
+                error=f"실행 시간이 {self.timeout}초를 초과했습니다."
             )
-        
-        # 변경 사항이 있는지 확인
-        if content == updated_content:
-            return ToolResult(output=f"변경 사항이 없습니다: {filepath}")
-        
-        # 파일 쓰기
-        try:
-            with open(abs_path, 'w', encoding='utf-8') as f:
-                f.write(updated_content)
         except Exception as e:
             return ToolResult(
                 output="",
-                error=f"파일 쓰기 오류: {str(e)}"
+                error=f"코드 실행 중 오류 발생: {str(e)}"
             )
+        finally:
+            # 임시 파일 삭제
+            try:
+                os.unlink(temp_name)
+            except:
+                pass
+    
+    async def _install_packages(self, packages: str) -> ToolResult:
+        """패키지 설치
         
-        return ToolResult(output=f"파일 '{filepath}'이(가) 업데이트되었습니다. {changes}")
+        Args:
+            packages: 설치할 패키지 목록 (공백으로 구분)
+            
+        Returns:
+            ToolResult: 설치 결과
+        """
+        try:
+            # 패키지 설치
+            result = subprocess.run(
+                ["pip", "install"] + packages.split(),
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
+            
+            # 결과 처리
+            if result.returncode != 0:
+                return ToolResult(
+                    output="",
+                    error=f"패키지 설치 오류:\n{result.stderr}"
+                )
+            
+            return ToolResult(output=f"패키지 설치 완료: {packages}")
+            
+        except Exception as e:
+            return ToolResult(
+                output="",
+                error=f"패키지 설치 중 오류 발생: {str(e)}"
+            )
     
     def _resolve_path(self, filepath: str) -> str:
         """파일 경로 해석

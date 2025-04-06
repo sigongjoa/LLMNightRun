@@ -6,7 +6,7 @@ LLMNightRun 종료 도구 모듈
 
 from typing import Optional
 
-from backend.schema import ToolResult
+from backend.models.agent import ToolResult
 from backend.tool.base import BaseTool
 
 

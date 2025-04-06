@@ -47,7 +47,7 @@ class CodeEmbedding(IdentifiedModel):
     chunk_id: str  # 파일 내 청크 식별자 (e.g. "file.py:1-50")
     content: str  # 원본 코드 청크
     embedding: List[float] = Field(default_factory=list)  # 벡터 임베딩
-    metadata: Dict[str, Any] = Field(default_factory=dict)  # 추가 메타데이터
+    meta_info: Dict[str, Any] = Field(default_factory=dict)  # 추가 메타데이터
 
 
 class EmbeddingSearchResult(BaseModel):
@@ -57,7 +57,7 @@ class EmbeddingSearchResult(BaseModel):
     chunk_id: str
     content: str
     similarity_score: float
-    metadata: Dict[str, Any]
+    meta_info: Dict[str, Any]
 
 
 class CodeSearchQuery(BaseModel):

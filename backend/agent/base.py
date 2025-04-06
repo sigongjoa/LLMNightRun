@@ -6,15 +6,30 @@ LLMNightRun 기본 에이전트 모듈
 
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
-from typing import List, Optional
+from typing import List, Optional, Dict, Any, Union, Literal
+from datetime import datetime
 
 from pydantic import BaseModel, Field, model_validator
 
 from backend.logger import get_logger
 from backend.llm import LLM
-from backend.schema import AgentState, Memory, Message, ROLE_TYPE
-import uuid
-from typing import Dict, Any, Optional, List, Union
+from backend.models.enums import AgentState
+from backend.models.agent import Message
+
+ROLE_TYPE = Literal['user', 'system', 'assistant', 'tool']
+
+class Memory:
+    """에이전트 메모리 클래스"""
+    messages: List[Message] = Field(default_factory=list)
+    
+    def add_message(self, message: Message) -> None:
+        """메시지를 메모리에 추가"""
+        self.messages.append(message)
+        
+    def clear(self) -> None:
+        """메모리 초기화"""
+        self.messages = []
+
 
 logger = get_logger(__name__)
 

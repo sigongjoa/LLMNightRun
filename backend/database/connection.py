@@ -10,7 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 from typing import Generator
 
-from ..config import settings
+from backend.config import settings
 
 # SQLAlchemy 엔진 생성
 engine = create_engine(

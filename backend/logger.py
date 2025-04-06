@@ -11,7 +11,7 @@ from pathlib import Path
 from datetime import datetime
 import logging.handlers
 
-from .config import settings
+from backend.config import settings
 
 
 def setup_logging(log_level=None):
@@ -93,10 +93,10 @@ class ColorFormatter(logging.Formatter):
     def format(self, record):
         """로그 레코드 포맷팅"""
         if record.levelname in self.COLORS and sys.stdout.isatty():
-            record.levelname = (
-                f"{self.COLORS[record.levelname]}{record.levelname}{self.COLORS['RESET']}"
-            )
-            record.msg = f"{self.COLORS[record.levelname.strip()]}{record.msg}{self.COLORS['RESET']}"
+            # 색상 적용
+            levelname = record.levelname
+            record.levelname = f"{self.COLORS[levelname]}{levelname}{self.COLORS['RESET']}"
+            record.msg = f"{self.COLORS[levelname]}{record.msg}{self.COLORS['RESET']}"
         return super().format(record)
 
 

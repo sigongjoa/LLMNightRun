@@ -10,7 +10,7 @@ from typing import List, Optional
 import logging
 
 from ..database.connection import get_db
-from ..database.operations.respone import get_responses, create_response, update_response, delete_response
+from ..database.operations.response import get_responses, create_response, update_response, delete_response
 from ..models.response import Response, ResponseCreate, ResponseResponse
 from ..models.enums import LLMType
 from ..services.llm_service import LLMService

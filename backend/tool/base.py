@@ -13,7 +13,7 @@ from typing import Any, Callable, Dict, List, Optional, Type, Union
 from pydantic import BaseModel, Field, create_model
 
 from backend.logger import get_logger
-from backend.schema import FunctionDefinition, ToolResult
+from backend.models.agent import FunctionDefinition, ToolResult
 
 
 logger = get_logger(__name__)
