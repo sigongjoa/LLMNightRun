@@ -370,3 +370,5 @@ const AgentConsole: React.FC = () => {
     </Paper>
   );
 };
+
+export default AgentConsole;
