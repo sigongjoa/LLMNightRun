@@ -1,0 +1,27 @@
+{
+  "browser_console": {
+    "description": "브라우저 개발자 콘솔 함수 그룹",
+    "functions": [
+      "console_execute",
+      "console_logs",
+      "console_clear",
+      "console_sessions"
+    ]
+  },
+  "terminal": {
+    "description": "윈도우 터미널 함수 그룹",
+    "functions": [
+      "terminal_create",
+      "terminal_delete",
+      "terminal_execute",
+      "terminal_history",
+      "terminal_sessions",
+      "terminal_workdir"
+    ]
+  },
+  "_metadata": {
+    "created_at": "2025-04-07T00:54:28.873764",
+    "updated_at": "2025-04-07T00:54:28.873764",
+    "id": "functions"
+  }
+}

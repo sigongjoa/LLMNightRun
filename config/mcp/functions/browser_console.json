@@ -1,0 +1,95 @@
+{
+  "console_execute": {
+    "name": "console_execute",
+    "description": "브라우저 개발자 콘솔에서 JavaScript 코드를 실행합니다.",
+    "parameters": {
+      "type": "object",
+      "required": [
+        "session_id",
+        "code"
+      ],
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "description": "콘솔 세션 ID"
+        },
+        "code": {
+          "type": "string",
+          "description": "실행할 JavaScript 코드"
+        },
+        "timeout": {
+          "type": "integer",
+          "description": "실행 제한 시간 (초)",
+          "default": 30
+        }
+      }
+    }
+  },
+  "console_logs": {
+    "name": "console_logs",
+    "description": "브라우저 개발자 콘솔에서 수집된 로그를 조회합니다.",
+    "parameters": {
+      "type": "object",
+      "required": [
+        "session_id"
+      ],
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "description": "콘솔 세션 ID"
+        },
+        "count": {
+          "type": "integer",
+          "description": "조회할 로그 수",
+          "default": 100
+        },
+        "level": {
+          "type": "string",
+          "description": "로그 레벨 필터 (info, warn, error 등)",
+          "enum": [
+            "info",
+            "warn",
+            "error",
+            "debug"
+          ]
+        },
+        "source": {
+          "type": "string",
+          "description": "로그 소스 필터 (console, network 등)",
+          "enum": [
+            "console",
+            "network",
+            "javascript"
+          ]
+        }
+      }
+    }
+  },
+  "console_clear": {
+    "name": "console_clear",
+    "description": "브라우저 개발자 콘솔에서 수집된 로그를 초기화합니다.",
+    "parameters": {
+      "type": "object",
+      "required": [
+        "session_id"
+      ],
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "description": "콘솔 세션 ID"
+        }
+      }
+    }
+  },
+  "console_sessions": {
+    "name": "console_sessions",
+    "description": "활성 상태인 브라우저 개발자 콘솔 세션 목록을 조회합니다.",
+    "parameters": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  "_metadata": {
+    "updated_at": "2025-04-07T00:54:30.589924"
+  }
+}
