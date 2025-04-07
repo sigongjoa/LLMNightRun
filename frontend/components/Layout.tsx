@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect, useState, useRef } from 'react';
 import { 
   AppBar, 
   Toolbar, 
@@ -12,7 +12,10 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
-  IconButton
+  IconButton,
+  CssBaseline,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -25,7 +28,6 @@ import {
   Terminal as TerminalIcon,
   Cloud as CloudIcon
 } from '@mui/icons-material';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
 
 interface LayoutProps {
@@ -34,7 +36,21 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const router = useRouter();
-  const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const renderCountRef = useRef(0);
+
+  // hydration 문제를 방지하기 위해 마운트 상태 확인
+  useEffect(() => {
+    setMounted(true);
+    renderCountRef.current += 1;
+    
+    return () => {
+      // cleanup
+    };
+  }, []);
 
   const toggleDrawer = (open: boolean) => (event: React.KeyboardEvent | React.MouseEvent) => {
     if (
@@ -59,42 +75,81 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { text: '설정', icon: <SettingsIcon />, href: '/settings' }
   ];
 
-  const isActive = (href: string) => router.pathname === href;
+  const isActive = (href: string) => {
+    // pathname이 href로 시작하는지 확인
+    if (!router.pathname) return false;
+    return router.pathname === href || router.pathname.startsWith(`${href}/`);
+  };
+
+  const handleNavigation = (href: string) => {
+    router.push(href);
+  };
+
+  // 첫 마운트 전에는 content를 숨김으로 표시
+  if (!mounted) {
+    return (
+      <Box sx={{ visibility: 'hidden', height: '100vh', width: '100vw' }}>
+        <div style={{ display: 'none' }}>{children}</div>
+      </Box>
+    );
+  }
+
+  // 중복 렌더링 방지
+  if (renderCountRef.current > 1 && typeof window !== 'undefined') {
+    renderCountRef.current = 1;
+  }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <AppBar position="static">
+      <CssBaseline />
+      
+      {/* 메인 앱바 */}
+      <AppBar position="static" component="header">
         <Toolbar>
           <IconButton
             size="large"
             edge="start"
             color="inherit"
             aria-label="menu"
-            sx={{ mr: 2, display: { sm: 'none' } }}
+            sx={{ mr: 1, display: { sm: 'none' }, flexShrink: 0 }}
             onClick={toggleDrawer(true)}
           >
             <MenuIcon />
           </IconButton>
           
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            <Link href="/">
-              LLMNightRun
-            </Link>
+          <Typography 
+            variant="h6" 
+            component="div" 
+            sx={{ mr: 4, cursor: 'pointer', flexShrink: 0 }}
+            onClick={() => handleNavigation('/')}
+          >
+            LLMNightRun
           </Typography>
           
-          <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+          <Box sx={{ 
+            display: { xs: 'none', sm: 'flex' }, 
+            flexGrow: 1, 
+            overflowX: 'auto',
+            msOverflowStyle: 'none',  /* IE, Edge */
+            scrollbarWidth: 'none',   /* Firefox */
+            '&::-webkit-scrollbar': { /* Chrome, Safari */
+              display: 'none'
+            }
+          }}>
             {menuItems.map((item) => (
               <Button 
-                key={item.text}
-                color="inherit"
-                component={Link}
-                href={item.href}
-                sx={{ 
-                  mx: 1,
-                  bgcolor: isActive(item.href) ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
-                  '&:hover': {
-                    bgcolor: 'rgba(255, 255, 255, 0.1)'
-                  }
+              key={item.text}
+              color="inherit"
+              onClick={() => handleNavigation(item.href)}
+              data-href={item.href}
+              sx={{ 
+              mx: 0.5,
+              px: 1.5,
+              whiteSpace: 'nowrap',
+              bgcolor: isActive(item.href) ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+              '&:hover': {
+                bgcolor: 'rgba(255, 255, 255, 0.1)'
+                }
                 }}
               >
                 {item.text}
@@ -104,6 +159,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </Toolbar>
       </AppBar>
       
+      {/* 모바일 드로어 메뉴 */}
       <Drawer
         anchor="left"
         open={drawerOpen}
@@ -126,8 +182,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <ListItem 
                 button 
                 key={item.text} 
-                component={Link}
-                href={item.href}
+                onClick={() => handleNavigation(item.href)}
                 sx={{ 
                   bgcolor: isActive(item.href) ? 'rgba(63, 81, 181, 0.1)' : 'transparent',
                 }}
@@ -140,10 +195,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </Box>
       </Drawer>
       
+      {/* 메인 컨텐츠 */}
       <Container component="main" sx={{ flexGrow: 1, py: 4 }}>
         {children}
       </Container>
       
+      {/* 푸터 */}
       <Box component="footer" sx={{ py: 3, bgcolor: 'background.paper', textAlign: 'center' }}>
         <Typography variant="body2" color="text.secondary">
           © {new Date().getFullYear()} LLMNightRun - 멀티 LLM 통합 자동화 플랫폼

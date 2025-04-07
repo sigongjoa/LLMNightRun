@@ -46,28 +46,16 @@ export const ServerList: React.FC<ServerListProps> = ({ onEdit, onAdd }) => {
 
   const handleDelete = async (serverId: string) => {
     if (window.confirm(`서버 "${serverId}"를 삭제하시겠습니까?`)) {
-      try {
-        await deleteServer(serverId);
-      } catch (error) {
-        console.error('Failed to delete server:', error);
-      }
+      await deleteServer(serverId);
     }
   };
 
   const handleStartAll = async () => {
-    try {
-      await startAllServers();
-    } catch (error) {
-      console.error('Failed to start all servers:', error);
-    }
+    await startAllServers();
   };
 
   const handleStopAll = async () => {
-    try {
-      await stopAllServers();
-    } catch (error) {
-      console.error('Failed to stop all servers:', error);
-    }
+    await stopAllServers();
   };
 
   return (
@@ -78,9 +66,11 @@ export const ServerList: React.FC<ServerListProps> = ({ onEdit, onAdd }) => {
         </Typography>
         <Box>
           <Tooltip title="새로고침">
-            <IconButton onClick={refreshServers} disabled={isLoading}>
-              <RefreshIcon />
-            </IconButton>
+            <span>
+              <IconButton onClick={refreshServers} disabled={isLoading}>
+                <RefreshIcon />
+              </IconButton>
+            </span>
           </Tooltip>
           <Tooltip title="서버 추가">
             <IconButton onClick={onAdd} color="primary">
@@ -111,12 +101,15 @@ export const ServerList: React.FC<ServerListProps> = ({ onEdit, onAdd }) => {
               <ListItem key={server.id} divider>
                 <ListItemText
                   primary={server.id}
+                  secondaryTypographyProps={{
+                    component: 'div' // 기본 <p> 대신 <div>를 사용하도록 변경
+                  }}
                   secondary={
                     <>
-                      <Typography component="span" variant="body2" color="text.primary">
+                      <Typography component="span" variant="body2" color="text.primary" sx={{ display: 'block' }}>
                         {server.command} {server.args.join(' ')}
                       </Typography>
-                      <Box mt={1}>
+                      <Box sx={{ mt: 1 }}>
                         <Chip
                           label={server.running ? '실행 중' : '중지됨'}
                           color={server.running ? 'success' : 'default'}
@@ -137,13 +130,15 @@ export const ServerList: React.FC<ServerListProps> = ({ onEdit, onAdd }) => {
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="재시작">
-                    <IconButton
-                      edge="end"
-                      onClick={() => restartServer(server.id)}
-                      disabled={!server.running}
-                    >
-                      <RestartIcon />
-                    </IconButton>
+                    <span>
+                      <IconButton
+                        edge="end"
+                        onClick={() => restartServer(server.id)}
+                        disabled={!server.running}
+                      >
+                        <RestartIcon />
+                      </IconButton>
+                    </span>
                   </Tooltip>
                   <Tooltip title="편집">
                     <IconButton edge="end" onClick={() => onEdit(server.id)}>

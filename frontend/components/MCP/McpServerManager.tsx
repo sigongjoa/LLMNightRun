@@ -8,41 +8,92 @@ import {
   Grid,
   Alert,
   Divider,
-  Link,
   Accordion,
   AccordionSummary,
-  AccordionDetails
+  AccordionDetails,
+  ButtonGroup
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import {
+  Edit as EditIcon,
+  Add as AddIcon,
+  Code as CodeIcon,
+  Launch as LaunchIcon
+} from '@mui/icons-material';
 import { ServerList } from './ServerList';
 import { ServerEditor } from './ServerEditor';
+import { JsonConfigEditor } from './JsonConfigEditor';
+import { ExternalServerAdder } from './ExternalServerAdder';
 import { McpProvider } from '../../contexts/McpContext';
 
 export const McpServerManager: React.FC = () => {
-  const [dialogOpen, setDialogOpen] = useState<boolean>(false);
+  const [serverEditorOpen, setServerEditorOpen] = useState<boolean>(false);
+  const [jsonEditorOpen, setJsonEditorOpen] = useState<boolean>(false);
+  const [externalServerAdderOpen, setExternalServerAdderOpen] = useState<boolean>(false);
   const [editingServerId, setEditingServerId] = useState<string | undefined>(undefined);
 
   const handleAddServer = () => {
     setEditingServerId(undefined);
-    setDialogOpen(true);
+    setServerEditorOpen(true);
   };
 
   const handleEditServer = (serverId: string) => {
     setEditingServerId(serverId);
-    setDialogOpen(true);
+    setServerEditorOpen(true);
   };
 
-  const handleCloseDialog = () => {
-    setDialogOpen(false);
+  const handleOpenJsonEditor = () => {
+    setJsonEditorOpen(true);
+  };
+
+  const handleOpenExternalServerAdder = () => {
+    setExternalServerAdderOpen(true);
+  };
+
+  const handleCloseDialogs = () => {
+    setServerEditorOpen(false);
+    setJsonEditorOpen(false);
+    setExternalServerAdderOpen(false);
     setEditingServerId(undefined);
+  };
+  
+  const openExternalLink = (url: string) => {
+    if (typeof window !== 'undefined') {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
   };
 
   return (
     <McpProvider>
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          MCP 서버 관리
-        </Typography>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Typography variant="h4" component="h1">
+            MCP 서버 관리
+          </Typography>
+          
+          <ButtonGroup variant="outlined">
+            <Button 
+              startIcon={<AddIcon />}
+              onClick={handleAddServer}
+            >
+              서버 추가
+            </Button>
+            <Button 
+              startIcon={<EditIcon />}
+              onClick={handleOpenJsonEditor}
+              color="secondary"
+            >
+              JSON 직접 편집
+            </Button>
+            <Button 
+              startIcon={<CodeIcon />}
+              onClick={handleOpenExternalServerAdder}
+              color="primary"
+            >
+              외부 서버 추가
+            </Button>
+          </ButtonGroup>
+        </Box>
         
         <Alert severity="info" sx={{ mb: 3 }}>
           MCP(Model Context Protocol) 서버를 관리할 수 있는 페이지입니다. 
@@ -96,9 +147,15 @@ export const McpServerManager: React.FC = () => {
               <Box mt={2}>
                 <Typography variant="body2">
                   더 많은 MCP 서버는{' '}
-                  <Link href="https://modelcontextprotocol.io/examples" target="_blank" rel="noopener">
+                  <Button
+                    variant="text"
+                    size="small"
+                    endIcon={<LaunchIcon fontSize="small" />}
+                    onClick={() => openExternalLink('https://modelcontextprotocol.io/examples')}
+                    sx={{ p: 0, minWidth: 0, verticalAlign: 'baseline', textTransform: 'none' }}
+                  >
                     Model Context Protocol 웹사이트
-                  </Link>
+                  </Button>
                   에서 확인할 수 있습니다.
                 </Typography>
               </Box>
@@ -106,10 +163,21 @@ export const McpServerManager: React.FC = () => {
           </Accordion>
         </Paper>
         
+        {/* 다이얼로그 컴포넌트들 */}
         <ServerEditor
-          open={dialogOpen}
+          open={serverEditorOpen}
           serverId={editingServerId}
-          onClose={handleCloseDialog}
+          onClose={handleCloseDialogs}
+        />
+        
+        <JsonConfigEditor 
+          open={jsonEditorOpen}
+          onClose={handleCloseDialogs}
+        />
+        
+        <ExternalServerAdder
+          open={externalServerAdderOpen}
+          onClose={handleCloseDialogs}
         />
       </Container>
     </McpProvider>

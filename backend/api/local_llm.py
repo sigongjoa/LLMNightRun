@@ -62,7 +62,14 @@ class LocalLLMChatResponse(BaseModel):
 
 
 # 현재 구성 (글로벌 변수)
+# 현재 구성 (글로벌 변수)
 current_config = default_local_llm_config
+
+# 설정에서 모델 ID 가져와서 초기화
+from backend.config.settings import settings
+if hasattr(settings, "llm") and hasattr(settings.llm, "local_llm_model_id"):
+    current_config.model_id = settings.llm.local_llm_model_id
+
 llm_instance = None
 
 
@@ -202,7 +209,8 @@ async def chat(request: LocalLLMChatRequest) -> LocalLLMChatResponse:
             "max_tokens": request.max_tokens or current_config.max_tokens,
             "temperature": request.temperature or current_config.temperature,
             "top_p": request.top_p or current_config.top_p,
-            "timeout": 120  # 타임아웃 증가
+            "timeout": 60  # 타임아웃 설정
+            # model_id는 여기서 전달하지 않음 - 중복 파라미터 문제 해결
         }
         
         logger.info(f"LLM 호출 시작: {len(request.messages)}개 메시지, 옵션: {options}")

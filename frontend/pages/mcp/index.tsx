@@ -7,12 +7,14 @@ import {
   Link as MuiLink
 } from '@mui/material';
 import Head from 'next/head';
-import Link from 'next/link';
+import { useRouter } from 'next/router';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { McpServerManager } from '../../components/mcp/McpServerManager';
 import Layout from '../../components/Layout';
 
 export default function McpPage() {
+  const router = useRouter();
+  
   return (
     <Layout>
       <Head>
@@ -25,11 +27,21 @@ export default function McpPage() {
           aria-label="breadcrumb"
           sx={{ mb: 2 }}
         >
-          <Link href="/" passHref>
-            <MuiLink color="inherit" underline="hover">
-              홈
-            </MuiLink>
-          </Link>
+          <MuiLink 
+            color="inherit" 
+            underline="hover" 
+            component="button"
+            onClick={() => router.push('/')}
+            sx={{ 
+              textAlign: 'left',
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer'
+            }}
+          >
+            홈
+          </MuiLink>
           <Typography color="text.primary">MCP 서버 관리</Typography>
         </Breadcrumbs>
         

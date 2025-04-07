@@ -87,11 +87,20 @@ class LLM:
         # LM Studio 로컬 LLM 처리
         if self.llm_type == LLMType.LOCAL_LLM and self.base_url:
             try:
+                # 설정에서 모델 ID 가져오지 않고, kwargs에서 가져온다
+                model_id = kwargs.pop("model_id", None)  # pop으로 파라미터 제거
+                
+                # model_id가 없으면 설정에서 가져오기
+                if not model_id:
+                    if hasattr(settings, "llm") and hasattr(settings.llm, "local_llm_model_id"):
+                        model_id = settings.llm.local_llm_model_id
+                
                 # LM Studio API 호출
                 response_data = await call_lm_studio(
                     messages=messages,
                     system_msgs=system_msgs,
                     base_url=self.base_url,
+                    model_id=model_id,  # 여기서만 모델 ID 전달
                     **kwargs
                 )
                 
@@ -151,6 +160,14 @@ class LLM:
                 if tool_choice:
                     tool_choice_str = tool_choice.value
                 
+                # 설정에서 모델 ID 가져오지 않고, kwargs에서 가져온다
+                model_id = kwargs.pop("model_id", None)  # pop으로 파라미터 제거
+                
+                # model_id가 없으면 설정에서 가져오기
+                if not model_id:
+                    if hasattr(settings, "llm") and hasattr(settings.llm, "local_llm_model_id"):
+                        model_id = settings.llm.local_llm_model_id
+                
                 # LM Studio API 호출
                 response_data = await call_lm_studio(
                     messages=messages,
@@ -158,6 +175,7 @@ class LLM:
                     base_url=self.base_url,
                     tools=tools,
                     tool_choice=tool_choice_str,
+                    model_id=model_id,  # 여기서만 모델 ID 전달
                     **kwargs
                 )
                 

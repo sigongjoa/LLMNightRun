@@ -150,46 +150,102 @@ class MCPServerManager:
             args = server_config.get("args", [])
             env_vars = server_config.get("env", {})
             
+            # Validate command
+            if not command:
+                return False, "Invalid server configuration: command is missing"
+            
+            # Check if command exists
+            cmd_exists = True
+            try:
+                # For Windows
+                if sys.platform == "win32":
+                    subprocess.run(["where", command], capture_output=True, check=True)
+                else:
+                    # For Unix-like systems
+                    subprocess.run(["which", command], capture_output=True, check=True)
+            except subprocess.SubprocessError:
+                cmd_exists = False
+                logger.warning(f"Command '{command}' not found in PATH")
+            
             # Prepare environment variables
             full_env = os.environ.copy()
             full_env.update(env_vars)
             
-            # Start the server process
+            # Provide more useful debug info
             cmd = [command] + args
-            process = subprocess.Popen(
-                cmd,
-                env=full_env,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                bufsize=1
-            )
+            logger.info(f"Starting MCP server '{server_id}' with command: {' '.join(cmd)}")
             
-            self.server_processes[server_id] = process
-            
-            # Start threads to monitor stdout/stderr
-            threading.Thread(
-                target=self._monitor_process_output,
-                args=(server_id, process.stdout, "stdout"),
-                daemon=True
-            ).start()
-            
-            threading.Thread(
-                target=self._monitor_process_output,
-                args=(server_id, process.stderr, "stderr"),
-                daemon=True
-            ).start()
-            
-            # Wait briefly to check if process immediately exits
-            time.sleep(0.5)
-            if process.poll() is not None:
-                return False, f"Server failed to start (exit code: {process.poll()})"
+            try:
+                # Start the server process with appropriate settings for Windows
+                if sys.platform == "win32":
+                    # On Windows, use startupinfo to hide console window
+                    startupinfo = subprocess.STARTUPINFO()
+                    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                    startupinfo.wShowWindow = subprocess.SW_HIDE
+                    
+                    # For npx commands on Windows, shell=True works better
+                    process = subprocess.Popen(
+                        ' '.join(cmd),
+                        env=full_env,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True,
+                        bufsize=1,
+                        shell=True,
+                        startupinfo=startupinfo,
+                        creationflags=subprocess.CREATE_NO_WINDOW  # Hide console window
+                    )
+                else:
+                    # On Unix-like systems, we can use the list form
+                    process = subprocess.Popen(
+                        cmd,
+                        env=full_env,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True,
+                        bufsize=1
+                    )
                 
-            logger.info(f"Started MCP server '{server_id}' (PID: {process.pid})")
-            return True, f"Server started (PID: {process.pid})"
+                self.server_processes[server_id] = process
+                
+                # Start threads to monitor stdout/stderr
+                threading.Thread(
+                    target=self._monitor_process_output,
+                    args=(server_id, process.stdout, "stdout"),
+                    daemon=True
+                ).start()
+                
+                threading.Thread(
+                    target=self._monitor_process_output,
+                    args=(server_id, process.stderr, "stderr"),
+                    daemon=True
+                ).start()
+                
+                # Wait a bit longer to check if process starts successfully
+                time.sleep(2.0)
+                if process.poll() is not None:
+                    stderr_output = []
+                    if process.stderr:
+                        stderr_output = [line.strip() for line in process.stderr.readlines()]
+                    
+                    error_msg = f"Server failed to start (exit code: {process.poll()})"
+                    if stderr_output:
+                        error_msg += f"\nError details: {' '.join(stderr_output)}"
+                    
+                    logger.error(error_msg)
+                    return False, error_msg
+                    
+                logger.info(f"Started MCP server '{server_id}' (PID: {process.pid})")
+                return True, f"Server started (PID: {process.pid})"
+                
+            except subprocess.SubprocessError as se:
+                # Specific subprocess error handling
+                logger.error(f"Subprocess error starting MCP server '{server_id}': {se}")
+                return False, f"Error starting server: {str(se)}"
             
         except Exception as e:
-            logger.error(f"Error starting MCP server '{server_id}': {e}")
+            # General exception handling
+            logger.error(f"Error starting MCP server '{server_id}': {e}", exc_info=True)
             return False, f"Error starting server: {str(e)}"
             
     def _monitor_process_output(self, server_id: str, stream, stream_name: str):

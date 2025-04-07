@@ -86,10 +86,17 @@ async def delete_server(server_id: str, manager: MCPServerManager = Depends(get_
 @router.post("/servers/{server_id}/start", response_model=ServerActionResponse)
 async def start_server(server_id: str, manager: MCPServerManager = Depends(get_manager)):
     """Start a specific MCP server."""
-    success, message = manager.start_server(server_id)
-    if not success:
-        raise HTTPException(status_code=500, detail=message)
-    return {"success": True, "message": message}
+    try:
+        logger.info(f"Received request to start server {server_id}")
+        success, message = manager.start_server(server_id)
+        if not success:
+            logger.error(f"Failed to start server {server_id}: {message}")
+            raise HTTPException(status_code=500, detail=message)
+        logger.info(f"Successfully started server {server_id}")
+        return {"success": True, "message": message}
+    except Exception as e:
+        logger.exception(f"Unhandled exception when starting server {server_id}")
+        raise HTTPException(status_code=500, detail=f"Unhandled error: {str(e)}")
 
 @router.post("/servers/{server_id}/stop", response_model=ServerActionResponse)
 async def stop_server(server_id: str, manager: MCPServerManager = Depends(get_manager)):

@@ -2,13 +2,14 @@
 Model Context Protocol (MCP) API 라우터
 """
 
-from fastapi import APIRouter, Request, HTTPException, File, UploadFile, Form, Body, Query
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi import APIRouter, Request, HTTPException, File, UploadFile, Form, Body, Query, Depends
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 import json
 import logging
 import os
 import tempfile
-from typing import Dict, Any, List, Optional
+import asyncio
+from typing import Dict, Any, List, Optional, Union
 
 from .handler import MCPHandler
 
@@ -96,6 +97,160 @@ async def update_context(
     
     response = await mcp_handler.handle_message(message)
     return response
+
+# LLM 관련 엔드포인트
+@router.post("/v1/llm/sessions")
+async def create_llm_session(
+    base_url: str = Body("http://localhost:1234/v1", description="LLM API 기본 URL"),
+    api_key: str = Body("", description="API 키"),
+    model: str = Body("local-model", description="모델 이름"),
+    context_length: int = Body(4096, description="컨텍스트 길이"),
+    additional_config: Dict[str, Any] = Body(None, description="추가 구성 정보")
+):
+    """LLM 세션 생성 API 엔드포인트"""
+    try:
+        from .llm_functions import llm_create_session
+        result = await llm_create_session(
+            base_url=base_url,
+            api_key=api_key,
+            model=model,
+            context_length=context_length,
+            additional_config=additional_config
+        )
+        if not result.get("success", False):
+            raise HTTPException(status_code=500, detail=result.get("error", "Failed to create LLM session"))
+            
+        return result
+    except Exception as e:
+        logger.error(f"Error creating LLM session: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating LLM session: {str(e)}")
+
+@router.get("/v1/llm/sessions")
+async def list_llm_sessions():
+    """LLM 세션 목록 조회 API 엔드포인트"""
+    try:
+        from .llm_functions import llm_list_sessions
+        result = llm_list_sessions()
+        return result
+    except Exception as e:
+        logger.error(f"Error listing LLM sessions: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error listing LLM sessions: {str(e)}")
+
+@router.get("/v1/llm/sessions/{session_id}")
+async def get_llm_session(session_id: str):
+    """LLM 세션 정보 조회 API 엔드포인트"""
+    try:
+        from .llm_functions import llm_get_session
+        result = llm_get_session(session_id)
+        if not result.get("success", False):
+            raise HTTPException(status_code=404, detail=result.get("error", f"Session {session_id} not found"))
+            
+        return result
+    except Exception as e:
+        logger.error(f"Error getting LLM session: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error getting LLM session: {str(e)}")
+
+@router.delete("/v1/llm/sessions/{session_id}")
+async def delete_llm_session(session_id: str):
+    """LLM 세션 삭제 API 엔드포인트"""
+    try:
+        from .llm_functions import llm_delete_session
+        result = llm_delete_session(session_id)
+        if not result.get("success", False):
+            raise HTTPException(status_code=404, detail=result.get("error", f"Session {session_id} not found"))
+            
+        return result
+    except Exception as e:
+        logger.error(f"Error deleting LLM session: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting LLM session: {str(e)}")
+
+@router.get("/v1/llm/sessions/{session_id}/history")
+async def get_llm_session_history(session_id: str, count: int = Query(None, description="조회할 기록 수")):
+    """LLM 세션 히스토리 조회 API 엔드포인트"""
+    try:
+        from .llm_functions import llm_get_history
+        result = llm_get_history(session_id, count)
+        if not result.get("success", False):
+            raise HTTPException(status_code=404, detail=result.get("error", f"Session {session_id} not found"))
+            
+        return result
+    except Exception as e:
+        logger.error(f"Error getting LLM session history: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error getting LLM session history: {str(e)}")
+
+@router.post("/v1/llm/sessions/{session_id}/test")
+async def test_llm_connection(session_id: str):
+    """LLM 연결 테스트 API 엔드포인트"""
+    try:
+        from .llm_functions import llm_test_connection
+        result = await llm_test_connection(session_id)
+        return result
+    except Exception as e:
+        logger.error(f"Error testing LLM connection: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error testing LLM connection: {str(e)}")
+
+@router.post("/v1/llm/sessions/{session_id}/generate")
+async def generate_llm_text(
+    session_id: str,
+    prompt: Union[str, List[Dict[str, Any]]] = Body(..., description="프롬프트 텍스트 또는 메시지 목록"),
+    max_tokens: int = Body(1024, description="최대 생성 토큰 수"),
+    temperature: float = Body(0.7, description="온도 (0.0 ~ 2.0)"),
+    top_p: float = Body(1.0, description="상위 확률 샘플링 (0.0 ~ 1.0)"),
+    frequency_penalty: float = Body(0.0, description="빈도 페널티 (0.0 ~ 2.0)"),
+    presence_penalty: float = Body(0.0, description="존재 페널티 (0.0 ~ 2.0)"),
+    stop_sequences: List[str] = Body(None, description="정지 시퀀스 목록"),
+    stream: bool = Body(False, description="스트리밍 여부")
+):
+    """LLM 텍스트 생성 API 엔드포인트"""
+    try:
+        from .llm_functions import llm_generate
+        result = await llm_generate(
+            session_id=session_id,
+            prompt=prompt,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            top_p=top_p,
+            frequency_penalty=frequency_penalty,
+            presence_penalty=presence_penalty,
+            stop_sequences=stop_sequences,
+            stream=stream
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Error generating LLM text: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generating LLM text: {str(e)}")
+
+@router.post("/v1/llm/sessions/{session_id}/chat")
+async def generate_llm_chat(
+    session_id: str,
+    messages: List[Dict[str, Any]] = Body(..., description="채팅 메시지 목록"),
+    max_tokens: int = Body(1024, description="최대 생성 토큰 수"),
+    temperature: float = Body(0.7, description="온도 (0.0 ~ 2.0)"),
+    top_p: float = Body(1.0, description="상위 확률 샘플링 (0.0 ~ 1.0)"),
+    frequency_penalty: float = Body(0.0, description="빈도 페널티 (0.0 ~ 2.0)"),
+    presence_penalty: float = Body(0.0, description="존재 페널티 (0.0 ~ 2.0)"),
+    stop_sequences: List[str] = Body(None, description="정지 시퀀스 목록"),
+    stream: bool = Body(False, description="스트리밍 여부")
+):
+    """LLM 채팅 완성 API 엔드포인트"""
+    try:
+        from .llm_functions import llm_chat
+        result = await llm_chat(
+            session_id=session_id,
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            top_p=top_p,
+            frequency_penalty=frequency_penalty,
+            presence_penalty=presence_penalty,
+            stop_sequences=stop_sequences,
+            stream=stream
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Error generating LLM chat completion: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generating LLM chat completion: {str(e)}")
+
 
 # 함수 그룹 관련 엔드포인트
 @router.get("/v1/function-groups")

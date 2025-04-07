@@ -13,7 +13,7 @@ from backend.models.enums import LLMType
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_LM_STUDIO_URL = "http://127.0.0.1:11434"
+DEFAULT_LM_STUDIO_URL = "http://127.0.0.1:1234"
 
 
 async def call_lm_studio(
@@ -72,12 +72,26 @@ async def call_lm_studio(
         formatted_messages.append(formatted_msg)
     
     # API 요청 데이터 구성
+    # 모델 ID를 우선적으로 사용
+    model_id = kwargs.get("model_id", None)
+    
+    # model_id가 없으면 설정에서 가져오기 시도
+    if not model_id:
+        from backend.config.settings import settings
+        if hasattr(settings, "llm") and hasattr(settings.llm, "local_llm_model_id"):
+            model_id = settings.llm.local_llm_model_id
+        else:
+            # 디폴트 모델 ID
+            model_id = "deepseek-r1-distill-qwen-7b"
+    
+    logger.info(f"사용하는 모델 ID: {model_id}")
+    
+    # OpenAI 호환 형식으로 요청 데이터 구성
     request_data = {
-        "model": "local-model",  # LM Studio에서는 이 필드가 실제로 사용되지 않음
+        "model": model_id,
         "messages": formatted_messages,
         "temperature": kwargs.get("temperature", 0.7),
-        "max_tokens": kwargs.get("max_tokens", 1000),
-        "stream": False
+        "max_tokens": kwargs.get("max_tokens", 1000)
     }
     
     # 도구가 있는 경우 추가
@@ -87,16 +101,26 @@ async def call_lm_studio(
     if tool_choice:
         request_data["tool_choice"] = tool_choice
     
-    # LM Studio API 호출
-    logger.info(f"Local LLM API 호출: {base_url}/api/chat")
+    # LLM API 호출 (LM Studio 전용 엔드포인트 사용)
+    # LM Studio는 OpenAI 호환 API를 사용함
+    endpoint = "/v1/chat/completions"
+    
+    logger.info(f"LM Studio API 호출: {base_url}{endpoint}")
     
     try:
         async with httpx.AsyncClient(timeout=120.0) as client:
             response = await client.post(
-                f"{base_url}/api/chat",
+                f"{base_url}{endpoint}",
                 json=request_data,
                 headers={"Content-Type": "application/json"}
             )
+            
+            if response.status_code == 200:
+                logger.info(f"LM Studio API 성공적으로 호출됨")
+                return response.json()
+            else:
+                logger.error(f"LM Studio API 오류: {response.status_code} {response.text}")
+                raise Exception(f"LM Studio API 오류: {response.status_code} {response.text}")
             
             response.raise_for_status()
             return response.json()
@@ -118,23 +142,8 @@ def extract_tool_calls(response_data: Dict[str, Any]) -> List[ToolCall]:
     """
     tool_calls = []
     
-    # Ollama API 형식
+    # OpenAI API 형식 (LM Studio는 이 형식 사용)
     if (
-        "message" in response_data
-        and "tool_calls" in response_data["message"]
-    ):
-        for tc in response_data["message"]["tool_calls"]:
-            tool_calls.append(ToolCall(
-                id=tc.get("id", "0"),  # Ollama는 ID가 없을 수 있음
-                type=tc.get("type", "function"),
-                function=ToolCallFunction(
-                    name=tc["function"]["name"],
-                    arguments=tc["function"]["arguments"]
-                )
-            ))
-    
-    # OpenAI API 형식 (호환성)
-    elif (
         "choices" in response_data 
         and len(response_data["choices"]) > 0 
         and "message" in response_data["choices"][0]
@@ -144,6 +153,21 @@ def extract_tool_calls(response_data: Dict[str, Any]) -> List[ToolCall]:
             tool_calls.append(ToolCall(
                 id=tc["id"],
                 type=tc["type"],
+                function=ToolCallFunction(
+                    name=tc["function"]["name"],
+                    arguments=tc["function"]["arguments"]
+                )
+            ))
+    
+    # Ollama API 형식 (더 이상 사용하지 않음 - 참고용)
+    elif (
+        "message" in response_data
+        and "tool_calls" in response_data["message"]
+    ):
+        for tc in response_data["message"]["tool_calls"]:
+            tool_calls.append(ToolCall(
+                id=tc.get("id", "0"),  # Ollama는 ID가 없을 수 있음
+                type=tc.get("type", "function"),
                 function=ToolCallFunction(
                     name=tc["function"]["name"],
                     arguments=tc["function"]["arguments"]
@@ -163,9 +187,13 @@ def extract_content(response_data: Dict[str, Any]) -> Optional[str]:
     Returns:
         응답 컨텐츠
     """
-    # Ollama API 형식
-    if "message" in response_data:
-        content = response_data.get("message", {}).get("content")
+    # OpenAI API 형식 (LM Studio는 이 형식 사용)
+    if (
+        "choices" in response_data 
+        and len(response_data["choices"]) > 0 
+        and "message" in response_data["choices"][0]
+    ):
+        content = response_data["choices"][0]["message"].get("content")
         
         # <think> 태그를 제거하는 처리
         if content and isinstance(content, str):
@@ -176,13 +204,9 @@ def extract_content(response_data: Dict[str, Any]) -> Optional[str]:
             
         return content
     
-    # OpenAI API 형식 (호환성)
-    elif (
-        "choices" in response_data 
-        and len(response_data["choices"]) > 0 
-        and "message" in response_data["choices"][0]
-    ):
-        content = response_data["choices"][0]["message"].get("content")
+    # Ollama API 형식 (더 이상 사용하지 않음 - 참고용)
+    elif "message" in response_data:
+        content = response_data.get("message", {}).get("content")
         
         # <think> 태그를 제거하는 처리
         if content and isinstance(content, str):

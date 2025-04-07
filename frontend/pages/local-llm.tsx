@@ -35,7 +35,7 @@ const LocalLLMPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [testing, setTesting] = useState<boolean>(false);
-  const [baseUrl, setBaseUrl] = useState<string>('http://127.0.0.1:1234');
+  const [baseUrl, setBaseUrl] = useState<string>('http://127.0.0.1:11434');
   const [modelId, setModelId] = useState<string>('');
   const [enabled, setEnabled] = useState<boolean>(false);
   const [temperature, setTemperature] = useState<number>(0.7);
@@ -161,13 +161,13 @@ const LocalLLMPage: React.FC = () => {
                   </Box>
                   
                   <TextField
-                    fullWidth
-                    label="LLM API URL"
-                    value={baseUrl}
-                    onChange={(e) => setBaseUrl(e.target.value)}
-                    margin="normal"
-                    variant="outlined"
-                    helperText="LM Studio API 주소 (기본값: http://127.0.0.1:1234)"
+                  fullWidth
+                  label="LLM API URL"
+                  value={baseUrl}
+                  onChange={(e) => setBaseUrl(e.target.value)}
+                  margin="normal"
+                  variant="outlined"
+                  helperText="LM Studio 또는 Ollama API 주소 (기본값: http://127.0.0.1:11434)"
                   />
                   
                   <TextField
