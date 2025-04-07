@@ -15,6 +15,7 @@ from backend.logger import setup_logging
 from backend.exceptions import LLMNightRunError, LLMError
 from backend.database.connection import create_tables
 from backend.api import question, response, code, agent, indexing, export, auto_debug
+from backend.mcp import router as mcp_router
 
 
 # 로깅 설정
@@ -86,6 +87,7 @@ app.include_router(agent.router)
 app.include_router(indexing.router)
 app.include_router(export.router)
 app.include_router(auto_debug.router)
+app.include_router(mcp_router)
 
 # 애플리케이션 시작 이벤트
 @app.on_event("startup")
