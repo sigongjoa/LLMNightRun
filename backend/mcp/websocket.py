@@ -34,12 +34,31 @@ async def websocket_browser_console(websocket: WebSocket, session_id: str):
     """
     await websocket.accept()
     
+    # 연결 후 로깅
+    ip_address = websocket.client.host
+    logger.info(f"Browser console WebSocket connection established: {session_id} from {ip_address}")
+    
     try:
+        # 클라이언트에게 연결 확인 메시지 전송
+        await websocket.send_json({
+            "type": "connected",
+            "session_id": session_id,
+            "timestamp": datetime.utcnow().isoformat()
+        })
+        
         # 콘솔 도구에 WebSocket 연결 등록
         await browser_console_tool.register_connection(session_id, websocket)
+    except WebSocketDisconnect:
+        logger.info(f"Browser console WebSocket client disconnected early: {session_id}")
     except Exception as e:
         logger.error(f"Error in browser console websocket: {e}")
-        await websocket.close(code=1011)
+        # 자세한 오류 정보 로깅
+        import traceback
+        logger.error(f"Detailed error: {traceback.format_exc()}")
+        try:
+            await websocket.close(code=1011)
+        except:
+            pass
 
 
 @router.websocket("/terminal/{session_id}")
@@ -52,13 +71,27 @@ async def websocket_terminal(websocket: WebSocket, session_id: str):
     """
     await websocket.accept()
     
+    # 연결 후 로깅
+    ip_address = websocket.client.host
+    logger.info(f"Terminal WebSocket connection established: {session_id} from {ip_address}")
+    
     try:
+        # 기존 연결이 있는 경우 대체
+        if session_id in active_connections:
+            old_ws = active_connections[session_id]
+            try:
+                await old_ws.close(code=1000) # 정상 연결 종료
+                logger.info(f"Closed previous terminal connection for session: {session_id}")
+            except Exception as e:
+                logger.warning(f"Error closing previous connection: {e}")
+        
         active_connections[session_id] = websocket
         
         await websocket.send_json({
             "type": "connected",
             "session_id": session_id,
-            "message": "Terminal WebSocket connection established"
+            "message": "Terminal WebSocket connection established",
+            "timestamp": datetime.utcnow().isoformat()
         })
         
         # 연결이 활성화되어 있는 동안 메시지 처리

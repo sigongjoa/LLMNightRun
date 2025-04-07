@@ -36,11 +36,25 @@ class BrowserConsoleTool:
         self._logs.setdefault(session_id, [])
         logger.info(f"Browser console connection registered: {session_id}")
         
+        # 연결 확인 메시지 전송
+        try:
+            await websocket.send_text(json.dumps({
+                "type": "connected",
+                "session_id": session_id,
+                "message": "Browser console connection established",
+                "timestamp": datetime.utcnow().isoformat()
+            }))
+        except Exception as e:
+            logger.error(f"Error sending connection confirmation: {e}")
+        
         try:
             # 연결 활성화 및 이벤트 처리
             await self._handle_connection(session_id, websocket)
         except Exception as e:
             logger.error(f"Error handling browser console connection: {e}")
+            # 자세한 오류 정보 로깅
+            import traceback
+            logger.error(f"Detailed error: {traceback.format_exc()}")
         finally:
             # 연결 해제 처리
             await self._unregister_connection(session_id)
@@ -178,6 +192,7 @@ class BrowserConsoleTool:
         Raises:
             ValueError: 잘못된 세션 ID 또는 코드인 경우
             TimeoutError: 실행 시간 초과인 경우
+            ConnectionError: WebSocket 연결 문제가 있는 경우
         """
         if session_id not in self._connections:
             raise ValueError(f"Browser console session not found: {session_id}")
@@ -194,11 +209,19 @@ class BrowserConsoleTool:
         
         # 실행 요청 전송
         websocket = self._connections[session_id]
-        await websocket.send_text(json.dumps({
-            "type": "execute",
-            "execution_id": execution_id,
-            "code": code
-        }))
+        if websocket.client_state.name != "CONNECTED" or websocket.application_state.name != "CONNECTED":
+            raise ConnectionError(f"WebSocket connection is not active: client={websocket.client_state.name}, app={websocket.application_state.name}")
+            
+        try:
+            await websocket.send_text(json.dumps({
+                "type": "execute",
+                "execution_id": execution_id,
+                "code": code,
+                "timestamp": datetime.utcnow().isoformat()
+            }))
+        except Exception as e:
+            logger.error(f"Error sending JavaScript execution request: {e}")
+            raise ConnectionError(f"Failed to send execution request: {str(e)}")
         
         try:
             # 결과 대기

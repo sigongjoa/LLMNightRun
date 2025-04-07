@@ -30,10 +30,46 @@ async def console_execute(session_id: str, code: str, timeout: int = 30) -> Dict
         Dict[str, Any]: 실행 결과
     """
     try:
+        # 코드 유효성 검사
+        if not code or not code.strip():
+            return {
+                "error": "JavaScript code is empty",
+                "status": "error",
+                "result": None
+            }
+        
         result = await browser_console_tool.execute_javascript(session_id, code, timeout)
         return result
+    except ValueError as e:
+        # 세션 없음 또는 입력 오류
+        logger.warning(f"ValueError executing JavaScript: {e}")
+        return {
+            "error": str(e),
+            "status": "error",
+            "result": None
+        }
+    except TimeoutError as e:
+        # 실행 시간 초과
+        logger.warning(f"Timeout executing JavaScript: {e}")
+        return {
+            "error": f"Execution timed out after {timeout} seconds",
+            "status": "timeout",
+            "result": None
+        }
+    except ConnectionError as e:
+        # 연결 문제
+        logger.error(f"Connection error executing JavaScript: {e}")
+        return {
+            "error": "Browser connection error: " + str(e),
+            "status": "connection_error",
+            "result": None
+        }
     except Exception as e:
+        # 기타 예외
         logger.error(f"Error executing JavaScript: {e}")
+        # 디버깅을 위한 자세한 오류 정보
+        import traceback
+        logger.error(f"Detailed error: {traceback.format_exc()}")
         return {
             "error": str(e),
             "status": "error",
@@ -177,13 +213,48 @@ async def terminal_execute(session_id: str, command: str, timeout: int = None, w
         Dict[str, Any]: 실행 결과
     """
     try:
+        # 명령어 유효성 검사
+        if not command or not command.strip():
+            return {
+                "stdout": "",
+                "stderr": "Command is empty",
+                "exit_code": 1,
+                "error": "EMPTY_COMMAND",
+                "status": "error"
+            }
+            
+        # 명령어 실행
         result = await terminal_tool.execute_command(session_id, command, timeout, working_dir)
         return {
             **result,
             "status": "success" if result.get("error") is None else "error"
         }
+    except ValueError as e:
+        # 세션 없음 또는 입력 오류
+        logger.warning(f"ValueError executing terminal command: {e}")
+        return {
+            "stdout": "",
+            "stderr": str(e),
+            "exit_code": 1,
+            "error": "INVALID_INPUT",
+            "status": "error"
+        }
+    except TimeoutError as e:
+        # 실행 시간 초과
+        logger.warning(f"Timeout executing terminal command: {e}")
+        return {
+            "stdout": "",
+            "stderr": f"Command execution timed out after {timeout or terminal_tool._default_timeout} seconds",
+            "exit_code": -1,
+            "error": "TIMEOUT",
+            "status": "timeout"
+        }
     except Exception as e:
+        # 기타 예외
         logger.error(f"Error executing terminal command: {e}")
+        # 디버깅을 위한 자세한 오류 정보
+        import traceback
+        logger.error(f"Detailed error: {traceback.format_exc()}")
         return {
             "stdout": "",
             "stderr": str(e),

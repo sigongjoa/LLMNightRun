@@ -152,7 +152,7 @@ class TerminalTool:
             for session in self._sessions.values()
         ]
     
-    def _is_command_allowed(self, command: str) -> bool:
+    def _is_command_allowed(self, command: str) -> Tuple[bool, str]:
         """명령어 허용 여부 확인
         
         보안을 위해 실행 가능한 명령어를 제한합니다.
@@ -161,22 +161,35 @@ class TerminalTool:
             command: 명령어
             
         Returns:
-            bool: 명령어 허용 여부
+            Tuple[bool, str]: (허용 여부, 거부이유)
         """
+        # 명령어 가 비어있는지 확인
+        if not command or not command.strip():
+            return False, "Command is empty"
+        
         # 명령어 추출 (옵션 제외)
         cmd_parts = command.strip().split()
         if not cmd_parts:
-            return False
+            return False, "Command parsing failed"
         
         base_cmd = cmd_parts[0].lower()
         
         # 금지된 명령어 확인
         for forbidden in self._forbidden_commands:
             if forbidden in command.lower():
-                return False
+                return False, f"Forbidden command or command pattern detected: {forbidden}"
+        
+        # 쉘 연산자 검출 (&&, |, >, >>, <, etc.)
+        shell_operators = ['&&', '||', '|', '>', '>>', '<', '<<', ';', '`']
+        for operator in shell_operators:
+            if operator in command:
+                return False, f"Shell operator '{operator}' is not allowed"
         
         # 허용된 명령어 확인
-        return base_cmd in self._allowed_commands
+        if base_cmd not in self._allowed_commands:
+            return False, f"Command '{base_cmd}' is not in the allowed commands list"
+            
+        return True, ""
     
     async def execute_command(
         self, 
@@ -207,15 +220,13 @@ class TerminalTool:
         if not session:
             raise ValueError(f"Terminal session not found: {session_id}")
         
-        # 명령어 유효성 확인
-        if not command or not command.strip():
-            raise ValueError("Command is empty")
-        
         # 명령어 허용 여부 확인
-        if not self._is_command_allowed(command):
+        is_allowed, reason = self._is_command_allowed(command)
+        if not is_allowed:
+            logger.warning(f"Command not allowed: {command} - Reason: {reason}")
             return {
                 "stdout": "",
-                "stderr": "Command not allowed for security reasons",
+                "stderr": f"Command not allowed: {reason}",
                 "exit_code": 1,
                 "error": "COMMAND_NOT_ALLOWED"
             }
