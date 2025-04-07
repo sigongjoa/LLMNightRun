@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Box, TextField, Button, Typography, Paper, IconButton, Divider, Select, MenuItem, Grid, FormControl, InputLabel } from '@mui/material';
 import { Code as CodeIcon, Refresh as RefreshIcon, Clear as ClearIcon, PlayArrow as ExecuteIcon } from '@mui/icons-material';
-import MCP from '../../utils/mcp';
 
 /**
  * MCP 브라우저 콘솔 컴포넌트
@@ -32,14 +31,14 @@ const MCPConsole = ({
   
   // 컴포넌트 마운트 시 웹소켓 연결
   useEffect(() => {
-    if (autoConnect) {
+    if (autoConnect && typeof window !== 'undefined' && window.MCP && window.MCP.console) {
       connectConsole();
     }
     
     // 컴포넌트 언마운트 시 정리
     return () => {
-      if (connected) {
-        MCP.console.disconnect();
+      if (connected && typeof window !== 'undefined' && window.MCP && window.MCP.console && typeof window.MCP.console.disconnect === 'function') {
+        window.MCP.console.disconnect();
       }
     };
   }, [autoConnect]);
@@ -67,8 +66,12 @@ const MCPConsole = ({
     setError(null);
     
     try {
+      if (!window.MCP || !window.MCP.console) {
+        throw new Error('콘솔 모듈을 로드할 수 없습니다.');
+      }
+      
       // 콘솔 연결
-      const sid = await MCP.console.connect();
+      const sid = await window.MCP.console.connect();
       setSessionId(sid);
       setConnected(true);
       
@@ -116,7 +119,11 @@ const MCPConsole = ({
     setExecuteResult(null);
     
     try {
-      const result = await MCP.console.executeCode(code);
+      if (!window.MCP || !window.MCP.console) {
+        throw new Error('콘솔 모듈을 로드할 수 없습니다.');
+      }
+      
+      const result = await window.MCP.console.execute(code);
       
       // 콜백 호출
       if (onExecute) {
@@ -169,7 +176,9 @@ const MCPConsole = ({
   
   // 세션 재연결
   const reconnect = () => {
-    MCP.console.disconnect();
+    if (window.MCP && window.MCP.console && typeof window.MCP.console.disconnect === 'function') {
+      window.MCP.console.disconnect();
+    }
     setConnected(false);
     setSessionId(null);
     setLogs([]);

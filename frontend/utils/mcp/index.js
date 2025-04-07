@@ -67,7 +67,9 @@ export const initMCP = async (options = {}) => {
 export const cleanupMCP = async (deleteTerminalSession = true) => {
   try {
     // 브라우저 콘솔 연결 해제
-    BrowserConsoleHook.disconnect();
+    if (typeof BrowserConsoleHook.disconnect === 'function') {
+      BrowserConsoleHook.disconnect();
+    }
 
     // 터미널 세션 정리
     if (deleteTerminalSession && MCPTerminalClient.activeSession) {
@@ -87,18 +89,27 @@ export const cleanupMCP = async (deleteTerminalSession = true) => {
   }
 };
 
-// 브라우저 종료 시 정리 작업 수행
-window.addEventListener('beforeunload', () => {
-  BrowserConsoleHook.disconnect();
-  MCPTerminalClient.disconnectWebSocket();
-});
-
-// 전역 객체로 노출
-window.MCP = {
+// 브라우저 환경에서만 실행
+let MCP = {
   console: BrowserConsoleHook,
   terminal: MCPTerminalClient,
   init: initMCP,
   cleanup: cleanupMCP
 };
 
-export default window.MCP;
+if (typeof window !== 'undefined') {
+  // 브라우저 종료 시 정리 작업 수행
+  window.addEventListener('beforeunload', () => {
+    if (BrowserConsoleHook && typeof BrowserConsoleHook.disconnect === 'function') {
+      BrowserConsoleHook.disconnect();
+    }
+    if (MCPTerminalClient && typeof MCPTerminalClient.disconnectWebSocket === 'function') {
+      MCPTerminalClient.disconnectWebSocket();
+    }
+  });
+
+  // 전역 객체로 노출
+  window.MCP = MCP;
+}
+
+export default MCP;

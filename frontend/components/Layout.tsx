@@ -21,7 +21,9 @@ import {
   Settings as SettingsIcon,
   Menu as MenuIcon,
   SmartToy as SmartToyIcon,
-  Memory as MemoryIcon
+  Memory as MemoryIcon,
+  Terminal as TerminalIcon,
+  Cloud as CloudIcon
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -52,6 +54,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { text: '코드 관리', icon: <CodeIcon />, href: '/code-manager' },
     { text: 'Manus 에이전트', icon: <SmartToyIcon />, href: '/agent' },
     { text: '로컬 LLM', icon: <MemoryIcon />, href: '/local-llm' },
+    { text: 'MCP 서버 관리', icon: <CloudIcon />, href: '/mcp' },
+    { text: 'MCP 도구', icon: <TerminalIcon />, href: '/mcp-tools' },
     { text: '설정', icon: <SettingsIcon />, href: '/settings' }
   ];
 
