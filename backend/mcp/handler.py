@@ -6,8 +6,9 @@ import json
 import uuid
 import logging
 import os
+import requests
 from datetime import datetime
-from typing import Dict, Any, Callable, List
+from typing import Dict, Any, Callable, List, Optional
 
 from .protocol import (
     MCPMessage, MCPMessageType, MCPFunctionCall, 
@@ -43,15 +44,17 @@ class MCPHandler:
         logger.info(f"Registering MCP function: {name}")
         self.registered_functions[name] = func
     
-    def handle_message(self, message_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle_message(self, message_data: Dict[str, Any]) -> Dict[str, Any]:
         """MCP 메시지 처리"""
         try:
             message = MCPMessage.parse_obj(message_data)
             
             if message.type == MCPMessageType.FUNCTION_CALL:
-                return self._handle_function_call(message)
+                return await self._handle_function_call(message)
             elif message.type == MCPMessageType.CONTEXT_UPDATE:
                 return self._handle_context_update(message)
+            elif message.type == "mcp_test":
+                return await self._handle_mcp_test(message) if hasattr(self._handle_mcp_test, "__await__") else self._handle_mcp_test(message)
             else:
                 raise ValueError(f"Unsupported message type: {message.type}")
                 
@@ -63,7 +66,7 @@ class MCPHandler:
                 request_id=message_data.get("request_id")
             )
     
-    def _handle_function_call(self, message: MCPMessage) -> Dict[str, Any]:
+    async def _handle_function_call(self, message: MCPMessage) -> Dict[str, Any]:
         """함수 호출 처리"""
         function_call: MCPFunctionCall = message.content
         
@@ -75,7 +78,13 @@ class MCPHandler:
             )
         
         try:
-            result = self.registered_functions[function_call.name](**function_call.arguments)
+            func = self.registered_functions[function_call.name]
+            import inspect
+            # 비동기 함수인 경우 await 사용
+            if inspect.iscoroutinefunction(func):
+                result = await func(**function_call.arguments)
+            else:
+                result = func(**function_call.arguments)
             
             response = MCPMessage(
                 type=MCPMessageType.FUNCTION_RESPONSE,
@@ -215,3 +224,88 @@ class MCPHandler:
     def list_function_groups(self) -> List[str]:
         """함수 그룹 목록 조회"""
         return self.config_manager.list_function_groups()
+        
+    async def _handle_mcp_test(self, message: MCPMessage) -> Dict[str, Any]:
+        """MCP 테스트 메시지 처리"""
+        try:
+            content = message.content
+            context_id = content.get('context_id')
+            
+            if not context_id or context_id not in self.contexts:
+                return self._create_error_response(
+                    f"Context ID '{context_id}' not found",
+                    "context_not_found",
+                    request_id=message.request_id
+                )
+            
+            # 컨텍스트에서 LLM 설정 가져오기
+            context_data = self.get_context(context_id)
+            llm_config = context_data.get('llm_config', {})
+            
+            if not llm_config:
+                return self._create_error_response(
+                    "No LLM configuration found in context",
+                    "missing_llm_config",
+                    request_id=message.request_id
+                )
+                
+            # 로컬 LLM 연결 테스트
+            provider = llm_config.get('provider', 'local')
+            base_url = llm_config.get('baseUrl', 'http://localhost:1234/v1')
+            api_key = llm_config.get('apiKey', '')
+            model = llm_config.get('model', 'local-model')
+            
+            # 간단한 요청으로 LLM 테스트
+            try:
+                if provider == 'local':
+                    # 단순 echo 요청으로 연결 테스트
+                    headers = {}
+                    if api_key:
+                        headers['Authorization'] = f"Bearer {api_key}"
+                        
+                    test_url = f"{base_url}/chat/completions"
+                    test_data = {
+                        "model": model,
+                        "messages": [{"role": "system", "content": "Test connection"}, 
+                                     {"role": "user", "content": "Echo: LLMNightRun test"}],
+                        "max_tokens": 10
+                    }
+                    
+                    # requests.post 대신 asyncio를 사용하는 것이 좋지만, 간단한 수정을 위해 aiohttp를 필요로 하지 않도록 유지
+                    response = requests.post(test_url, json=test_data, headers=headers, timeout=5)
+                    
+                    if response.status_code == 200:
+                        return {
+                            "success": True,
+                            "message": "LLM connection test successful",
+                            "llm_response": response.json(),
+                            "request_id": message.request_id,
+                            "timestamp": datetime.utcnow().isoformat()
+                        }
+                    else:
+                        return self._create_error_response(
+                            f"LLM connection failed: {response.status_code} - {response.text}",
+                            "llm_connection_error",
+                            request_id=message.request_id
+                        )
+                else:
+                    # 다른 프로바이더 구현 추가 가능...
+                    return self._create_error_response(
+                        f"Provider '{provider}' not yet supported for testing",
+                        "provider_not_supported",
+                        request_id=message.request_id
+                    )
+            except requests.exceptions.RequestException as e:
+                return self._create_error_response(
+                    f"LLM connection failed: {str(e)}",
+                    "llm_connection_error",
+                    request_id=message.request_id
+                )
+                
+        except Exception as e:
+            logger.error(f"Error handling MCP test message: {str(e)}")
+            return self._create_error_response(
+                f"Error handling MCP test: {str(e)}",
+                "mcp_test_error",
+                request_id=message.request_id
+            )

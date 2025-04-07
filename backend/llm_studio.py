@@ -13,7 +13,7 @@ from backend.models.enums import LLMType
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_LM_STUDIO_URL = "http://127.0.0.1:1234"
+DEFAULT_LM_STUDIO_URL = "http://127.0.0.1:11434"
 
 
 async def call_lm_studio(
@@ -88,12 +88,12 @@ async def call_lm_studio(
         request_data["tool_choice"] = tool_choice
     
     # LM Studio API 호출
-    logger.info(f"Local LLM API 호출: {base_url}/v1/chat/completions")
+    logger.info(f"Local LLM API 호출: {base_url}/api/chat")
     
     try:
         async with httpx.AsyncClient(timeout=120.0) as client:
             response = await client.post(
-                f"{base_url}/v1/chat/completions",
+                f"{base_url}/api/chat",
                 json=request_data,
                 headers={"Content-Type": "application/json"}
             )
@@ -118,7 +118,23 @@ def extract_tool_calls(response_data: Dict[str, Any]) -> List[ToolCall]:
     """
     tool_calls = []
     
+    # Ollama API 형식
     if (
+        "message" in response_data
+        and "tool_calls" in response_data["message"]
+    ):
+        for tc in response_data["message"]["tool_calls"]:
+            tool_calls.append(ToolCall(
+                id=tc.get("id", "0"),  # Ollama는 ID가 없을 수 있음
+                type=tc.get("type", "function"),
+                function=ToolCallFunction(
+                    name=tc["function"]["name"],
+                    arguments=tc["function"]["arguments"]
+                )
+            ))
+    
+    # OpenAI API 형식 (호환성)
+    elif (
         "choices" in response_data 
         and len(response_data["choices"]) > 0 
         and "message" in response_data["choices"][0]
@@ -147,7 +163,21 @@ def extract_content(response_data: Dict[str, Any]) -> Optional[str]:
     Returns:
         응답 컨텐츠
     """
-    if (
+    # Ollama API 형식
+    if "message" in response_data:
+        content = response_data.get("message", {}).get("content")
+        
+        # <think> 태그를 제거하는 처리
+        if content and isinstance(content, str):
+            # <think>...</think> 태그 제거
+            import re
+            content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL)
+            return content.strip()
+            
+        return content
+    
+    # OpenAI API 형식 (호환성)
+    elif (
         "choices" in response_data 
         and len(response_data["choices"]) > 0 
         and "message" in response_data["choices"][0]

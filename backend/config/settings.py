@@ -21,6 +21,7 @@ class LLMSettings(BaseSettings):
     """LLM 관련 설정"""
     openai_api_key: Optional[str] = Field(None, env="OPENAI_API_KEY")
     claude_api_key: Optional[str] = Field(None, env="ANTHROPIC_API_KEY")
+    local_llm_url: Optional[str] = Field("http://127.0.0.1:11434", env="LOCAL_LLM_URL")
     model_name: str = "gpt-4"
     temperature: float = 0.7
     max_tokens: int = 1500

@@ -23,7 +23,7 @@ async def process_mcp_message(request: Request):
         message_data = await request.json()
         logger.info(f"Received MCP message: {json.dumps(message_data)[:200]}...")
         
-        response = mcp_handler.handle_message(message_data)
+        response = await mcp_handler.handle_message(message_data)
         return response
         
     except json.JSONDecodeError:
@@ -94,7 +94,7 @@ async def update_context(
         "request_id": context_id
     }
     
-    response = mcp_handler.handle_message(message)
+    response = await mcp_handler.handle_message(message)
     return response
 
 # 함수 그룹 관련 엔드포인트
@@ -150,7 +150,7 @@ async def export_config():
         )
     except Exception as e:
         logger.error(f"Error exporting configuration: {str(e)}")
-        if os.path.exists(tmp_path):
+        if 'tmp_path' in locals() and os.path.exists(tmp_path):
             os.unlink(tmp_path)
         raise HTTPException(status_code=500, detail=f"Error exporting configuration: {str(e)}")
 
@@ -182,3 +182,94 @@ async def import_config(
         if 'tmp_path' in locals() and os.path.exists(tmp_path):
             os.unlink(tmp_path)
         raise HTTPException(status_code=500, detail=f"Error importing configuration: {str(e)}")
+
+# 터미널 관련 API (비활성화됨)
+@router.post("/v1/terminal/create")
+async def create_terminal_session(
+    working_dir: Optional[str] = Body(None, description="초기 작업 디렉토리")
+):
+    """터미널 세션 생성 API (비활성화됨)"""
+    try:
+        from .function_implementations import terminal_create
+        result = terminal_create(working_dir)
+        return result
+    except Exception as e:
+        logger.error(f"Error creating terminal session: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating terminal session: {str(e)}")
+
+@router.delete("/v1/terminal/{session_id}")
+async def delete_terminal_session(session_id: str):
+    """터미널 세션 삭제 API (비활성화됨)"""
+    try:
+        from .function_implementations import terminal_delete
+        result = terminal_delete(session_id)
+        return result
+    except Exception as e:
+        logger.error(f"Error deleting terminal session: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting terminal session: {str(e)}")
+
+@router.post("/v1/terminal/{session_id}/execute")
+async def execute_terminal_command(
+    session_id: str,
+    command: str = Body(..., description="실행할 명령어"),
+    timeout: Optional[int] = Body(None, description="실행 제한 시간(초)"),
+    working_dir: Optional[str] = Body(None, description="작업 디렉토리")
+):
+    """터미널 명령어 실행 API (비활성화됨)"""
+    try:
+        from .function_implementations import terminal_execute
+        result = await terminal_execute(session_id, command, timeout, working_dir)
+        return result
+    except Exception as e:
+        logger.error(f"Error executing terminal command: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error executing terminal command: {str(e)}")
+
+@router.get("/v1/terminal/{session_id}/history")
+async def get_terminal_history(
+    session_id: str,
+    count: int = Query(10, description="조회할 기록 수")
+):
+    """터미널 명령어 실행 기록 조회 API (비활성화됨)"""
+    try:
+        from .function_implementations import terminal_history
+        result = terminal_history(session_id, count)
+        return result
+    except Exception as e:
+        logger.error(f"Error retrieving terminal history: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving terminal history: {str(e)}")
+
+@router.get("/v1/terminal/sessions")
+async def list_terminal_sessions():
+    """터미널 세션 목록 조회 API (비활성화됨)"""
+    try:
+        from .function_implementations import terminal_sessions
+        result = terminal_sessions()
+        return result
+    except Exception as e:
+        logger.error(f"Error listing terminal sessions: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error listing terminal sessions: {str(e)}")
+
+@router.get("/v1/terminal/{session_id}/workdir")
+async def get_terminal_workdir(session_id: str):
+    """터미널 작업 디렉토리 조회 API (비활성화됨)"""
+    try:
+        from .function_implementations import terminal_workdir
+        result = terminal_workdir(session_id)
+        return result
+    except Exception as e:
+        logger.error(f"Error retrieving terminal working directory: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving terminal working directory: {str(e)}")
+
+@router.post("/v1/terminal/{session_id}/workdir")
+async def set_terminal_workdir(
+    session_id: str,
+    working_dir: str = Body(..., description="설정할 작업 디렉토리")
+):
+    """터미널 작업 디렉토리 설정 API (비활성화됨)"""
+    try:
+        from .function_implementations import terminal_workdir
+        result = terminal_workdir(session_id, working_dir)
+        return result
+    except Exception as e:
+        logger.error(f"Error setting terminal working directory: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error setting terminal working directory: {str(e)}")

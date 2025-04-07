@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from backend.models.agent import Message, ToolCall
 from backend.models.enums import ToolChoice, LLMType
 from backend.llm_studio import call_lm_studio, extract_content, extract_tool_calls
+from backend.config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +46,14 @@ class LLM:
         """
         self.config_name = config_name
         self.llm_type = llm_type
-        self.base_url = base_url
-        logger.info(f"LLM({config_name}, {llm_type}) 인스턴스 초기화됨")
+        
+        # 로컬 LLM인 경우 기본 URL 설정
+        if self.llm_type == LLMType.LOCAL_LLM and base_url is None:
+            self.base_url = settings.llm.local_llm_url
+        else:
+            self.base_url = base_url
+            
+        logger.info(f"LLM({config_name}, {llm_type}) 인스턴스 초기화됨 [API URL: {self.base_url}]")
     
     async def ask(
         self, 

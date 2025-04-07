@@ -1,7 +1,8 @@
 """
 MCP 함수 구현 모듈
 
-브라우저 개발자 콘솔과 윈도우 터미널을 위한 MCP 함수 구현을 제공합니다.
+브라우저 개발자 콘솔을 위한 MCP 함수 구현을 제공합니다.
+터미널 기능은 비활성화되었습니다.
 """
 
 import logging
@@ -14,7 +15,7 @@ logger = logging.getLogger("mcp.functions")
 
 # 도구 인스턴스 생성
 browser_console_tool = BrowserConsoleTool()
-terminal_tool = TerminalTool()
+terminal_tool = TerminalTool()  # 더미 인스턴스 (기능 없음)
 
 
 # 브라우저 콘솔 함수 구현
@@ -151,211 +152,73 @@ def console_sessions() -> Dict[str, Any]:
         }
 
 
-# 터미널 함수 구현
+# 터미널 함수 구현 (비활성화됨)
 def terminal_create(working_dir: str = None) -> Dict[str, Any]:
-    """새 터미널 세션 생성
-    
-    Args:
-        working_dir: 초기 작업 디렉터리
-        
-    Returns:
-        Dict[str, Any]: 세션 정보
-    """
-    try:
-        session_id = terminal_tool.create_session(working_dir)
-        return {
-            "session_id": session_id,
-            "working_dir": terminal_tool.get_working_directory(session_id),
-            "status": "success"
-        }
-    except Exception as e:
-        logger.error(f"Error creating terminal session: {e}")
-        return {
-            "session_id": None,
-            "status": "error",
-            "error": str(e)
-        }
+    """새 터미널 세션 생성 (비활성화됨)"""
+    logger.warning("Terminal functionality is disabled")
+    return {
+        "session_id": "dummy-session",
+        "working_dir": "D:\\",
+        "status": "success",
+        "disabled": True,
+        "message": "Terminal functionality is disabled"
+    }
 
 def terminal_delete(session_id: str) -> Dict[str, Any]:
-    """터미널 세션 삭제
-    
-    Args:
-        session_id: 세션 ID
-        
-    Returns:
-        Dict[str, Any]: 삭제 결과
-    """
-    try:
-        success = terminal_tool.delete_session(session_id)
-        return {
-            "success": success,
-            "status": "success" if success else "error",
-            "error": None if success else "Session not found"
-        }
-    except Exception as e:
-        logger.error(f"Error deleting terminal session: {e}")
-        return {
-            "success": False,
-            "status": "error",
-            "error": str(e)
-        }
+    """터미널 세션 삭제 (비활성화됨)"""
+    logger.warning("Terminal functionality is disabled")
+    return {
+        "success": True,
+        "status": "success",
+        "disabled": True,
+        "message": "Terminal functionality is disabled"
+    }
 
 async def terminal_execute(session_id: str, command: str, timeout: int = None, working_dir: str = None) -> Dict[str, Any]:
-    """터미널 명령어 실행
-    
-    Args:
-        session_id: 세션 ID
-        command: 실행할 명령어
-        timeout: 실행 제한 시간 (초)
-        working_dir: 작업 디렉터리
-        
-    Returns:
-        Dict[str, Any]: 실행 결과
-    """
-    try:
-        # 명령어 유효성 검사
-        if not command or not command.strip():
-            return {
-                "stdout": "",
-                "stderr": "Command is empty",
-                "exit_code": 1,
-                "error": "EMPTY_COMMAND",
-                "status": "error"
-            }
-            
-        # 명령어 실행
-        result = await terminal_tool.execute_command(session_id, command, timeout, working_dir)
-        return {
-            **result,
-            "status": "success" if result.get("error") is None else "error"
-        }
-    except ValueError as e:
-        # 세션 없음 또는 입력 오류
-        logger.warning(f"ValueError executing terminal command: {e}")
-        return {
-            "stdout": "",
-            "stderr": str(e),
-            "exit_code": 1,
-            "error": "INVALID_INPUT",
-            "status": "error"
-        }
-    except TimeoutError as e:
-        # 실행 시간 초과
-        logger.warning(f"Timeout executing terminal command: {e}")
-        return {
-            "stdout": "",
-            "stderr": f"Command execution timed out after {timeout or terminal_tool._default_timeout} seconds",
-            "exit_code": -1,
-            "error": "TIMEOUT",
-            "status": "timeout"
-        }
-    except Exception as e:
-        # 기타 예외
-        logger.error(f"Error executing terminal command: {e}")
-        # 디버깅을 위한 자세한 오류 정보
-        import traceback
-        logger.error(f"Detailed error: {traceback.format_exc()}")
-        return {
-            "stdout": "",
-            "stderr": str(e),
-            "exit_code": -1,
-            "error": "EXECUTION_ERROR",
-            "status": "error"
-        }
+    """터미널 명령어 실행 (비활성화됨)"""
+    logger.warning("Terminal functionality is disabled")
+    return {
+        "stdout": "Terminal functionality is disabled",
+        "stderr": "",
+        "exit_code": 0,
+        "error": None,
+        "status": "success",
+        "disabled": True,
+        "message": "Terminal functionality is disabled"
+    }
 
 def terminal_history(session_id: str, count: int = 10) -> Dict[str, Any]:
-    """터미널 명령어 실행 기록 조회
-    
-    Args:
-        session_id: 세션 ID
-        count: 조회할 기록 수
-        
-    Returns:
-        Dict[str, Any]: 명령어 실행 기록
-    """
-    try:
-        history = terminal_tool.get_history(session_id, count)
-        return {
-            "history": history,
-            "count": len(history),
-            "status": "success"
-        }
-    except Exception as e:
-        logger.error(f"Error retrieving terminal history: {e}")
-        return {
-            "history": [],
-            "count": 0,
-            "status": "error",
-            "error": str(e)
-        }
+    """터미널 명령어 실행 기록 조회 (비활성화됨)"""
+    logger.warning("Terminal functionality is disabled")
+    return {
+        "history": [],
+        "count": 0,
+        "status": "success",
+        "disabled": True,
+        "message": "Terminal functionality is disabled"
+    }
 
 def terminal_sessions() -> Dict[str, Any]:
-    """터미널 활성 세션 목록 조회
-    
-    Returns:
-        Dict[str, Any]: 세션 목록
-    """
-    try:
-        sessions = terminal_tool.list_sessions()
-        return {
-            "sessions": sessions,
-            "count": len(sessions),
-            "status": "success"
-        }
-    except Exception as e:
-        logger.error(f"Error retrieving terminal sessions: {e}")
-        return {
-            "sessions": [],
-            "count": 0,
-            "status": "error",
-            "error": str(e)
-        }
+    """터미널 세션 목록 조회 (비활성화됨)"""
+    logger.warning("Terminal functionality is disabled")
+    return {
+        "sessions": [],
+        "count": 0,
+        "status": "success",
+        "disabled": True,
+        "message": "Terminal functionality is disabled"
+    }
 
 def terminal_workdir(session_id: str, working_dir: str = None) -> Dict[str, Any]:
-    """터미널 세션 작업 디렉터리 조회 또는 설정
-    
-    Args:
-        session_id: 세션 ID
-        working_dir: 설정할 작업 디렉터리 (None인 경우 조회만 수행)
-        
-    Returns:
-        Dict[str, Any]: 작업 디렉터리 정보
-    """
-    try:
-        if working_dir:
-            # 작업 디렉터리 설정
-            success = terminal_tool.set_working_directory(session_id, working_dir)
-            if not success:
-                return {
-                    "working_dir": terminal_tool.get_working_directory(session_id),
-                    "updated": False,
-                    "status": "error",
-                    "error": "Invalid directory or session not found"
-                }
-        
-        # 작업 디렉터리 조회
-        work_dir = terminal_tool.get_working_directory(session_id)
-        if work_dir is None:
-            return {
-                "working_dir": None,
-                "updated": False,
-                "status": "error",
-                "error": "Session not found"
-            }
-        
-        return {
-            "working_dir": work_dir,
-            "updated": working_dir is not None,
-            "status": "success"
-        }
-    except Exception as e:
-        logger.error(f"Error handling terminal working directory: {e}")
-        return {
-            "working_dir": None,
-            "updated": False,
-            "status": "error",
-            "error": str(e)
-        }
+    """터미널 작업 디렉터리 조회/설정 (비활성화됨)"""
+    logger.warning("Terminal functionality is disabled")
+    return {
+        "working_dir": "D:\\",
+        "updated": False,
+        "status": "success",
+        "disabled": True,
+        "message": "Terminal functionality is disabled"
+    }
 
 
 # 함수 매핑 - 함수 이름을 함수 객체에 매핑
@@ -366,7 +229,7 @@ MCP_FUNCTION_IMPLEMENTATIONS = {
     "console_clear": console_clear,
     "console_sessions": console_sessions,
     
-    # 터미널 함수
+    # 터미널 함수 (비활성화됨)
     "terminal_create": terminal_create,
     "terminal_delete": terminal_delete,
     "terminal_execute": terminal_execute,
