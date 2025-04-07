@@ -18,6 +18,8 @@ from ..config import settings
 from ..models.enums import LLMType
 from ..models.response import LLMRequest
 from ..exceptions import LLMError, TokenLimitExceeded
+from ..models.agent import Message
+from ..llm_studio import call_lm_studio, extract_content
 
 
 logger = logging.getLogger(__name__)
@@ -143,6 +145,49 @@ class LLMService:
                 raise TokenLimitExceeded("Claude 최대 토큰 제한 초과")
             logger.error(f"Claude API 호출 중 오류 발생: {str(e)}")
             raise LLMError(f"Claude API 호출 실패: {str(e)}")
+
+    async def get_local_llm_response(self, prompt: str, **kwargs) -> str:
+        """
+        로컬 LLM을 사용하여 응답을 가져옵니다.
+        
+        Args:
+            prompt: 질문 내용
+            **kwargs: 추가 옵션
+            
+        Returns:
+            로컬 LLM의 응답 텍스트
+            
+        Raises:
+            LLMError: API 호출 실패 시
+        """
+        try:
+            # 메시지 구성
+            messages = [Message(role="user", content=prompt)]
+            system_msgs = [Message(role="system", content="당신은 도움이 되는 AI 어시스턴트입니다.")]
+            
+            # 옵션 설정
+            base_url = kwargs.get("base_url", "http://127.0.0.1:1234")
+            
+            # LM Studio API 호출
+            response_data = await call_lm_studio(
+                messages=messages,
+                system_msgs=system_msgs,
+                base_url=base_url,
+                max_tokens=kwargs.get("max_tokens", settings.llm.max_tokens),
+                temperature=kwargs.get("temperature", settings.llm.temperature),
+                top_p=kwargs.get("top_p", 0.95)
+            )
+            
+            # 응답 추출
+            content = extract_content(response_data)
+            if content is None:
+                raise LLMError("로컬 LLM에서 응답을 받을 수 없습니다.")
+                
+            return content
+        
+        except Exception as e:
+            logger.error(f"로컬 LLM 호출 중 오류 발생: {str(e)}")
+            raise LLMError(f"로컬 LLM 호출 실패: {str(e)}")
     
     async def get_response(self, llm_type: LLMType, prompt: str, **kwargs) -> str:
         """
@@ -163,6 +208,8 @@ class LLMService:
             return await self.get_openai_response(prompt, **kwargs)
         elif llm_type == LLMType.CLAUDE_API:
             return await self.get_claude_response(prompt, **kwargs)
+        elif llm_type == LLMType.LOCAL_LLM:
+            return await self.get_local_llm_response(prompt, **kwargs)
         else:
             raise LLMError(f"API를 통한 요청이 지원되지 않는 LLM 유형입니다: {llm_type}")
     

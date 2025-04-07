@@ -13,6 +13,7 @@ class LLMType(str, Enum):
     OPENAI_WEB = "openai_web"
     CLAUDE_API = "claude_api"
     CLAUDE_WEB = "claude_web"
+    LOCAL_LLM = "local_llm"  # 로컬 LLM (LM Studio 등)
     MANUAL = "manual"  # 수동으로 입력한 경우
 
 

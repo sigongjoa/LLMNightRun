@@ -20,7 +20,8 @@ import {
   Code as CodeIcon,
   Settings as SettingsIcon,
   Menu as MenuIcon,
-  SmartToy as SmartToyIcon // 추가된 import
+  SmartToy as SmartToyIcon,
+  Memory as MemoryIcon
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -50,6 +51,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { text: '질문 제출', icon: <QuestionIcon />, href: '/submit' },
     { text: '코드 관리', icon: <CodeIcon />, href: '/code-manager' },
     { text: 'Manus 에이전트', icon: <SmartToyIcon />, href: '/agent' },
+    { text: '로컬 LLM', icon: <MemoryIcon />, href: '/local-llm' },
     { text: '설정', icon: <SettingsIcon />, href: '/settings' }
   ];
 

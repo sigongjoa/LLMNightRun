@@ -4,6 +4,7 @@ export enum LLMType {
     OPENAI_WEB = "openai_web",
     CLAUDE_API = "claude_api",
     CLAUDE_WEB = "claude_web",
+    LOCAL_LLM = "local_llm",
     MANUAL = "manual",
   }
   

@@ -195,11 +195,15 @@ async def ask_llm(
         질문 및 LLM의 응답
     """
     try:
+        logger.info(f"LLM 질문 요청: {llm_type}, 질문 ID: {question.question_id}")
+        
         # LLM 서비스 초기화
         llm_service = LLMService()
         
         # LLM에 질문 요청
+        logger.info(f"LLM 요청 시작: {llm_type}")
         content = await llm_service.get_response(llm_type, question.content)
+        logger.info(f"LLM 응답 받음: 길이 {len(content)}")
         
         # 응답 생성 및 저장
         response_data = {
@@ -209,10 +213,11 @@ async def ask_llm(
         }
         
         db_response = create_response(db, response_data)
+        logger.info(f"LLM 응답 저장 완료: 응답 ID {db_response.id}")
         
         # 결과 반환
         return {
-            "question_id": question.question_id,
+            "question": question,
             "response": db_response
         }
     except Exception as e:

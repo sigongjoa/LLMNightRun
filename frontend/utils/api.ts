@@ -10,6 +10,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 120000,  // 120초 타임아웃
 });
 
 // 요청 인터셉터 (예: 인증 토큰 추가)
@@ -74,8 +75,53 @@ export const createResponse = async (response: Response): Promise<Response> => {
 
 // LLM API 요청
 export const askLLM = async (llmType: LLMType, question: Question): Promise<{question: Question, response: Response}> => {
-  const response = await api.post(`/ask/${llmType}`, question);
-  return response.data;
+  // 로컬 LLM인 경우 다른 API 엔드포인트 사용
+  if (llmType === LLMType.LOCAL_LLM) {
+    try {
+      console.log('로컬 LLM API 호출 시작');
+      const localResponse = await api.post('/api/local-llm/chat', {
+        messages: [{ role: 'user', content: question.content }]
+      });
+      console.log('로컬 LLM API 응답:', localResponse.data);
+      
+      // 질문 ID가 없는 경우 질문 먼저 생성
+      let questionObj = question;
+      if (!question.id) {
+        const createdQuestion = await createQuestion(question);
+        questionObj = createdQuestion;
+      }
+      
+      // 응답 저장 - 필요한 필드만 포함
+      const responseData: Partial<Response> = {
+        question_id: questionObj.id || 0,
+        llm_type: LLMType.LOCAL_LLM,
+        content: localResponse.data.content
+      };
+      
+      const savedResponse = await createResponse(responseData);
+      console.log('저장된 응답:', savedResponse);
+      
+      // 응답 형식 변환
+      return {
+        question: questionObj,
+        response: savedResponse
+      };
+    } catch (error) {
+      console.error('로컬 LLM 호출 오류:', error);
+      throw error;
+    }
+  }
+  
+  // 기존 다른 LLM 유형들은 원래 API 사용
+  try {
+    console.log(`/ask/${llmType} 호출 시작`);
+    const response = await api.post(`/ask/${llmType}`, question);
+    console.log(`/ask/${llmType} 응답 받음:`, response.data);
+    return response.data;
+  } catch (error) {
+    console.error(`/ask/${llmType} 호출 오류:`, error);
+    throw error;
+  }
 };
 
 // GitHub 업로드

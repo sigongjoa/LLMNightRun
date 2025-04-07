@@ -71,9 +71,11 @@ def create_response(db: Session, response: Union[Response, ResponseCreate, Dict[
     if "id" in response_data:
         del response_data["id"]
     
-    # 생성 시간 제거 (자동 설정)
+    # 생성 시간 및 업데이트 시간 필드 제거
     if "created_at" in response_data:
         del response_data["created_at"]
+    if "updated_at" in response_data:
+        del response_data["updated_at"]
     
     # LLM 타입 처리 (문자열 -> Enum)
     if "llm_type" in response_data and not isinstance(response_data["llm_type"], LLMTypeEnum):

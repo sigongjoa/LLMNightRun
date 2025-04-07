@@ -20,6 +20,7 @@ class LLMTypeEnum(enum.Enum):
     openai_web = "openai_web"
     claude_api = "claude_api"
     claude_web = "claude_web"
+    local_llm = "local_llm"
     manual = "manual"
 
 class CodeLanguageEnum(enum.Enum):

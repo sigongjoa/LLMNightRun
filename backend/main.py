@@ -14,7 +14,7 @@ from backend.config import settings
 from backend.logger import setup_logging
 from backend.exceptions import LLMNightRunError, LLMError
 from backend.database.connection import create_tables
-from backend.api import question, response, code, agent, indexing, export, auto_debug
+from backend.api import question, response, code, agent, indexing, export, auto_debug, local_llm
 from backend.mcp import router as mcp_router, websocket_router as mcp_ws_router
 
 
@@ -87,6 +87,7 @@ app.include_router(agent.router)
 app.include_router(indexing.router)
 app.include_router(export.router)
 app.include_router(auto_debug.router)
+app.include_router(local_llm.router)
 app.include_router(mcp_router)
 app.include_router(mcp_ws_router)
 

@@ -33,6 +33,7 @@ const LLM_ICONS: Record<LLMType, { name: string; color: string }> = {
   [LLMType.OPENAI_WEB]: { name: 'OpenAI 웹', color: '#10a37f' },
   [LLMType.CLAUDE_API]: { name: 'Claude API', color: '#7e57c2' },
   [LLMType.CLAUDE_WEB]: { name: 'Claude 웹', color: '#7e57c2' },
+  [LLMType.LOCAL_LLM]: { name: '로컬 LLM', color: '#1976d2' },
   [LLMType.MANUAL]: { name: '수동 입력', color: '#9e9e9e' },
 };
 
@@ -69,13 +70,13 @@ const ResultsPage: React.FC = () => {
         setResponses(responsesData);
       } catch (err: any) {
         console.error('결과 로딩 오류:', err);
-        setError(err.detail || '데이터를 불러오는 중에 오류가 발생했습니다.');
+        setError(typeof err.detail === 'string' ? err.detail : '데이터를 불러오는 중에 오류가 발생했습니다.');
       } finally {
         setLoading(false);
       }
     };
     
-    if (questionId) {
+    if (questionId && questionId !== 'undefined' && questionId !== 'null') {
       loadData();
     }
   }, [questionId]);
@@ -110,7 +111,7 @@ const ResultsPage: React.FC = () => {
       setGithubUrl(result.url);
     } catch (err: any) {
       console.error('GitHub 업로드 오류:', err);
-      setError(err.detail || 'GitHub 업로드 중 오류가 발생했습니다.');
+      setError(typeof err.detail === 'string' ? err.detail : 'GitHub 업로드 중 오류가 발생했습니다.');
     } finally {
       setUploadLoading(false);
     }
@@ -221,6 +222,14 @@ const ResultsPage: React.FC = () => {
                 코드 추출
               </Button>
               
+              <ExportButton 
+                type={ExportType.QUESTION}
+                id={question.id!}
+                buttonVariant="outlined"
+                buttonSize="medium"
+                sx={{ mr: 1 }}
+              />
+              
               <Button
                 variant="contained"
                 color="primary"
@@ -230,49 +239,6 @@ const ResultsPage: React.FC = () => {
               >
                 {uploadSuccess ? '업로드됨' : 'GitHub에 저장'}
               </Button>
-            </Box>
-            <Box>
-                {question.tags && question.tags.length > 0 && (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {question.tags.map((tag, index) => (
-                      <Chip key={index} label={tag} size="small" variant="outlined" />
-                    ))}
-                  </Box>
-                )}
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-                  작성일: {formatDate(question.created_at)}
-                </Typography>
-              </Box>
-              
-              <Box>
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  startIcon={<CodeIcon />}
-                  onClick={handleExtractCode}
-                  sx={{ mr: 1 }}
-                >
-                  코드 추출
-                </Button>
-                
-                <ExportButton 
-                  type={ExportType.QUESTION}
-                  id={question.id!}
-                  buttonVariant="outlined"
-                  buttonSize="medium"
-                  sx={{ mr: 1 }}
-                />
-                
-                <Button
-                  variant="contained"
-                  color="primary"
-                  startIcon={uploadLoading ? <CircularProgress size={20} color="inherit" /> : <UploadIcon />}
-                  onClick={handleGitHubUpload}
-                  disabled={uploadLoading || uploadSuccess}
-                >
-                  {uploadSuccess ? '업로드됨' : 'GitHub에 저장'}
-                </Button>
-              </Box>
             </Box>
           </Box>
           
@@ -302,16 +268,28 @@ const ResultsPage: React.FC = () => {
               scrollButtons="auto"
             >
               <Tab label="모든 응답 비교" />
-              {responses.map((response, index) => (
-                <Tab
-                  key={response.id || index}
-                  label={LLM_ICONS[response.llm_type].name}
-                  iconPosition="start"
-                  sx={{
-                    color: LLM_ICONS[response.llm_type].color
-                  }}
-                />
-              ))}
+              {responses.map((response, index) => {
+                let tabLabel = 'Unknown';
+                let tabColor = '#666';
+                
+                if (LLM_ICONS[response.llm_type]) {
+                  tabLabel = LLM_ICONS[response.llm_type].name;
+                  tabColor = LLM_ICONS[response.llm_type].color;
+                } else if (typeof response.llm_type === 'string') {
+                  tabLabel = response.llm_type;
+                }
+                
+                return (
+                  <Tab
+                    key={response.id || index}
+                    label={tabLabel}
+                    iconPosition="start"
+                    sx={{
+                      color: tabColor
+                    }}
+                  />
+                );
+              })}
             </Tabs>
           </Box>
           
@@ -321,26 +299,44 @@ const ResultsPage: React.FC = () => {
               {responses.map((response, index) => (
                 <Grid item xs={12} md={6} lg={responses.length > 2 ? 4 : 6} key={response.id || index}>
                   <Card elevation={3}>
-                    <CardHeader
-                      title={LLM_ICONS[response.llm_type].name}
-                      subheader={formatDate(response.created_at)}
-                      sx={{
-                        backgroundColor: `${LLM_ICONS[response.llm_type].color}10`,
-                        '& .MuiCardHeader-title': {
-                          color: LLM_ICONS[response.llm_type].color,
-                          fontWeight: 'bold'
+                  {
+                    LLM_ICONS[response.llm_type] ? (
+                      <CardHeader
+                        title={LLM_ICONS[response.llm_type].name}
+                        subheader={formatDate(response.created_at)}
+                        sx={{
+                          backgroundColor: `${LLM_ICONS[response.llm_type].color}10`,
+                          '& .MuiCardHeader-title': {
+                            color: LLM_ICONS[response.llm_type].color,
+                            fontWeight: 'bold'
+                          }
+                        }}
+                        action={
+                          <IconButton
+                            aria-label="copy"
+                            onClick={() => copyTextToClipboard(response.content)}
+                            size="small"
+                          >
+                            <CopyIcon />
+                          </IconButton>
                         }
-                      }}
-                      action={
-                        <IconButton
-                          aria-label="copy"
-                          onClick={() => copyTextToClipboard(response.content)}
-                          size="small"
-                        >
-                          <CopyIcon />
-                        </IconButton>
-                      }
-                    />
+                      />
+                    ) : (
+                      <CardHeader
+                        title={String(response.llm_type)}
+                        subheader={formatDate(response.created_at)}
+                        action={
+                          <IconButton
+                            aria-label="copy"
+                            onClick={() => copyTextToClipboard(response.content)}
+                            size="small"
+                          >
+                            <CopyIcon />
+                          </IconButton>
+                        }
+                      />
+                    )
+                  }
                     <CardContent>
                       <Typography
                         variant="body2"
@@ -364,25 +360,42 @@ const ResultsPage: React.FC = () => {
             activeTab === index + 1 && (
               <Box key={response.id || index}>
                 <Card elevation={3}>
-                  <CardHeader
-                    title={LLM_ICONS[response.llm_type].name}
-                    subheader={formatDate(response.created_at)}
-                    sx={{
-                      backgroundColor: `${LLM_ICONS[response.llm_type].color}10`,
-                      '& .MuiCardHeader-title': {
-                        color: LLM_ICONS[response.llm_type].color,
-                        fontWeight: 'bold'
-                      }
-                    }}
-                    action={
-                      <IconButton
-                        aria-label="copy"
-                        onClick={() => copyTextToClipboard(response.content)}
-                      >
-                        <CopyIcon />
-                      </IconButton>
-                    }
-                  />
+                  {
+                    LLM_ICONS[response.llm_type] ? (
+                      <CardHeader
+                        title={LLM_ICONS[response.llm_type].name}
+                        subheader={formatDate(response.created_at)}
+                        sx={{
+                          backgroundColor: `${LLM_ICONS[response.llm_type].color}10`,
+                          '& .MuiCardHeader-title': {
+                            color: LLM_ICONS[response.llm_type].color,
+                            fontWeight: 'bold'
+                          }
+                        }}
+                        action={
+                          <IconButton
+                            aria-label="copy"
+                            onClick={() => copyTextToClipboard(response.content)}
+                          >
+                            <CopyIcon />
+                          </IconButton>
+                        }
+                      />
+                    ) : (
+                      <CardHeader
+                        title={String(response.llm_type)}
+                        subheader={formatDate(response.created_at)}
+                        action={
+                          <IconButton
+                            aria-label="copy"
+                            onClick={() => copyTextToClipboard(response.content)}
+                          >
+                            <CopyIcon />
+                          </IconButton>
+                        }
+                      />
+                    )
+                  }
                   <CardContent>
                     <Typography
                       variant="body1"

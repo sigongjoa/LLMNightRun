@@ -102,11 +102,15 @@ const SubmitPage: React.FC = () => {
       
       // LLM별로 질문 요청 처리
       let questionId: number | undefined;
+      console.log('선택된 LLM 유형:', selectedLLMTypes);
       
       for (const llmType of selectedLLMTypes) {
+        console.log(`LLM 질문 시작: ${llmType}`);
+        
         if (!questionId) {
           // 첫 번째 요청에서는 질문 객체를 생성하고 ID를 저장
           const result = await askLLM(llmType, questionData);
+          console.log('LLM 응답 결과:', result);
           questionId = result.question.id;
         } else {
           // 이후 요청에서는 같은 질문 ID 사용
@@ -123,7 +127,7 @@ const SubmitPage: React.FC = () => {
       
     } catch (err: any) {
       console.error('질문 제출 오류:', err);
-      setError(err.detail || '질문을 처리하는 중에 오류가 발생했습니다.');
+      setError(typeof err.detail === 'string' ? err.detail : '질문을 처리하는 중에 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -224,6 +228,17 @@ const SubmitPage: React.FC = () => {
                     />
                   }
                   label="Claude API"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={selectedLLMs[LLMType.LOCAL_LLM] || false}
+                      onChange={handleLLMChange}
+                      name={LLMType.LOCAL_LLM}
+                      disabled={loading}
+                    />
+                  }
+                  label="로컬 LLM (LM Studio)"
                 />
                 <FormControlLabel
                   control={
