@@ -14,8 +14,136 @@ from backend.models.agent import Message, ToolCall
 from backend.models.enums import ToolChoice, LLMType
 from backend.llm_studio import call_lm_studio, extract_content, extract_tool_calls
 from backend.config.settings import settings
+import httpx
+import json
 
 logger = logging.getLogger(__name__)
+
+
+async def generate_from_openai(prompt: str, **kwargs) -> str:
+    """
+    OpenAI API를 사용하여 텍스트를 생성합니다.
+    
+    Args:
+        prompt: 프롬프트 텍스트
+        **kwargs: 추가 매개변수
+        
+    Returns:
+        생성된 텍스트
+    """
+    try:
+        from backend.config.settings import settings
+        
+        # API 키 확인
+        api_key = settings.openai_api_key
+        if not api_key:
+            raise ValueError("OpenAI API 키가 설정되지 않았습니다")
+        
+        # 모델 설정 (기본값: gpt-3.5-turbo)
+        model = kwargs.get("model", "gpt-3.5-turbo")
+        
+        # API 요청 데이터 구성
+        request_data = {
+            "model": model,
+            "messages": [
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": kwargs.get("temperature", 0.7),
+            "max_tokens": kwargs.get("max_tokens", 1000)
+        }
+        
+        # OpenAI API 호출
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                "https://api.openai.com/v1/chat/completions",
+                json=request_data,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                }
+            )
+            
+            response.raise_for_status()
+            data = response.json()
+            
+            # 응답 컨텐츠 추출
+            if (
+                "choices" in data 
+                and len(data["choices"]) > 0 
+                and "message" in data["choices"][0]
+                and "content" in data["choices"][0]["message"]
+            ):
+                return data["choices"][0]["message"]["content"]
+            
+            logger.error(f"OpenAI API 응답 형식 오류: {data}")
+            return "OpenAI API 응답을 처리할 수 없습니다."
+    
+    except Exception as e:
+        logger.error(f"OpenAI API 호출 오류: {str(e)}")
+        return f"OpenAI API 오류: {str(e)}"
+
+
+async def generate_from_claude(prompt: str, **kwargs) -> str:
+    """
+    Claude API를 사용하여 텍스트를 생성합니다.
+    
+    Args:
+        prompt: 프롬프트 텍스트
+        **kwargs: 추가 매개변수
+        
+    Returns:
+        생성된 텍스트
+    """
+    try:
+        from backend.config.settings import settings
+        
+        # API 키 확인
+        api_key = settings.claude_api_key
+        if not api_key:
+            raise ValueError("Claude API 키가 설정되지 않았습니다")
+        
+        # 모델 설정 (기본값: claude-3-opus-20240229)
+        model = kwargs.get("model", "claude-3-opus-20240229")
+        
+        # API 요청 데이터 구성
+        request_data = {
+            "model": model,
+            "messages": [
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": kwargs.get("temperature", 0.7),
+            "max_tokens": kwargs.get("max_tokens", 1000)
+        }
+        
+        # Claude API 호출
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                "https://api.anthropic.com/v1/messages",
+                json=request_data,
+                headers={
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                    "Content-Type": "application/json"
+                }
+            )
+            
+            response.raise_for_status()
+            data = response.json()
+            
+            # 응답 컨텐츠 추출
+            if (
+                "content" in data
+                and len(data["content"]) > 0
+                and "text" in data["content"][0]
+            ):
+                return data["content"][0]["text"]
+            
+            logger.error(f"Claude API 응답 형식 오류: {data}")
+            return "Claude API 응답을 처리할 수 없습니다."
+    
+    except Exception as e:
+        logger.error(f"Claude API 호출 오류: {str(e)}")
+        return f"Claude API 오류: {str(e)}"
 
 
 class ChatCompletionResponse(BaseModel):

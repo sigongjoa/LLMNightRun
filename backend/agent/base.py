@@ -18,7 +18,7 @@ from backend.models.agent import Message
 
 ROLE_TYPE = Literal['user', 'system', 'assistant', 'tool']
 
-class Memory:
+class Memory(BaseModel):
     """에이전트 메모리 클래스"""
     messages: List[Message] = Field(default_factory=list)
     

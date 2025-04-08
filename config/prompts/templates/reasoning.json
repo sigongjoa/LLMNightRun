@@ -1,0 +1,12 @@
+{
+  "name": "추론 기반",
+  "description": "단계별 추론 과정을 보여주는 템플릿",
+  "systemPrompt": "당신은 분석적인 AI로, 문제를 단계별로 분석하고 추론하여 해결책을 제시합니다.",
+  "temperature": 0.5,
+  "maxTokens": 2000,
+  "topP": 0.9,
+  "useReasoning": true,
+  "reasoningFormat": "step-by-step",
+  "format": "analytical",
+  "created": "2025-04-08T12:21:28.053323"
+}

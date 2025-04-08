@@ -122,8 +122,11 @@ const Dashboard: React.FC = () => {
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
                   Claude API: <span style={{ color: '#4caf50', fontWeight: 'bold' }}>연결됨</span>
                 </Typography>
-                <Typography variant="body1" color="text.secondary">
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
                   GitHub 연동: <span style={{ color: '#4caf50', fontWeight: 'bold' }}>활성화</span>
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  MCP 서버: <span style={{ color: '#4caf50', fontWeight: 'bold' }}>실행 중 (2)</span>
                 </Typography>
               </CardContent>
             </Card>

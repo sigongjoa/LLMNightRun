@@ -1,0 +1,10 @@
+{
+  "name": "기술적",
+  "description": "기술적이고 정확한 응답을 제공하는 템플릿",
+  "systemPrompt": "당신은 기술 전문가 AI로, 정확하고 사실에 근거한 기술적 응답을 제공합니다.",
+  "temperature": 0.3,
+  "maxTokens": 2000,
+  "topP": 0.85,
+  "format": "technical",
+  "created": "2025-04-08T12:21:28.053323"
+}

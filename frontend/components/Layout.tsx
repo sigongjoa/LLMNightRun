@@ -26,7 +26,12 @@ import {
   SmartToy as SmartToyIcon,
   Memory as MemoryIcon,
   Terminal as TerminalIcon,
-  Cloud as CloudIcon
+  Cloud as CloudIcon,
+  FileDownload as FileDownloadIcon,
+  Engineering as EngineeringIcon,
+  GitHub as GitHubIcon,
+  Book as BookIcon,
+  Description as DescriptionIcon
 } from '@mui/icons-material';
 import { useRouter } from 'next/router';
 
@@ -64,16 +69,42 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     setDrawerOpen(open);
   };
 
-  const menuItems = [
-    { text: '대시보드', icon: <DashboardIcon />, href: '/' },
-    { text: '질문 제출', icon: <QuestionIcon />, href: '/submit' },
-    { text: '코드 관리', icon: <CodeIcon />, href: '/code-manager' },
-    { text: 'Manus 에이전트', icon: <SmartToyIcon />, href: '/agent' },
-    { text: '로컬 LLM', icon: <MemoryIcon />, href: '/local-llm' },
-    { text: 'MCP 서버 관리', icon: <CloudIcon />, href: '/mcp' },
-    { text: 'MCP 도구', icon: <TerminalIcon />, href: '/mcp-tools' },
-    { text: '설정', icon: <SettingsIcon />, href: '/settings' }
-  ];
+  // 메뉴 고유성 보장을 위한 로직
+  const getUniqueMenuItems = () => {
+    // 기본 메뉴 항목
+    const baseMenuItems = [
+      { text: '대시보드', icon: <DashboardIcon />, href: '/' },
+      { text: '질문 제출', icon: <QuestionIcon />, href: '/submit' },
+      { text: '코드 관리', icon: <CodeIcon />, href: '/code-manager' },
+      { text: 'MCP 채팅', icon: <SmartToyIcon />, href: '/mcp-chat/new' },
+      { text: '프롬프트 엔지니어링', icon: <EngineeringIcon />, href: '/prompt-engineering' },
+      { text: '내보내기', icon: <FileDownloadIcon />, href: '/export' },
+      { text: 'GitHub 업로드', icon: <GitHubIcon />, href: '/github-upload' },
+      { text: '문서 관리', icon: <DescriptionIcon />, href: '/docs-manager' },
+      { text: '로컬 LLM', icon: <MemoryIcon />, href: '/local-llm' },
+      { text: 'MCP 서버 관리', icon: <CloudIcon />, href: '/mcp' },
+      { text: '설정', icon: <SettingsIcon />, href: '/settings' }
+    ];
+    
+    // URL 기반 메뉴 필터링 (필요한 경우)
+    if (typeof window !== 'undefined') {
+      // 현재 경로가 /mcp-admin 경로인 경우만 필터링
+      const currentPath = router.pathname;
+      if (currentPath === '/mcp-admin') {
+        // MCP 관리자 페이지인 경우 관련 메뉴만 표시
+        return baseMenuItems.filter(item => 
+          item.href === '/' || 
+          item.href === '/mcp-chat' || 
+          item.href === '/mcp' || 
+          item.href === '/settings'
+        );
+      }
+    }
+    
+    return baseMenuItems;
+  };
+  
+  const menuItems = getUniqueMenuItems();
 
   const isActive = (href: string) => {
     // pathname이 href로 시작하는지 확인

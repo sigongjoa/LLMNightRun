@@ -1,0 +1,17 @@
+{
+  "defaultTemplate": "standard",
+  "activeTemplate": "standard",
+  "temperature": 0.7,
+  "maxTokens": 1000,
+  "systemPrompt": "당신은 유능한 AI 비서로, 사용자의 질문에 명확하고 도움이 되는 응답을 제공합니다.",
+  "customSettings": {
+    "useReasoning": true,
+    "reasoningFormat": "thinking",
+    "enableTools": true,
+    "responseStyle": "balanced",
+    "topP": 0.95,
+    "enableFunctionCalling": true
+  },
+  "created": "2025-04-08T12:21:27.935178",
+  "modified": "2025-04-08T12:21:27.935178"
+}

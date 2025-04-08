@@ -3,6 +3,7 @@ import type { AppProps } from 'next/app';
 import type { NextComponentType } from 'next';
 import { CacheProvider, EmotionCache } from '@emotion/react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
+import Head from 'next/head';
 import theme from '../styles/theme';
 import createEmotionCache from '../utils/createEmotionCache';
 import Layout from '../components/Layout';
@@ -58,14 +59,21 @@ export default function MyApp({
     }
   }, []);
   
-  // 커스텀 레이아웃 사용 여부 확인
-  const getLayout = Component.getLayout || ((page) => <Layout>{page}</Layout>);
-  
   return (
     <CacheProvider value={emotionCache}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        {getLayout(<Component {...pageProps} />)}
+        <Head>
+          {/* 모든 페이지에 공통으로 필요한 폰트 추가 */}
+          <link
+            href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap"
+            rel="stylesheet"
+          />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        </Head>
+        <Layout>
+          <Component {...pageProps} />
+        </Layout>
       </ThemeProvider>
     </CacheProvider>
   );

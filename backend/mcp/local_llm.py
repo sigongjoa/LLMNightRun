@@ -484,6 +484,62 @@ class LocalLLMTool:
             "count": len(history)
         }
 
+    async def update_session_settings(self, session_id: str, settings: Dict[str, Any]) -> Dict[str, Any]:
+        """세션 설정 업데이트
+        
+        Args:
+            session_id: 세션 ID
+            settings: 업데이트할 설정
+            
+        Returns:
+            Dict[str, Any]: 업데이트 결과
+        """
+        if session_id not in self.active_sessions:
+            return {
+                "success": False,
+                "error": f"Session {session_id} not found"
+            }
+        
+        session = self.active_sessions[session_id]
+        
+        # 기존 config 복사 후 업데이트
+        updated_config = session["config"].copy()
+        
+        # 시스템 프롬프트 업데이트
+        if "system_prompt" in settings:
+            # 현재는 config에 시스템 프롬프트를 직접 저장하지 않으므로 별도 저장
+            session["system_prompt"] = settings["system_prompt"]
+        
+        # 온도 업데이트
+        if "temperature" in settings:
+            updated_config["temperature"] = settings["temperature"]
+        
+        # 최대 토큰 수 업데이트
+        if "max_tokens" in settings:
+            updated_config["max_tokens"] = settings["max_tokens"]
+        
+        # top_p 업데이트
+        if "top_p" in settings:
+            updated_config["top_p"] = settings["top_p"]
+        
+        # 기타 설정 업데이트
+        for key, value in settings.items():
+            if key not in ["system_prompt", "temperature", "max_tokens", "top_p"]:
+                # 직접 config에 저장하지 않고 별도의 session 항목으로 저장
+                session[key] = value
+        
+        # 설정 업데이트
+        session["config"] = updated_config
+        session["last_updated"] = datetime.utcnow().isoformat()
+        
+        logger.info(f"Session {session_id} settings updated")
+        
+        return {
+            "success": True,
+            "message": f"Session {session_id} settings updated",
+            "updated_settings": settings
+        }
+
     def delete_session(self, session_id: str) -> Dict[str, Any]:
         """세션 삭제
         

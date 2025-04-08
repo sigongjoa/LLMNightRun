@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Question, Response, CodeSnippet, CodeTemplate, Settings, LLMType, ApiError } from '../types';
+import { Question, Response, CodeSnippet, CodeTemplate, Settings, LLMType, ApiError, ExportFormat, ExportOptions } from '../types';
 
 // API 기본 URL 설정
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -124,9 +124,29 @@ export const askLLM = async (llmType: LLMType, question: Question): Promise<{que
   }
 };
 
-// GitHub 업로드
-export const uploadToGitHub = async (questionId: number): Promise<{message: string, url: string}> => {
-  const response = await api.post('/github/upload', { question_id: questionId });
+// GitHub 관련 API 함수
+export const uploadToGitHub = async (
+  questionId: number,
+  folderPath?: string
+): Promise<{message: string, repo_url: string, folder_path: string, commit_message: string}> => {
+  const response = await api.post('/github/upload', {
+    question_id: questionId,
+    folder_path: folderPath
+  });
+  return response.data;
+};
+
+export const generateCommitMessage = async (
+  questionId: number
+): Promise<{commit_message: string}> => {
+  const response = await api.get(`/github/generate-commit-message/${questionId}`);
+  return response.data;
+};
+
+export const generateReadme = async (
+  questionId: number
+): Promise<{readme_content: string}> => {
+  const response = await api.get(`/github/generate-readme/${questionId}`);
   return response.data;
 };
 
@@ -183,6 +203,148 @@ export const fetchSettings = async (): Promise<Settings> => {
 
 export const updateSettings = async (settings: Partial<Settings>): Promise<Settings> => {
   const response = await api.post<Settings>('/settings/', settings);
+  return response.data;
+};
+
+// 내보내기 관련 API 함수
+export const exportQuestion = async (
+  questionId: number, 
+  format: ExportFormat, 
+  options: ExportOptions
+): Promise<Blob> => {
+  const params = {
+    format,
+    include_metadata: options.includeMetadata,
+    include_tags: options.includeTags,
+    include_timestamps: options.includeTimestamps,
+    include_llm_info: options.includeLlmInfo,
+    code_highlighting: options.codeHighlighting
+  };
+  
+  const response = await api.get(`/export/question/${questionId}`, {
+    params,
+    responseType: 'blob'
+  });
+  
+  return response.data;
+};
+
+export const exportCodeSnippet = async (
+  snippetId: number, 
+  format: ExportFormat, 
+  options: ExportOptions
+): Promise<Blob> => {
+  const params = {
+    format,
+    include_metadata: options.includeMetadata,
+    include_tags: options.includeTags,
+    include_timestamps: options.includeTimestamps,
+    include_llm_info: options.includeLlmInfo
+  };
+  
+  const response = await api.get(`/export/code-snippet/${snippetId}`, {
+    params,
+    responseType: 'blob'
+  });
+  
+  return response.data;
+};
+
+export const exportAgentLogs = async (
+  sessionId: string, 
+  format: ExportFormat, 
+  options: ExportOptions
+): Promise<Blob> => {
+  const params = {
+    format,
+    include_timestamps: options.includeTimestamps
+  };
+  
+  const response = await api.get(`/export/agent-logs/${sessionId}`, {
+    params,
+    responseType: 'blob'
+  });
+  
+  return response.data;
+};
+
+export const exportBatch = async (
+  items: Array<{type: 'question' | 'code_snippet' | 'agent_logs', id: number | string}>,
+  format: ExportFormat, 
+  options: ExportOptions
+): Promise<Blob> => {
+  const params = {
+    format,
+    include_metadata: options.includeMetadata,
+    include_tags: options.includeTags,
+    include_timestamps: options.includeTimestamps,
+    include_llm_info: options.includeLlmInfo
+  };
+  
+  const response = await api.post('/export/batch', items, {
+    params,
+    responseType: 'blob'
+  });
+  
+  return response.data;
+};
+
+// 프롬프트 템플릿 관련 API 함수
+export const fetchPromptTemplates = async (
+  category?: string,
+  tag?: string,
+  skip = 0,
+  limit = 100
+): Promise<PromptTemplate[]> => {
+  const params: any = { skip, limit };
+  if (category) params.category = category;
+  if (tag) params.tag = tag;
+  
+  const response = await api.get<PromptTemplate[]>('/prompt-templates/', { params });
+  return response.data;
+};
+
+export const fetchPromptTemplate = async (id: number): Promise<PromptTemplate> => {
+  const response = await api.get<PromptTemplate>(`/prompt-templates/${id}`);
+  return response.data;
+};
+
+export const createPromptTemplate = async (template: PromptTemplate): Promise<PromptTemplate> => {
+  const response = await api.post<PromptTemplate>('/prompt-templates/', template);
+  return response.data;
+};
+
+export const updatePromptTemplate = async (id: number, template: Partial<PromptTemplate>): Promise<PromptTemplate> => {
+  const response = await api.put<PromptTemplate>(`/prompt-templates/${id}`, template);
+  return response.data;
+};
+
+export const deletePromptTemplate = async (id: number): Promise<void> => {
+  await api.delete(`/prompt-templates/${id}`);
+};
+
+// 프롬프트 미리보기 및 실행
+export const previewPrompt = async (
+  template: string,
+  variables: Record<string, string>
+): Promise<string> => {
+  const response = await api.post<{result: string}>('/prompt-engineering/preview', {
+    template,
+    variables
+  });
+  return response.data.result;
+};
+
+export const executePrompt = async (
+  templateId: number,
+  variables: Record<string, string>,
+  llmType: LLMType
+): Promise<{question: Question, response: Response}> => {
+  const response = await api.post(`/prompt-engineering/execute`, {
+    template_id: templateId,
+    variables,
+    llm_type: llmType
+  });
   return response.data;
 };
 

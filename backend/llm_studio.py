@@ -218,3 +218,44 @@ def extract_content(response_data: Dict[str, Any]) -> Optional[str]:
         return content
     
     return None
+
+
+async def generate_from_local_llm(messages: List[Dict[str, str]], **kwargs) -> str:
+    """
+    로컬 LLM(LM Studio)을 사용하여 텍스트를 생성합니다.
+    
+    Args:
+        messages: 메시지 목록 (OpenAI 형식)
+        **kwargs: 추가 매개변수
+        
+    Returns:
+        생성된 텍스트
+    """
+    from backend.config.settings import settings
+    from .models.agent import Message
+    
+    # LM Studio URL 설정
+    base_url = settings.llm.get("local_llm_base_url", DEFAULT_LM_STUDIO_URL)
+    
+    # 메시지 변환
+    formatted_messages = []
+    for msg in messages:
+        formatted_messages.append(Message(
+            role=msg.get("role", "user"),
+            content=msg.get("content", ""),
+            name=msg.get("name")
+        ))
+    
+    # API 호출
+    response_data = await call_lm_studio(
+        messages=formatted_messages,
+        base_url=base_url,
+        model_id=kwargs.get("model_id", settings.llm.get("local_llm_model_id")),
+        temperature=kwargs.get("temperature", settings.llm.get("local_llm_temperature", 0.7)),
+        max_tokens=kwargs.get("max_tokens", settings.llm.get("local_llm_max_tokens", 1000))
+    )
+    
+    # 응답 컨텐츠 추출
+    content = extract_content(response_data)
+    
+    return content if content else ""

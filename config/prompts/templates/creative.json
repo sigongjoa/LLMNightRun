@@ -1,0 +1,10 @@
+{
+  "name": "창의적",
+  "description": "더 창의적이고 다양한 응답을 제공하는 템플릿",
+  "systemPrompt": "당신은 창의적인 AI 비서로, 사용자의 질문에 독창적이고 흥미로운 관점으로 답변합니다.",
+  "temperature": 0.9,
+  "maxTokens": 1500,
+  "topP": 0.98,
+  "format": "creative",
+  "created": "2025-04-08T12:21:28.053323"
+}

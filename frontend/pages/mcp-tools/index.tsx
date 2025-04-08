@@ -69,29 +69,76 @@ const McpTools: React.FC = () => {
       // 여기서는 가상 데이터를 사용합니다. 실제로는 API를 호출하여 데이터를 가져와야 합니다.
       // 이 부분은 실제 MCP 도구 API가 구현된 후에 대체해야 합니다.
       const mockTools: ToolInfo[] = [
+        // 파일 시스템 도구
         {
-          name: 'github_search_repository',
-          description: 'GitHub 저장소 검색',
-          server: 'github',
-          schema: {
-            type: 'object',
-            properties: {
-              query: { type: 'string', description: '검색어' },
-              language: { type: 'string', description: '프로그래밍 언어 필터' }
-            }
-          }
-        },
-        {
-          name: 'file_read',
+          name: 'read_file',
           description: '파일 내용 읽기',
           server: 'filesystem',
           schema: {
             type: 'object',
             properties: {
               path: { type: 'string', description: '파일 경로' }
-            }
+            },
+            required: ['path']
           }
         },
+        {
+          name: 'write_file',
+          description: '파일에 내용 쓰기',
+          server: 'filesystem',
+          schema: {
+            type: 'object',
+            properties: {
+              path: { type: 'string', description: '파일 경로' },
+              content: { type: 'string', description: '파일 내용' }
+            },
+            required: ['path', 'content']
+          }
+        },
+        {
+          name: 'list_directory',
+          description: '디렉토리 내용 나열',
+          server: 'filesystem',
+          schema: {
+            type: 'object',
+            properties: {
+              path: { type: 'string', description: '디렉토리 경로' }
+            },
+            required: ['path']
+          }
+        },
+        
+        // GitHub 도구
+        {
+          name: 'github_search_repository',
+          description: 'GitHub 저장소 검색',
+          server: 'github-api',
+          schema: {
+            type: 'object',
+            properties: {
+              query: { type: 'string', description: '검색어' },
+              language: { type: 'string', description: '프로그래밍 언어 필터' }
+            },
+            required: ['query']
+          }
+        },
+        {
+          name: 'github_create_issue',
+          description: 'GitHub 이슈 생성',
+          server: 'github-api',
+          schema: {
+            type: 'object',
+            properties: {
+              owner: { type: 'string', description: '저장소 소유자' },
+              repo: { type: 'string', description: '저장소 이름' },
+              title: { type: 'string', description: '이슈 제목' },
+              body: { type: 'string', description: '이슈 내용' }
+            },
+            required: ['owner', 'repo', 'title']
+          }
+        },
+        
+        // 메모리 도구
         {
           name: 'memory_store',
           description: '메모리에 정보 저장',
@@ -101,7 +148,32 @@ const McpTools: React.FC = () => {
             properties: {
               key: { type: 'string', description: '키' },
               value: { type: 'string', description: '값' }
-            }
+            },
+            required: ['key', 'value']
+          }
+        },
+        {
+          name: 'memory_retrieve',
+          description: '메모리에서 정보 검색',
+          server: 'memory',
+          schema: {
+            type: 'object',
+            properties: {
+              key: { type: 'string', description: '키' }
+            },
+            required: ['key']
+          }
+        },
+        {
+          name: 'memory_search',
+          description: '메모리에서 패턴으로 검색',
+          server: 'memory',
+          schema: {
+            type: 'object',
+            properties: {
+              pattern: { type: 'string', description: '검색 패턴' }
+            },
+            required: ['pattern']
           }
         }
       ];

@@ -7,10 +7,14 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional, Union, Dict, Any
 from datetime import datetime
+import logging
 
 from ..models import AgentSession as DBAgentSession, AgentLog as DBAgentLog, AgentPhaseEnum
 from ...models.agent import AgentSession, AgentLog
 from ...models.enums import AgentPhase
+
+# 로거 설정
+logger = logging.getLogger(__name__)
 
 
 def get_agent_sessions(
@@ -83,29 +87,34 @@ def create_agent_session(
     Returns:
         생성된 Agent 세션
     """
-    # 딕셔너리로 변환
-    if not isinstance(session, dict):
-        session_data = session.dict(exclude_unset=True)
-    else:
-        session_data = session
-    
-    # ID 제거 (자동 생성)
-    if "id" in session_data:
-        del session_data["id"]
-    
-    # 시작 시간이 지정되지 않은 경우 현재 시간 사용
-    if "start_time" not in session_data or not session_data["start_time"]:
-        session_data["start_time"] = datetime.utcnow()
-    
-    # 데이터베이스 모델 생성
-    db_session = DBAgentSession(**session_data)
-    
-    # 데이터베이스에 저장
-    db.add(db_session)
-    db.commit()
-    db.refresh(db_session)
-    
-    return db_session
+    try:
+        # 딕셔너리로 변환
+        if not isinstance(session, dict):
+            session_data = session.dict(exclude_unset=True)
+        else:
+            session_data = session.copy()
+        
+        # ID 제거 (자동 생성)
+        if "id" in session_data:
+            del session_data["id"]
+        
+        # 시작 시간이 지정되지 않은 경우 현재 시간 사용
+        if "start_time" not in session_data or not session_data["start_time"]:
+            session_data["start_time"] = datetime.utcnow()
+        
+        # 데이터베이스 모델 생성
+        db_session = DBAgentSession(**session_data)
+        
+        # 데이터베이스에 저장
+        db.add(db_session)
+        db.commit()
+        db.refresh(db_session)
+        
+        return db_session
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Agent session creation error: {str(e)}")
+        raise
 
 
 def update_agent_session(
@@ -124,22 +133,27 @@ def update_agent_session(
     Returns:
         업데이트된 Agent 세션 또는 None
     """
-    db_session = db.query(DBAgentSession).filter(DBAgentSession.session_id == session_id).first()
-    
-    if not db_session:
+    try:
+        db_session = db.query(DBAgentSession).filter(DBAgentSession.session_id == session_id).first()
+        
+        if not db_session:
+            return None
+        
+        for key, value in update_data.items():
+            if hasattr(db_session, key):
+                setattr(db_session, key, value)
+        
+        db.commit()
+        db.refresh(db_session)
+        
+        return db_session
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Agent session update error: {str(e)}")
         return None
-    
-    for key, value in update_data.items():
-        if hasattr(db_session, key):
-            setattr(db_session, key, value)
-    
-    db.commit()
-    db.refresh(db_session)
-    
-    return db_session
 
 
-def finish_agent_session(
+async def finish_agent_session(
     db: Session,
     session_id: str,
     status: str = "completed"
@@ -196,14 +210,17 @@ def get_agent_logs(
     
     if phase:
         # Enum 변환
-        if isinstance(phase, str):
-            db_phase = AgentPhaseEnum[phase]
-        elif isinstance(phase, AgentPhase):
-            db_phase = AgentPhaseEnum[phase.value]
-        else:
-            db_phase = phase
-            
-        query = query.filter(DBAgentLog.phase == db_phase)
+        try:
+            if isinstance(phase, str):
+                db_phase = AgentPhaseEnum[phase]
+            elif isinstance(phase, AgentPhase):
+                db_phase = AgentPhaseEnum[phase.value]
+            else:
+                db_phase = phase
+                
+            query = query.filter(DBAgentLog.phase == db_phase)
+        except (KeyError, TypeError):
+            logger.warning(f"Invalid phase value: {phase}")
     
     if step is not None:
         query = query.filter(DBAgentLog.step == step)
@@ -220,10 +237,10 @@ def get_agent_logs(
     return query.offset(skip).limit(limit).all()
 
 
-def create_agent_log(
+async def create_agent_log(
     db: Session,
     log: Union[AgentLog, Dict[str, Any]]
-) -> AgentLog:
+) -> Optional[AgentLog]:
     """
     새 Agent 로그 생성
     
@@ -232,57 +249,80 @@ def create_agent_log(
         log: 생성할 로그 정보
     
     Returns:
-        생성된 Agent 로그
+        생성된 Agent 로그 또는 None
     """
-    # 딕셔너리로 변환
-    if not isinstance(log, dict):
-        log_data = log.dict(exclude_unset=True)
-    else:
-        log_data = log
-    
-    # ID 제거 (자동 생성)
-    if "id" in log_data:
-        del log_data["id"]
-    
-    # 타임스탬프가 지정되지 않은 경우 현재 시간 사용
-    if "timestamp" not in log_data or not log_data["timestamp"]:
-        log_data["timestamp"] = datetime.utcnow()
-    
-    # phase 처리 (문자열/Enum -> DB Enum)
-    if "phase" in log_data and not isinstance(log_data["phase"], AgentPhaseEnum):
-        phase = log_data["phase"]
-        if isinstance(phase, AgentPhase):
-            log_data["phase"] = AgentPhaseEnum[phase.value]
+    try:
+        # 딕셔너리로 변환
+        if not isinstance(log, dict):
+            log_data = log.dict(exclude_unset=True)
         else:
-            log_data["phase"] = AgentPhaseEnum[phase]
-    
-    # 세션 확인 및 업데이트
-    session_id = log_data.get("session_id")
-    if session_id:
-        db_session = db.query(DBAgentSession).filter(DBAgentSession.session_id == session_id).first()
+            log_data = log.copy()
         
-        if db_session:
-            # 총 스텝 수 업데이트
-            step = log_data.get("step", 0)
-            if step > db_session.total_steps:
-                db_session.total_steps = step
-        else:
-            # 세션이 없으면 자동으로 생성
-            agent_type = log_data.get("agent_type", "unknown")
-            db_session = DBAgentSession(
-                session_id=session_id,
-                agent_type=agent_type,
-                start_time=datetime.utcnow(),
-                status="running"
-            )
-            db.add(db_session)
-    
-    # 데이터베이스 모델 생성
-    db_log = DBAgentLog(**log_data)
-    
-    # 데이터베이스에 저장
-    db.add(db_log)
-    db.commit()
-    db.refresh(db_log)
-    
-    return db_log
+        # ID 제거 (자동 생성)
+        if "id" in log_data:
+            del log_data["id"]
+        
+        # 타임스탬프가 지정되지 않은 경우 현재 시간 사용
+        if "timestamp" not in log_data or not log_data["timestamp"]:
+            log_data["timestamp"] = datetime.utcnow()
+        
+        # phase 처리 (문자열/Enum -> DB Enum)
+        if "phase" in log_data and not isinstance(log_data["phase"], AgentPhaseEnum):
+            try:
+                phase = log_data["phase"]
+                if isinstance(phase, AgentPhase):
+                    log_data["phase"] = AgentPhaseEnum[phase.value]
+                else:
+                    log_data["phase"] = AgentPhaseEnum[phase]
+            except (KeyError, TypeError) as e:
+                logger.warning(f"Invalid phase value: {log_data['phase']}, using 'error' phase")
+                log_data["phase"] = AgentPhaseEnum.error
+        
+        # 필수 필드 확인
+        if "session_id" not in log_data:
+            logger.error("Missing required field: session_id")
+            return None
+        
+        if "step" not in log_data:
+            log_data["step"] = 0
+            
+        # 세션 확인
+        session_id = log_data.get("session_id")
+        db_session = None
+        
+        if session_id:
+            db_session = db.query(DBAgentSession).filter(DBAgentSession.session_id == session_id).first()
+            
+            if db_session:
+                # 총 스텝 수 업데이트
+                step = log_data.get("step", 0)
+                if step > db_session.total_steps:
+                    db_session.total_steps = step
+            else:
+                # 세션이 없으면 자동으로 생성
+                agent_type = log_data.get("agent_type", "mcp")  # 기본값을 manus에서 mcp로 변경
+                db_session = DBAgentSession(
+                    session_id=session_id,
+                    agent_type=agent_type,
+                    start_time=datetime.utcnow(),
+                    status="running"
+                )
+                db.add(db_session)
+        
+        # 유효한 필드만 포함
+        valid_fields = {'session_id', 'step', 'phase', 'timestamp', 'input_data', 'output_data', 'tool_calls', 'error'}
+        filtered_data = {k: v for k, v in log_data.items() if k in valid_fields}
+        
+        # 데이터베이스 모델 생성
+        db_log = DBAgentLog(**filtered_data)
+        
+        # 데이터베이스에 저장
+        db.add(db_log)
+        db.commit()
+        db.refresh(db_log)
+        
+        return db_log
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Agent log creation error: {str(e)}")
+        return None

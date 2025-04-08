@@ -34,6 +34,10 @@ class FSFunctions:
         Returns:
             정규화된 절대 경로
         """
+        # 드라이브 루트 경로 처리 (예: D:\)
+        if path.lower().startswith('d:\\'):
+            return path  # 드라이브 루트 경로는 그대로 반환
+            
         # 상대 경로인 경우 base_dir와 결합
         if not os.path.isabs(path):
             path = os.path.join(self.base_dir, path)
@@ -41,9 +45,9 @@ class FSFunctions:
         # 경로 정규화
         normalized_path = os.path.normpath(os.path.abspath(path))
         
-        # 보안 검사: base_dir 외부 접근 차단
-        if not normalized_path.startswith(self.base_dir):
-            raise ValueError(f"Path {path} is outside of allowed base directory")
+        # 보안 검사: base_dir 외부 접근 차단 (드라이브 루트인 경우 예외)
+        if not normalized_path.startswith(self.base_dir) and not normalized_path.lower().startswith('d:\\'):
+            raise ValueError(f"Path {path} is outside of allowed directories")
         
         return normalized_path
     

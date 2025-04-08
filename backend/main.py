@@ -14,9 +14,13 @@ from backend.config import settings
 from backend.logger import setup_logging
 from backend.exceptions import LLMNightRunError, LLMError
 from backend.database.connection import create_tables
-from backend.api import question, response, code, agent, indexing, export, auto_debug, local_llm
-from backend.mcp import router as mcp_router, websocket_router as mcp_ws_router, api_router as mcp_api_router
+from backend.api import question, response, code, agent, indexing, export, auto_debug, local_llm, mcp_status, github, docs_manager
 
+# MCP 관련 라우터 임포트
+from backend.mcp import router as mcp_router
+from backend.mcp import websocket_router as mcp_ws_router
+from backend.mcp import api_router as mcp_api_router
+from backend.mcp.chat_websocket import router as mcp_chat_ws_router
 
 # 로깅 설정
 logger = setup_logging()
@@ -88,9 +92,15 @@ app.include_router(indexing.router)
 app.include_router(export.router)
 app.include_router(auto_debug.router)
 app.include_router(local_llm.router)
+app.include_router(mcp_status.router)
+app.include_router(github.router)
+app.include_router(docs_manager.router)
+
+# MCP 관련 라우터 등록
 app.include_router(mcp_router)
 app.include_router(mcp_ws_router)
 app.include_router(mcp_api_router)
+app.include_router(mcp_chat_ws_router)
 
 # 애플리케이션 시작 이벤트
 @app.on_event("startup")

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Container, 
   Typography, 
@@ -11,7 +11,8 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  ButtonGroup
+  ButtonGroup,
+  CircularProgress
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {
@@ -62,6 +63,49 @@ export const McpServerManager: React.FC = () => {
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
+
+  const [initialized, setInitialized] = useState<boolean>(false);
+  const [connectionError, setConnectionError] = useState<boolean>(false);
+
+  // 컴포넌트 마운트 시 백엔드 API와의 연결 확인
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        await fetch(`${window.location.protocol}//${window.location.hostname}:8000/health`);
+        setInitialized(true);
+        setConnectionError(false);
+      } catch (err) {
+        console.error('Backend connection error:', err);
+        setConnectionError(true);
+        setInitialized(true);
+      }
+    };
+    
+    checkConnection();
+  }, []);
+
+  if (!initialized) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (connectionError) {
+    return (
+      <Alert severity="error" sx={{ mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          백엔드 서버에 연결할 수 없습니다!
+        </Typography>
+        <Typography variant="body1">
+          LLMNightRun 백엔드 서버가 실행 중인지 확인하세요.<br />
+          다음 명령으로 서버를 시작할 수 있습니다:<br />
+          <code>uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload</code>
+        </Typography>
+      </Alert>
+    );
+  }
 
   return (
     <McpProvider>

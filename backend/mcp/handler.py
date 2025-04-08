@@ -54,7 +54,12 @@ class MCPHandler:
             elif message.type == MCPMessageType.CONTEXT_UPDATE:
                 return self._handle_context_update(message)
             elif message.type == "mcp_test":
-                return await self._handle_mcp_test(message) if hasattr(self._handle_mcp_test, "__await__") else self._handle_mcp_test(message)
+                # 명시적으로 비동기 함수로 처리
+                import inspect
+                if inspect.iscoroutinefunction(self._handle_mcp_test):
+                    return await self._handle_mcp_test(message)
+                else:
+                    return self._handle_mcp_test(message)
             else:
                 raise ValueError(f"Unsupported message type: {message.type}")
                 
@@ -80,11 +85,23 @@ class MCPHandler:
         try:
             func = self.registered_functions[function_call.name]
             import inspect
+            
             # 비동기 함수인 경우 await 사용
             if inspect.iscoroutinefunction(func):
                 result = await func(**function_call.arguments)
             else:
-                result = func(**function_call.arguments)
+                # 동기 함수를 별도 스레드에서 실행
+                import asyncio
+                from concurrent.futures import ThreadPoolExecutor
+                import functools
+                
+                with ThreadPoolExecutor() as pool:
+                    result = await asyncio.get_event_loop().run_in_executor(
+                        pool, functools.partial(func, **function_call.arguments)
+                    )
+            
+            # 로깅 추가
+            logger.debug(f"Function '{function_call.name}' executed with result: {result}")
             
             response = MCPMessage(
                 type=MCPMessageType.FUNCTION_RESPONSE,

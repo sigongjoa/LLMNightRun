@@ -1,24 +1,20 @@
 import React from 'react';
-import { 
-  Container, 
-  Typography, 
-  Box,
-  Breadcrumbs,
-  Link as MuiLink
-} from '@mui/material';
+import { NextPage } from 'next';
 import Head from 'next/head';
-import { useRouter } from 'next/router';
+import { Box, Breadcrumbs, Typography, Link as MuiLink } from '@mui/material';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import { McpServerManager } from '../../components/mcp/McpServerManager';
+import { useRouter } from 'next/router';
+import { McpServerManager } from '../../components/MCP/McpServerManager';
 import Layout from '../../components/Layout';
 
-export default function McpPage() {
+const MCPPage: NextPage = () => {
   const router = useRouter();
   
   return (
     <Layout>
       <Head>
-        <title>MCP 서버 관리 - LLMNightRun</title>
+        <title>MCP 서버 관리 | LLMNightRun</title>
+        <meta name="description" content="LLMNightRun의 Model Context Protocol 서버 관리 페이지" />
       </Head>
       
       <Box sx={{ py: 2, px: 3 }}>
@@ -29,7 +25,7 @@ export default function McpPage() {
         >
           <MuiLink 
             color="inherit" 
-            underline="hover" 
+            underline="hover"
             component="button"
             onClick={() => router.push('/')}
             sx={{ 
@@ -49,4 +45,6 @@ export default function McpPage() {
       </Box>
     </Layout>
   );
-}
+};
+
+export default MCPPage;

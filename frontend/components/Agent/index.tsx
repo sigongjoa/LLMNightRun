@@ -76,7 +76,7 @@ const AgentConsole: React.FC = () => {
       setMessages([
         {
           role: 'system',
-          content: 'Manus 에이전트가 생성되었습니다. 어떤 작업을 도와드릴까요?'
+          content: 'MCP 에이전트가 생성되었습니다. 어떤 작업을 도와드릴까요?'
         }
       ]);
     } catch (err: any) {
@@ -210,12 +210,11 @@ const AgentConsole: React.FC = () => {
         >
           <CardContent>
             {message.role !== 'user' && (
-              <Typography 
-                variant="caption" 
+              <Typography variant="caption" 
                 color="text.secondary" 
                 sx={{ display: 'block', mb: 0.5 }}
               >
-                {message.role === 'assistant' ? 'Manus' : 
+                {message.role === 'assistant' ? 'MCP' : 
                  message.role === 'system' ? 'System' :
                  message.role === 'tool' ? `Tool: ${message.name || 'Unknown'}` : message.role}
               </Typography>
@@ -285,7 +284,7 @@ const AgentConsole: React.FC = () => {
       }}
     >
       <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h6">Manus 에이전트</Typography>
+        <Typography variant="h6">MCP 에이전트</Typography>
         <Box>
           <Chip
             label={agentState}

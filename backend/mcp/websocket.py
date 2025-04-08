@@ -145,9 +145,13 @@ background_task = None
 def start_background_tasks():
     """Start background tasks for status polling."""
     global background_task
-    if background_task is None:
-        loop = asyncio.get_event_loop()
-        background_task = loop.create_task(status_polling_task())
+    if background_task is None or background_task.done():
+        try:
+            loop = asyncio.get_event_loop()
+            background_task = loop.create_task(status_polling_task())
+            logger.info("Started MCP status polling background task")
+        except Exception as e:
+            logger.error(f"Error starting background task: {e}")
 
 def stop_background_tasks():
     """Stop background tasks."""
