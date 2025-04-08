@@ -31,7 +31,8 @@ import {
   Engineering as EngineeringIcon,
   GitHub as GitHubIcon,
   Book as BookIcon,
-  Description as DescriptionIcon
+  Description as DescriptionIcon,
+  Psychology as PsychologyIcon
 } from '@mui/icons-material';
 import { useRouter } from 'next/router';
 
@@ -83,6 +84,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       { text: '문서 관리', icon: <DescriptionIcon />, href: '/docs-manager' },
       { text: '로컬 LLM', icon: <MemoryIcon />, href: '/local-llm' },
       { text: 'MCP 서버 관리', icon: <CloudIcon />, href: '/mcp' },
+      { text: '메모리 관리', icon: <PsychologyIcon />, href: '/memory-manager' },
       { text: '설정', icon: <SettingsIcon />, href: '/settings' }
     ];
     

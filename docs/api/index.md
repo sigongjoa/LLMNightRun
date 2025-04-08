@@ -16,6 +16,7 @@ LLMNightRun API 문서에 오신 것을 환영합니다.
 - [Mcp API](./mcp.md)
 - [Mcp-Api API](./mcp-api.md)
 - [Mcp-Status API](./mcp-status.md)
+- [Memory API](./memory.md)
 - [Monitoring API](./monitoring.md)
 - [Questions API](./questions.md)
 - [Responses API](./responses.md)

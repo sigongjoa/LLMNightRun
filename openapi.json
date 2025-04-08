@@ -6894,6 +6894,957 @@
           }
         }
       }
+    },
+    "/memory/health": {
+      "get": {
+        "tags": [
+          "memory"
+        ],
+        "summary": "Health Check",
+        "description": "Check the health of the memory system.\n\nReturns:\n    Status message",
+        "operationId": "health_check_memory_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Health Check Memory Health Get"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memory/add": {
+      "post": {
+        "tags": [
+          "memory"
+        ],
+        "summary": "Add Memory",
+        "description": "Add a new memory to the store.\n\nArgs:\n    memory: Memory object to add\n    background_tasks: FastAPI background tasks\n    \nReturns:\n    Dictionary with memory ID",
+        "operationId": "add_memory_memory_add_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Memory"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Add Memory Memory Add Post"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memory/batch": {
+      "post": {
+        "tags": [
+          "memory"
+        ],
+        "summary": "Add Memories Batch",
+        "description": "Add multiple memories in batch.\n\nArgs:\n    batch: Batch of memories to add\n    background_tasks: FastAPI background tasks\n    \nReturns:\n    Dictionary with memory IDs",
+        "operationId": "add_memories_batch_memory_batch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemoryBatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "type": "object",
+                  "title": "Response Add Memories Batch Memory Batch Post"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memory/search": {
+      "post": {
+        "tags": [
+          "memory"
+        ],
+        "summary": "Search Memories",
+        "description": "Search for memories.\n\nArgs:\n    search: Search parameters\n    \nReturns:\n    List of matching memories",
+        "operationId": "search_memories_memory_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemorySearch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MemoryResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Search Memories Memory Search Post"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memory/get/{memory_id}": {
+      "get": {
+        "tags": [
+          "memory"
+        ],
+        "summary": "Get Memory",
+        "description": "Get memory by ID.\n\nArgs:\n    memory_id: ID of memory to retrieve\n    \nReturns:\n    Memory if found",
+        "operationId": "get_memory_memory_get__memory_id__get",
+        "parameters": [
+          {
+            "name": "memory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Memory Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memory/delete/{memory_id}": {
+      "delete": {
+        "tags": [
+          "memory"
+        ],
+        "summary": "Delete Memory",
+        "description": "Delete memory by ID.\n\nArgs:\n    memory_id: ID of memory to delete\n    background_tasks: FastAPI background tasks\n    \nReturns:\n    Success status",
+        "operationId": "delete_memory_memory_delete__memory_id__delete",
+        "parameters": [
+          {
+            "name": "memory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Memory Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Memory Memory Delete  Memory Id  Delete"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memory/clear": {
+      "post": {
+        "tags": [
+          "memory"
+        ],
+        "summary": "Clear Memories",
+        "description": "Clear all memories of specified type, or all if type is None.\n\nArgs:\n    memory_type: Type of memories to clear, or all if None\n    background_tasks: FastAPI background tasks\n    \nReturns:\n    Success status",
+        "operationId": "clear_memories_memory_clear_post",
+        "parameters": [
+          {
+            "name": "memory_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/MemoryType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Memory Type"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Clear Memories Memory Clear Post"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memory/working": {
+      "get": {
+        "tags": [
+          "memory"
+        ],
+        "summary": "Get Working Memory",
+        "description": "Get current working memory.\n\nReturns:\n    List of memories in working memory",
+        "operationId": "get_working_memory_memory_working_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Memory"
+                  },
+                  "type": "array",
+                  "title": "Response Get Working Memory Memory Working Get"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memory/working/limit": {
+      "post": {
+        "tags": [
+          "memory"
+        ],
+        "summary": "Set Working Memory Limit",
+        "description": "Set the working memory limit.\n\nArgs:\n    limit: New working memory limit\n    \nReturns:\n    New limit",
+        "operationId": "set_working_memory_limit_memory_working_limit_post",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "integer"
+                  },
+                  "title": "Response Set Working Memory Limit Memory Working Limit Post"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memory/context": {
+      "post": {
+        "tags": [
+          "memory"
+        ],
+        "summary": "Get Memory Context",
+        "description": "Get memory context for a query.\n\nArgs:\n    query: Query to get context for\n    top_k: Number of memories to include\n    \nReturns:\n    Memory context",
+        "operationId": "get_memory_context_memory_context_post",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Query"
+            }
+          },
+          {
+            "name": "top_k",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 5,
+              "title": "Top K"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Get Memory Context Memory Context Post"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memory/attach-context": {
+      "post": {
+        "tags": [
+          "memory"
+        ],
+        "summary": "Attach Context To Prompt",
+        "description": "Attach memory context to a prompt.\n\nArgs:\n    prompt: Original prompt\n    query: Query to get context for, or use prompt if empty\n    top_k: Number of memories to include\n    \nReturns:\n    Prompt with memory context",
+        "operationId": "attach_context_to_prompt_memory_attach_context_post",
+        "parameters": [
+          {
+            "name": "prompt",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Prompt"
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Query"
+            }
+          },
+          {
+            "name": "top_k",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 5,
+              "title": "Top K"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Attach Context To Prompt Memory Attach Context Post"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memory/count": {
+      "get": {
+        "tags": [
+          "memory"
+        ],
+        "summary": "Count Memories",
+        "description": "Get the total number of memories.\n\nReturns:\n    Number of memories",
+        "operationId": "count_memories_memory_count_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "integer"
+                  },
+                  "type": "object",
+                  "title": "Response Count Memories Memory Count Get"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memory/experiment": {
+      "post": {
+        "tags": [
+          "memory"
+        ],
+        "summary": "Store Experiment Memory",
+        "description": "Store memory about an experiment.\n\nArgs:\n    experiment_data: Data about the experiment\n    background_tasks: FastAPI background tasks\n    \nReturns:\n    ID of the created memory",
+        "operationId": "store_experiment_memory_memory_experiment_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "title": "Experiment Data"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Store Experiment Memory Memory Experiment Post"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memory/related": {
+      "post": {
+        "tags": [
+          "memory"
+        ],
+        "summary": "Retrieve Related Memories",
+        "description": "Retrieve memories related to a prompt.\n\nArgs:\n    prompt: Prompt to find related memories for\n    top_k: Number of memories to return\n    memory_types: Types of memories to include\n    \nReturns:\n    List of related memories",
+        "operationId": "retrieve_related_memories_memory_related_post",
+        "parameters": [
+          {
+            "name": "prompt",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Prompt"
+            }
+          },
+          {
+            "name": "top_k",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 5,
+              "title": "Top K"
+            }
+          },
+          {
+            "name": "memory_types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemoryType"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Memory Types"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemoryResponse"
+                  },
+                  "title": "Response Retrieve Related Memories Memory Related Post"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -8458,6 +9409,194 @@
         ],
         "title": "MCPConfigUpdate"
       },
+      "Memory": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MemoryType"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp"
+          },
+          "metadata": {
+            "type": "object",
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content",
+          "type"
+        ],
+        "title": "Memory",
+        "description": "Base model for memory items."
+      },
+      "MemoryBatch": {
+        "properties": {
+          "memories": {
+            "items": {
+              "$ref": "#/components/schemas/Memory"
+            },
+            "type": "array",
+            "title": "Memories"
+          }
+        },
+        "type": "object",
+        "required": [
+          "memories"
+        ],
+        "title": "MemoryBatch",
+        "description": "Model for batch memory operations."
+      },
+      "MemoryResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MemoryType"
+          },
+          "timestamp": {
+            "type": "integer",
+            "title": "Timestamp"
+          },
+          "metadata": {
+            "type": "object",
+            "title": "Metadata"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "content",
+          "type",
+          "timestamp",
+          "metadata"
+        ],
+        "title": "MemoryResponse",
+        "description": "Model for memory response."
+      },
+      "MemorySearch": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "top_k": {
+            "type": "integer",
+            "title": "Top K",
+            "default": 5
+          },
+          "memory_types": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MemoryType"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory Types"
+          },
+          "date_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date From"
+          },
+          "date_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date To"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "MemorySearch",
+        "description": "Model for memory search parameters."
+      },
+      "MemoryType": {
+        "type": "string",
+        "enum": [
+          "conversation",
+          "experiment",
+          "code",
+          "result",
+          "note"
+        ],
+        "title": "MemoryType",
+        "description": "Types of memory that can be stored."
+      },
       "Message": {
         "properties": {
           "role": {
@@ -9144,6 +10283,10 @@
     {
       "name": "api_v2",
       "description": "리팩토링된 API v2 엔드포인트"
+    },
+    {
+      "name": "memory",
+      "description": "LLM 메모리 관리 및 벡터 DB 연동 기능"
     }
   ],
   "servers": [

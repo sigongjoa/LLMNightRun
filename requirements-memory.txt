@@ -1,0 +1,14 @@
+# LLM Memory 시스템을 위한 추가 요구 사항
+# 이 파일을 설치하려면: pip install -r requirements-memory.txt
+
+# 벡터 데이터베이스
+faiss-cpu>=1.7.4    # 벡터 DB (CPU 버전)
+
+# 임베딩 모델
+sentence-transformers>=2.2.2   # Sentence Transformer 모델
+
+# 유틸리티
+tqdm>=4.66.1        # 진행률 표시
+numpy>=1.24.0       # 수치 연산
+scipy>=1.10.0       # 과학적 계산
+joblib>=1.2.0       # 병렬 처리

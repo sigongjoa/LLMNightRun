@@ -27,6 +27,8 @@ from backend.api import agent, github
 from backend.api import indexing, export, docs_manager
 # 시스템 및 디버깅
 from backend.api import auto_debug, local_llm, mcp_status
+# 메모리 관리
+from backend.api.memory.router import router as memory_router
 
 # v2 API 라우터 임포트
 from backend.api.v2 import llm as llm_v2
@@ -65,6 +67,10 @@ tags_metadata = [
     {
         "name": "api_v2",
         "description": "리팩토링된 API v2 엔드포인트",
+    },
+    {
+        "name": "memory",
+        "description": "LLM 메모리 관리 및 벡터 DB 연동 기능",
     },
 ]
 
@@ -180,7 +186,18 @@ def register_routers():
             router.tags = [tag] + (router.tags or [])
         app.include_router(router)
     
-    logger.info(f"총 {len(all_routers)}개 라우터 등록 완료")
+    # 개별 처리가 필요한 메모리 라우터 추가
+    try:
+        # 메모리 라우터 태그 설정 및 추가
+        if not hasattr(memory_router, 'tags'):
+            memory_router.tags = []
+        memory_router.tags.append("memory")
+        app.include_router(memory_router)
+        logger.info("메모리 라우터 등록 완료")
+    except Exception as e:
+        logger.error(f"메모리 라우터 등록 실패: {str(e)}")
+    
+    logger.info(f"총 {len(all_routers) + 1}개 라우터 등록 완료")
 
 # 라우터 등록 실행
 register_routers()

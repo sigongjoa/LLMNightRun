@@ -14,6 +14,7 @@ from backend.models.agent import Message, ToolCall
 from backend.models.enums import ToolChoice, LLMType
 from backend.llm_studio import call_lm_studio, extract_content, extract_tool_calls
 from backend.config.settings import settings
+from backend.services.memory_service import get_memory_service
 import httpx
 import json
 
@@ -162,7 +163,8 @@ class LLM:
         self, 
         config_name: str = "default", 
         llm_type: LLMType = LLMType.OPENAI_API, 
-        base_url: Optional[str] = None
+        base_url: Optional[str] = None,
+        use_memory: bool = False
     ):
         """
         LLM 인스턴스 초기화
@@ -171,9 +173,11 @@ class LLM:
             config_name: 설정 프로필 이름
             llm_type: LLM 유형 (OPENAI_API, CLAUDE_API, LOCAL_LLM 등)
             base_url: LLM API 기본 URL (로컬 LLM의 경우)
+            use_memory: 메모리 기능 사용 여부
         """
         self.config_name = config_name
         self.llm_type = llm_type
+        self.use_memory = use_memory
         
         # 로컬 LLM인 경우 기본 URL 설정
         if self.llm_type == LLMType.LOCAL_LLM and base_url is None:
@@ -181,7 +185,10 @@ class LLM:
         else:
             self.base_url = base_url
             
-        logger.info(f"LLM({config_name}, {llm_type}) 인스턴스 초기화됨 [API URL: {self.base_url}]")
+        # 메모리 서비스 초기화 (사용하는 경우에만)
+        self.memory_service = get_memory_service() if use_memory else None
+            
+        logger.info(f"LLM({config_name}, {llm_type}) 인스턴스 초기화됨 [API URL: {self.base_url}, Memory: {use_memory}]")
     
     async def ask(
         self, 
@@ -210,6 +217,35 @@ class LLM:
         if not isinstance(last_msg, Message):
             raise ValueError(f"마지막 메시지가 Message 타입이 아닙니다: {type(last_msg)}")
         
+        # 메모리 기능이 활성화된 경우 메모리 컨텍스트 추가
+        if self.use_memory and self.memory_service:
+            # 시스템 메시지가 있는 경우 첫 시스템 메시지에 메모리 컨텍스트 추가
+            if system_msgs and len(system_msgs) > 0:
+                # 마지막 대화 메시지의 내용으로 관련 메모리 검색
+                original_system = system_msgs[0].content
+                query = last_msg.content if last_msg.content else ""
+                
+                # 메모리 컨텍스트를 시스템 메시지에 추가
+                system_msgs[0].content = self.memory_service.attach_context_to_prompt(
+                    original_system, query, top_k=3
+                )
+                
+                logger.info("메모리 컨텍스트가 시스템 메시지에 추가되었습니다.")
+            
+            # 대화 내용을 메모리에 저장 (비동기로 처리하지 않음)
+            try:
+                self.memory_service.add_memory({
+                    "content": f"User: {last_msg.content}",
+                    "type": "conversation",
+                    "metadata": {
+                        "role": "user",
+                        "message": last_msg.content,
+                        "tags": ["user-query"]
+                    }
+                })
+            except Exception as e:
+                logger.error(f"대화 메모리 저장 오류: {str(e)}")
+                
         logger.info(f"LLM 요청: {len(messages)}개 메시지")
         
         # LM Studio 로컬 LLM 처리
@@ -234,6 +270,22 @@ class LLM:
                 
                 # 응답 컨텐츠 추출
                 content = extract_content(response_data)
+                
+                # 응답을 메모리에 저장 (메모리 기능이 활성화된 경우)
+                if self.use_memory and self.memory_service and content:
+                    try:
+                        self.memory_service.add_memory({
+                            "content": f"Assistant: {content}",
+                            "type": "conversation",
+                            "metadata": {
+                                "role": "assistant",
+                                "message": content,
+                                "tags": ["assistant-response"]
+                            }
+                        })
+                    except Exception as e:
+                        logger.error(f"응답 메모리 저장 오류: {str(e)}")
+                
                 if content is not None:
                     return content
                 
@@ -278,6 +330,35 @@ class LLM:
         if not isinstance(last_msg, Message):
             raise ValueError(f"마지막 메시지가 Message 타입이 아닙니다: {type(last_msg)}")
         
+        # 메모리 기능이 활성화된 경우 메모리 컨텍스트 추가
+        if self.use_memory and self.memory_service:
+            # 시스템 메시지가 있는 경우 첫 시스템 메시지에 메모리 컨텍스트 추가
+            if system_msgs and len(system_msgs) > 0:
+                # 마지막 대화 메시지의 내용으로 관련 메모리 검색
+                original_system = system_msgs[0].content
+                query = last_msg.content if last_msg.content else ""
+                
+                # 메모리 컨텍스트를 시스템 메시지에 추가
+                system_msgs[0].content = self.memory_service.attach_context_to_prompt(
+                    original_system, query, top_k=3
+                )
+                
+                logger.info("메모리 컨텍스트가 시스템 메시지에 추가되었습니다.")
+            
+            # 대화 내용을 메모리에 저장
+            try:
+                self.memory_service.add_memory({
+                    "content": f"User: {last_msg.content}",
+                    "type": "conversation",
+                    "metadata": {
+                        "role": "user",
+                        "message": last_msg.content,
+                        "tags": ["user-query"]
+                    }
+                })
+            except Exception as e:
+                logger.error(f"대화 메모리 저장 오류: {str(e)}")
+        
         logger.info(f"LLM 도구 요청: {len(messages)}개 메시지, {len(tools) if tools else 0}개 도구")
         
         # LM Studio 로컬 LLM 처리
@@ -311,6 +392,27 @@ class LLM:
                 content = extract_content(response_data)
                 tool_calls = extract_tool_calls(response_data)
                 
+                # 응답을 메모리에 저장 (메모리 기능이 활성화된 경우)
+                if self.use_memory and self.memory_service and content:
+                    try:
+                        # 도구 호출이 있는 경우 포함하여 저장
+                        tool_calls_str = ""
+                        if tool_calls:
+                            tool_calls_str = f"\nTool Calls: {json.dumps([t.model_dump() for t in tool_calls])}"
+                            
+                        self.memory_service.add_memory({
+                            "content": f"Assistant: {content}{tool_calls_str}",
+                            "type": "conversation",
+                            "metadata": {
+                                "role": "assistant",
+                                "message": content,
+                                "has_tool_calls": bool(tool_calls),
+                                "tags": ["assistant-response", "tool-call"] if tool_calls else ["assistant-response"]
+                            }
+                        })
+                    except Exception as e:
+                        logger.error(f"응답 메모리 저장 오류: {str(e)}")
+                
                 return ChatCompletionResponse(
                     content=content,
                     tool_calls=tool_calls if tool_calls else None
@@ -327,3 +429,24 @@ class LLM:
         )
         
         return response
+    
+    def store_experiment_memory(self, experiment_data: Dict[str, Any]) -> Optional[str]:
+        """실험 결과를 메모리에 저장합니다.
+        
+        Args:
+            experiment_data: 실험 데이터
+            
+        Returns:
+            저장된 메모리 ID 또는 None (메모리 기능이 비활성화된 경우)
+        """
+        if not self.use_memory or not self.memory_service:
+            logger.warning("메모리 기능이 활성화되지 않았습니다.")
+            return None
+            
+        try:
+            memory_id = self.memory_service.store_experiment_memory(experiment_data)
+            logger.info(f"실험 메모리가 저장되었습니다. ID: {memory_id}")
+            return memory_id
+        except Exception as e:
+            logger.error(f"실험 메모리 저장 오류: {str(e)}")
+            return None
