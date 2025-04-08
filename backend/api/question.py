@@ -1,12 +1,12 @@
 """
 질문 API 라우터 모듈
 
-질문 관련 엔드포인트를 정의합니다.
+질문 저장, 조회, 수정, 삭제 및 검색 기능을 제공하는 엔드포인트를 정의합니다.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import logging
 
 from ..database.connection import get_db
@@ -23,7 +23,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter(
     prefix="/questions",
     tags=["questions"],
-    responses={404: {"description": "찾을 수 없음"}},
+    responses={
+        404: {"description": "질문을 찾을 수 없음"},
+        500: {"description": "서버 내부 오류"}
+    },
 )
 
 
@@ -31,23 +34,24 @@ router = APIRouter(
 async def submit_question(
     question: QuestionCreate, 
     db: Session = Depends(get_db)
-):
+) -> QuestionResponse:
     """
-    새로운 질문을 제출합니다.
+    새로운 질문을 데이터베이스에 저장합니다.
     
     Args:
         question: 질문 내용 및 태그
         db: 데이터베이스 세션
         
     Returns:
-        생성된 질문 정보
+        QuestionResponse: 생성된 질문 정보
+        
+    Raises:
+        HTTPException: 질문 생성 중 오류 발생 시
     """
     try:
-        # 질문 생성
-        db_question = create_question(db, question)
-        return db_question
+        return create_question(db, question)
     except Exception as e:
-        logger.error(f"질문 생성 중 오류 발생: {str(e)}")
+        logger.error(f"질문 생성 중 오류 발생: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"질문 생성 실패: {str(e)}")
 
 
@@ -57,9 +61,9 @@ async def list_questions(
     limit: int = 100, 
     tag: Optional[str] = None,
     db: Session = Depends(get_db)
-):
+) -> List[QuestionResponse]:
     """
-    모든 질문을 조회합니다.
+    질문 목록을 페이지네이션과 필터링 옵션으로 조회합니다.
     
     Args:
         skip: 건너뛸 항목 수
@@ -68,13 +72,15 @@ async def list_questions(
         db: 데이터베이스 세션
         
     Returns:
-        질문 목록
+        List[QuestionResponse]: 질문 목록
+        
+    Raises:
+        HTTPException: 질문 목록 조회 중 오류 발생 시
     """
     try:
-        questions = get_questions(db, tag=tag, skip=skip, limit=limit)
-        return questions
+        return get_questions(db, tag=tag, skip=skip, limit=limit)
     except Exception as e:
-        logger.error(f"질문 목록 조회 중 오류 발생: {str(e)}")
+        logger.error(f"질문 목록 조회 중 오류 발생: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"질문 목록 조회 실패: {str(e)}")
 
 
@@ -82,19 +88,19 @@ async def list_questions(
 async def get_question(
     question_id: int, 
     db: Session = Depends(get_db)
-):
+) -> QuestionResponse:
     """
-    특정 질문을 조회합니다.
+    특정 ID의 질문을 조회합니다.
     
     Args:
         question_id: 질문 ID
         db: 데이터베이스 세션
         
     Returns:
-        질문 정보
+        QuestionResponse: 질문 정보
         
     Raises:
-        HTTPException: 질문을 찾을 수 없는 경우
+        HTTPException: 질문을 찾을 수 없거나 조회 중 오류 발생 시
     """
     try:
         question = get_questions(db, question_id=question_id, single=True)
@@ -104,7 +110,7 @@ async def get_question(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"질문 조회 중 오류 발생: {str(e)}")
+        logger.error(f"질문 조회 중 오류 발생: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"질문 조회 실패: {str(e)}")
 
 
@@ -113,9 +119,9 @@ async def update_question_endpoint(
     question_id: int, 
     question: Question, 
     db: Session = Depends(get_db)
-):
+) -> QuestionResponse:
     """
-    질문을 업데이트합니다.
+    특정 ID의 질문을 업데이트합니다.
     
     Args:
         question_id: 질문 ID
@@ -123,10 +129,10 @@ async def update_question_endpoint(
         db: 데이터베이스 세션
         
     Returns:
-        업데이트된 질문 정보
+        QuestionResponse: 업데이트된 질문 정보
         
     Raises:
-        HTTPException: 질문을 찾을 수 없는 경우
+        HTTPException: 질문을 찾을 수 없거나 업데이트 중 오류 발생 시
     """
     try:
         updated_question = update_question(db, question_id, question)
@@ -136,7 +142,7 @@ async def update_question_endpoint(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"질문 업데이트 중 오류 발생: {str(e)}")
+        logger.error(f"질문 업데이트 중 오류 발생: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"질문 업데이트 실패: {str(e)}")
 
 
@@ -144,19 +150,19 @@ async def update_question_endpoint(
 async def delete_question_endpoint(
     question_id: int, 
     db: Session = Depends(get_db)
-):
+) -> Dict[str, Any]:
     """
-    질문을 삭제합니다.
+    특정 ID의 질문을 삭제합니다.
     
     Args:
         question_id: 질문 ID
         db: 데이터베이스 세션
         
     Returns:
-        삭제 결과
+        Dict[str, Any]: 삭제 성공 메시지
         
     Raises:
-        HTTPException: 질문을 찾을 수 없는 경우
+        HTTPException: 질문을 찾을 수 없거나 삭제 중 오류 발생 시
     """
     try:
         success = delete_question(db, question_id)
@@ -166,7 +172,7 @@ async def delete_question_endpoint(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"질문 삭제 중 오류 발생: {str(e)}")
+        logger.error(f"질문 삭제 중 오류 발생: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"질문 삭제 실패: {str(e)}")
 
 
@@ -176,22 +182,24 @@ async def search_questions_endpoint(
     skip: int = 0, 
     limit: int = 100, 
     db: Session = Depends(get_db)
-):
+) -> List[QuestionResponse]:
     """
-    질문을 검색합니다.
+    질문을 검색어를 기준으로 검색합니다.
     
     Args:
-        query: 검색어
+        query: 검색어 (최소 2글자)
         skip: 건너뛸 항목 수
         limit: 최대 조회 항목 수
         db: 데이터베이스 세션
         
     Returns:
-        검색된 질문 목록
+        List[QuestionResponse]: 검색된 질문 목록
+        
+    Raises:
+        HTTPException: 검색 중 오류 발생 시
     """
     try:
-        questions = search_questions(db, query, skip=skip, limit=limit)
-        return questions
+        return search_questions(db, query, skip=skip, limit=limit)
     except Exception as e:
-        logger.error(f"질문 검색 중 오류 발생: {str(e)}")
+        logger.error(f"질문 검색 중 오류 발생: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"질문 검색 실패: {str(e)}")

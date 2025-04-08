@@ -14,6 +14,7 @@ class LLMType(str, Enum):
     CLAUDE_API = "claude_api"
     CLAUDE_WEB = "claude_web"
     LOCAL_LLM = "local_llm"  # 로컬 LLM (LM Studio 등)
+    CUSTOM_API = "custom_api"  # 커스텀 LLM API
     MANUAL = "manual"  # 수동으로 입력한 경우
 
 

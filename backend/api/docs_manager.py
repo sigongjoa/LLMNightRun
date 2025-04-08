@@ -5,13 +5,16 @@
 """
 
 from typing import Dict, List, Any, Optional
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Path, Query, Body
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query, Body
+from fastapi.param_functions import Path as FastAPIPath
+from pydantic import BaseModel, Field
 
 import os
 import sys
+import json
 import logging
 from datetime import datetime
+from pathlib import Path as PathLib
 
 # 문서 생성 모듈 임포트
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
@@ -46,6 +49,39 @@ class DocumentInfo(BaseModel):
     last_updated: Optional[str] = None
     exists: bool
 
+# 경로 유틸리티 함수
+def get_project_paths() -> Dict[str, str]:
+    """프로젝트 경로 정보 반환"""
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+    docs_dir = os.path.join(repo_root, "docs")
+    config_dir = os.path.join(repo_root, "config")
+    
+    # 필요한 디렉토리 생성
+    os.makedirs(docs_dir, exist_ok=True)
+    os.makedirs(config_dir, exist_ok=True)
+    
+    return {
+        "repo_root": repo_root,
+        "docs_dir": docs_dir,
+        "config_dir": config_dir,
+        "github_config": os.path.join(config_dir, "github_config.json")
+    }
+
+def get_document_path(doc_type: str) -> str:
+    """문서 유형에 따른 파일 경로 반환"""
+    paths = get_project_paths()
+    
+    if doc_type.upper() == "README":
+        return os.path.join(paths["repo_root"], "README.md")
+    else:
+        return os.path.join(paths["docs_dir"], f"{doc_type.upper()}.md")
+
+# 문서 유형 목록
+DOC_TYPES = [
+    "README", "API", "MODELS", "DATABASE", 
+    "ARCHITECTURE", "TESTING", "CHANGELOG", "CONFIGURATION"
+]
+
 # API 엔드포인트 구현
 @router.get("/list")
 async def list_documents() -> Dict[str, Any]:
@@ -53,27 +89,11 @@ async def list_documents() -> Dict[str, Any]:
     사용 가능한 문서 목록과 상태 조회
     """
     try:
-        # 문서 디렉토리
-        docs_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../docs'))
-        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
-        
-        # 문서 유형 정의
-        doc_types = [
-            "README", "API", "MODELS", "DATABASE", 
-            "ARCHITECTURE", "TESTING", "CHANGELOG", "CONFIGURATION"
-        ]
-        
-        # 결과 구성
+        paths = get_project_paths()
         docs_info = []
         
-        for doc_type in doc_types:
-            # 문서 파일 경로 결정
-            if doc_type == "README":
-                path = os.path.join(repo_root, "README.md")
-            else:
-                path = os.path.join(docs_dir, f"{doc_type.upper()}.md")
-            
-            # 파일 존재 및 마지막 수정 시간 확인
+        for doc_type in DOC_TYPES:
+            path = get_document_path(doc_type)
             exists = os.path.exists(path)
             last_updated = None
             
@@ -82,11 +102,10 @@ async def list_documents() -> Dict[str, Any]:
                     os.path.getmtime(path)
                 ).strftime("%Y-%m-%d %H:%M:%S")
             
-            # 문서 정보 추가
             docs_info.append(
                 DocumentInfo(
                     doc_type=doc_type,
-                    path=os.path.relpath(path, repo_root),
+                    path=os.path.relpath(path, paths["repo_root"]),
                     last_updated=last_updated,
                     exists=exists
                 )
@@ -113,13 +132,12 @@ async def generate_documents(
     선택한 문서 생성 또는 업데이트
     """
     try:
-        # repo_path 설정
-        repo_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+        paths = get_project_paths()
         
         # 백그라운드 작업으로 문서 생성 실행
         background_tasks.add_task(
             _generate_documents_task,
-            repo_path=repo_path,
+            repo_path=paths["repo_root"],
             doc_types=request.doc_types,
             force_update=request.force_update,
             push_to_github=request.push_to_github
@@ -140,20 +158,14 @@ async def generate_documents(
 
 @router.get("/content/{doc_type}")
 async def get_document_content(
-    doc_type: str = Path(..., description="문서 유형")
+    doc_type: str = FastAPIPath(..., description="문서 유형")
 ) -> Dict[str, Any]:
     """
     특정 문서의 내용 조회
     """
     try:
-        # repo_path 설정
-        repo_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
-        
-        # 문서 파일 경로 결정
-        if doc_type.upper() == "README":
-            path = os.path.join(repo_path, "README.md")
-        else:
-            path = os.path.join(repo_path, "docs", f"{doc_type.upper()}.md")
+        paths = get_project_paths()
+        path = get_document_path(doc_type)
         
         # 파일 존재 확인
         if not os.path.exists(path):
@@ -170,7 +182,7 @@ async def get_document_content(
             "status": "success",
             "doc_type": doc_type,
             "content": content,
-            "path": os.path.relpath(path, repo_path),
+            "path": os.path.relpath(path, paths["repo_root"]),
             "last_updated": datetime.fromtimestamp(
                 os.path.getmtime(path)
             ).strftime("%Y-%m-%d %H:%M:%S")
@@ -189,17 +201,10 @@ async def set_github_config(config: GitHubConfigRequest) -> Dict[str, Any]:
     GitHub 연동 설정 저장
     """
     try:
-        # 설정 디렉토리
-        config_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../config'))
-        os.makedirs(config_dir, exist_ok=True)
+        paths = get_project_paths()
         
-        # 설정 파일 경로
-        config_path = os.path.join(config_dir, "github_config.json")
-        
-        # 설정 저장 (비밀번호는 암호화 고려)
-        import json
-        with open(config_path, 'w', encoding='utf-8') as f:
-            # auth_token은 실제 운영 환경에서는 안전하게 저장해야 함
+        # 설정 저장
+        with open(paths["github_config"], 'w', encoding='utf-8') as f:
             json.dump({
                 "repo_url": config.repo_url,
                 "branch": config.branch,
@@ -226,13 +231,10 @@ async def get_github_config() -> Dict[str, Any]:
     GitHub 연동 설정 조회
     """
     try:
-        # 설정 파일 경로
-        config_path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), '../../../config/github_config.json')
-        )
+        paths = get_project_paths()
         
         # 설정 파일 존재 확인
-        if not os.path.exists(config_path):
+        if not os.path.exists(paths["github_config"]):
             return {
                 "status": "warning",
                 "message": "GitHub 설정이 존재하지 않습니다.",
@@ -240,8 +242,7 @@ async def get_github_config() -> Dict[str, Any]:
             }
         
         # 설정 읽기
-        import json
-        with open(config_path, 'r', encoding='utf-8') as f:
+        with open(paths["github_config"], 'r', encoding='utf-8') as f:
             config = json.load(f)
             
             # 보안을 위해 auth_token 마스킹
@@ -266,11 +267,10 @@ async def get_github_status() -> Dict[str, Any]:
     GitHub 리포지토리 상태 조회
     """
     try:
-        # repo_path 설정
-        repo_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+        paths = get_project_paths()
         
         # Git 핸들러 초기화
-        git = GitHandler(repo_path)
+        git = GitHandler(paths["repo_root"])
         
         # 상태 정보 수집
         current_branch = git.get_branch_name()

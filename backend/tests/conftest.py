@@ -1,66 +1,121 @@
+"""
+pytest 설정 모듈
+
+테스트에 필요한 fixture 및 설정을 제공합니다.
+"""
+
 import os
+import sys
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from typing import Dict, Any, Generator, Optional
+
+# 백엔드 루트 디렉토리를 sys.path에 추가
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from fastapi.testclient import TestClient
+from fastapi import FastAPI
 
-from backend.database.connection import Base
 from backend.main import app
-from backend.database.connection import get_db
+from backend.core.di import DiContainer
+from backend.core.service_locator import setup_services
+from backend.interfaces.llm_service import ILLMService
+from backend.models.enums import LLMType
 
-# 테스트용 데이터베이스 URL
-TEST_DATABASE_URL = "sqlite:///./test.db"
 
-# 테스트 엔진 생성
-engine = create_engine(
-    TEST_DATABASE_URL, connect_args={"check_same_thread": False}
-)
+@pytest.fixture
+def app_instance() -> FastAPI:
+    """FastAPI 애플리케이션 인스턴스를 제공하는 fixture"""
+    return app
 
-# 테스트 세션 생성
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-@pytest.fixture(scope="function")
-def test_db():
-    # 테스트 DB 스키마 생성
-    Base.metadata.create_all(bind=engine)
+@pytest.fixture
+def test_client(app_instance: FastAPI) -> TestClient:
+    """테스트 클라이언트를 제공하는 fixture"""
+    return TestClient(app_instance)
+
+
+@pytest.fixture
+def di_container() -> DiContainer:
+    """
+    테스트를 위한 빈 DI 컨테이너를 제공하는 fixture
+    """
+    return DiContainer()
+
+
+class MockLLMProvider:
+    """테스트를 위한 모의 LLM 제공자"""
     
-    # 테스트 세션 제공
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-        
-    # 테스트 후 테이블 삭제
-    Base.metadata.drop_all(bind=engine)
+    def __init__(self, response_text: str = "테스트 응답입니다."):
+        self.response_text = response_text
+        self.last_prompt = None
+        self.last_kwargs = None
+    
+    async def generate(self, prompt: str, **kwargs) -> str:
+        """모의 텍스트 생성 함수"""
+        self.last_prompt = prompt
+        self.last_kwargs = kwargs
+        return self.response_text
 
-@pytest.fixture(scope="function")
-def client(test_db):
-    # FastAPI 테스트 클라이언트 생성
-    def override_get_db():
+
+class MockLLMService:
+    """테스트를 위한 모의 LLM 서비스"""
+    
+    def __init__(self):
+        self.providers = {}
+        self.last_llm_type = None
+        self.last_prompt = None
+        self.last_kwargs = None
+        
+        # 기본 모의 제공자 등록
+        self.providers[LLMType.OPENAI_API] = MockLLMProvider("OpenAI 응답입니다.")
+        self.providers[LLMType.CLAUDE_API] = MockLLMProvider("Claude 응답입니다.")
+        self.providers[LLMType.LOCAL_LLM] = MockLLMProvider("로컬 LLM 응답입니다.")
+    
+    def register_provider(self, llm_type: LLMType, provider: Any) -> None:
+        """모의 제공자 등록 함수"""
+        self.providers[llm_type] = provider
+    
+    def register_custom_provider(
+        self, 
+        name: str, 
+        api_url: str, 
+        api_key: str, 
+        headers: Optional[Dict[str, str]] = None,
+        payload_template: Optional[Dict[str, Any]] = None
+    ) -> None:
+        """모의 커스텀 제공자 등록 함수"""
         try:
-            yield test_db
-        finally:
-            pass
-            
-    app.dependency_overrides[get_db] = override_get_db
-    
-    with TestClient(app) as c:
-        yield c
+            llm_type = LLMType(name)
+        except ValueError:
+            llm_type = LLMType.CUSTOM_API
         
-    # 의존성 오버라이드 제거
-    app.dependency_overrides.clear()
-
-@pytest.fixture(scope="function")
-def mock_settings():
-    """테스트용 설정 모의 객체"""
-    class MockSettings:
-        def __init__(self):
-            self.openai_api_key = "test_openai_key"
-            self.claude_api_key = "test_claude_key"
-            self.github_token = "test_github_token"
-            self.github_repo = "test_repo"
-            self.github_username = "test_username"
-            self.id = 1
+        self.providers[llm_type] = MockLLMProvider(f"{name} 응답입니다.")
     
-    return MockSettings()
+    async def get_response(self, llm_type: LLMType, prompt: str, **kwargs) -> str:
+        """모의 응답 생성 함수"""
+        self.last_llm_type = llm_type
+        self.last_prompt = prompt
+        self.last_kwargs = kwargs
+        
+        if llm_type not in self.providers:
+            return f"지원되지 않는 LLM 유형입니다: {llm_type}"
+        
+        provider = self.providers[llm_type]
+        return await provider.generate(prompt, **kwargs)
+
+
+@pytest.fixture
+def mock_llm_service() -> MockLLMService:
+    """모의 LLM 서비스 인스턴스를 제공하는 fixture"""
+    return MockLLMService()
+
+
+@pytest.fixture
+def test_di_container(di_container: DiContainer, mock_llm_service: MockLLMService) -> DiContainer:
+    """
+    모의 서비스가 등록된 DI 컨테이너를 제공하는 fixture
+    """
+    # 모의 LLM 서비스 등록
+    di_container.register_instance(ILLMService, mock_llm_service)
+    
+    return di_container
