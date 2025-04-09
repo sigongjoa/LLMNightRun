@@ -5541,6 +5541,713 @@
         }
       }
     },
+    "/model-installer/install": {
+      "post": {
+        "tags": [
+          "model-installer"
+        ],
+        "summary": "Install Model",
+        "description": "GitHub 저장소에서 모델 설치\n\n- **repo_url**: GitHub 저장소 URL\n- **model_name**: 모델 이름 (선택 사항)",
+        "operationId": "install_model_model_installer_install_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelInstallRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Install Model Model Installer Install Post"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/model-installer/models": {
+      "get": {
+        "tags": [
+          "model-installer"
+        ],
+        "summary": "List Models",
+        "description": "설치된 모델 목록 조회",
+        "operationId": "list_models_model_installer_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response List Models Model Installer Models Get"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/model-installer/models/{model_name}": {
+      "get": {
+        "tags": [
+          "model-installer"
+        ],
+        "summary": "Get Model Info",
+        "description": "모델 정보 조회\n\n- **model_name**: 모델 이름",
+        "operationId": "get_model_info_model_installer_models__model_name__get",
+        "parameters": [
+          {
+            "name": "model_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Model Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Get Model Info Model Installer Models  Model Name  Get"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/model-installer/run": {
+      "post": {
+        "tags": [
+          "model-installer"
+        ],
+        "summary": "Run Model",
+        "description": "모델 실행\n\n- **model_name**: 모델 이름\n- **script_name**: 실행할 스크립트 이름 (선택 사항)",
+        "operationId": "run_model_model_installer_run_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Run Model Model Installer Run Post"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/model-installer/analyze-error": {
+      "post": {
+        "tags": [
+          "model-installer"
+        ],
+        "summary": "Analyze Error",
+        "description": "에러 로그 분석\n\n- **error_log**: 분석할 에러 로그",
+        "operationId": "analyze_error_model_installer_analyze_error_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorAnalysisRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Analyze Error Model Installer Analyze Error Post"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/model-installer/push-to-mcp": {
+      "post": {
+        "tags": [
+          "model-installer"
+        ],
+        "summary": "Push To Mcp",
+        "description": "설치된 모델을 MCP 서버에 푸시\n\n- **model_name**: 모델 이름",
+        "operationId": "push_to_mcp_model_installer_push_to_mcp_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelPushRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Push To Mcp Model Installer Push To Mcp Post"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/model-installer/mcp-status/{model_name}": {
+      "get": {
+        "tags": [
+          "model-installer"
+        ],
+        "summary": "Get Mcp Model Status",
+        "description": "MCP 서버에 업로드된 모델 상태 조회\n\n- **model_name**: 모델 이름",
+        "operationId": "get_mcp_model_status_model_installer_mcp_status__model_name__get",
+        "parameters": [
+          {
+            "name": "model_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "모델 이름",
+              "title": "Model Name"
+            },
+            "description": "모델 이름"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Get Mcp Model Status Model Installer Mcp Status  Model Name  Get"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/model-installer/update-mcp": {
+      "post": {
+        "tags": [
+          "model-installer"
+        ],
+        "summary": "Update Mcp Model",
+        "description": "MCP 서버에 업로드된 모델 업데이트\n\n- **model_name**: 모델 이름",
+        "operationId": "update_mcp_model_model_installer_update_mcp_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Update Mcp Model Model Installer Update Mcp Post"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/llm/generate": {
       "post": {
         "tags": [
@@ -8499,6 +9206,20 @@
         ],
         "title": "DocumentGenerateRequest"
       },
+      "ErrorAnalysisRequest": {
+        "properties": {
+          "error_log": {
+            "type": "string",
+            "title": "Error Log",
+            "description": "분석할 에러 로그"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error_log"
+        ],
+        "title": "ErrorAnalysisRequest"
+      },
       "FunctionResponse": {
         "properties": {
           "functions": {
@@ -9673,6 +10394,89 @@
         "title": "Message",
         "description": "대화 메시지"
       },
+      "ModelInstallRequest": {
+        "properties": {
+          "repo_url": {
+            "type": "string",
+            "maxLength": 2083,
+            "minLength": 1,
+            "format": "uri",
+            "title": "Repo Url",
+            "description": "GitHub 저장소 URL"
+          },
+          "model_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Name",
+            "description": "모델 이름 (기본값: 저장소 이름에서 추출)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "repo_url"
+        ],
+        "title": "ModelInstallRequest"
+      },
+      "ModelPushRequest": {
+        "properties": {
+          "model_name": {
+            "type": "string",
+            "title": "Model Name",
+            "description": "모델 이름"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model_name"
+        ],
+        "title": "ModelPushRequest"
+      },
+      "ModelRunRequest": {
+        "properties": {
+          "model_name": {
+            "type": "string",
+            "title": "Model Name",
+            "description": "모델 이름"
+          },
+          "script_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Script Name",
+            "description": "실행할 스크립트 이름 (기본값: 통합 런처)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model_name"
+        ],
+        "title": "ModelRunRequest"
+      },
+      "ModelUpdateRequest": {
+        "properties": {
+          "model_name": {
+            "type": "string",
+            "title": "Model Name",
+            "description": "모델 이름"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model_name"
+        ],
+        "title": "ModelUpdateRequest"
+      },
       "Question": {
         "properties": {
           "created_at": {
@@ -10287,6 +11091,10 @@
     {
       "name": "memory",
       "description": "LLM 메모리 관리 및 벡터 DB 연동 기능"
+    },
+    {
+      "name": "model-installer",
+      "description": "GitHub 모델 자동 설치 및 관리 기능"
     }
   ],
   "servers": [

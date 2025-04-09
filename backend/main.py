@@ -26,7 +26,7 @@ from backend.api import agent, github
 # 데이터 관리
 from backend.api import indexing, export, docs_manager
 # 시스템 및 디버깅
-from backend.api import auto_debug, local_llm, mcp_status
+from backend.api import auto_debug, local_llm, mcp_status, model_installer
 # 메모리 관리
 from backend.api.memory.router import router as memory_router
 
@@ -71,6 +71,10 @@ tags_metadata = [
     {
         "name": "memory",
         "description": "LLM 메모리 관리 및 벡터 DB 연동 기능",
+    },
+    {
+        "name": "model-installer",
+        "description": "GitHub 모델 자동 설치 및 관리 기능",
     },
 ]
 
@@ -162,6 +166,7 @@ def register_routers():
         (auto_debug.router, "system"),
         (local_llm.router, "system"),
         (mcp_status.router, "system"),
+        (model_installer.router, "model-installer"),
     ]
     
     # v2 API 라우터
