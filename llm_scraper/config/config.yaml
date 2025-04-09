@@ -1,0 +1,55 @@
+
+# LLM Scraper configuration
+
+# Browser configuration
+browser:
+  type: chrome
+  headless: false
+  timeout: 60
+  user_data_dir: null
+
+# Output configuration
+output:
+  format: json
+  directory: output
+  include_metadata: true
+
+# Model-specific configurations
+models:
+  chatgpt:
+    url: https://chat.openai.com/
+    selectors:
+      login_button: "//button[contains(text(), 'Log in')]"
+      prompt_textarea: "//textarea[@placeholder='Send a message']"
+      submit_button: "//button[@type='submit']"
+      response_container: "//div[contains(@class, 'markdown')]"
+      thinking_indicator: "//div[contains(@class, 'thinking')]"
+    # Credentials should be provided separately for security reasons
+
+  claude:
+    url: https://claude.ai/
+    selectors:
+      login_button: "//button[contains(text(), 'Continue with')]"
+      prompt_textarea: "//div[@role='textbox']"
+      submit_button: "//button[@aria-label='Send message']"
+      response_container: "//div[contains(@class, 'claude-response')]"
+      thinking_indicator: "//div[contains(@class, 'typing-indicator')]"
+
+  gemini:
+    url: https://gemini.google.com/app
+    selectors:
+      login_button: "//button[contains(text(), 'Sign in')]"
+      prompt_textarea: "//textarea[contains(@placeholder, 'Enter')]"
+      submit_button: "//button[@aria-label='Send message']"
+      response_container: "//div[contains(@role, 'region') and contains(@aria-label, 'Response')]"
+      thinking_indicator: "//div[contains(@class, 'loading')]"
+
+# Credentials configuration
+credentials:
+  env_prefix: LLM_SCRAPER_
+
+# Retry configuration
+retry:
+  max_attempts: 3
+  delay: 2
+  backoff_factor: 2
