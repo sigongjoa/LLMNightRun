@@ -9,6 +9,7 @@ import logging
 from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
+from backend.services.llm_service import LLMService  # Re-export LLMService class
 
 from backend.models.agent import Message, ToolCall
 from backend.models.enums import ToolChoice, LLMType

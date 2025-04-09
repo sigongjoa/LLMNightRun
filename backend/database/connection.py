@@ -20,6 +20,8 @@ engine = create_engine(
 
 # 세션 생성
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# 호환성을 위한 별칭
+Session = SessionLocal
 
 # 모델 기본 클래스 생성
 Base = declarative_base()

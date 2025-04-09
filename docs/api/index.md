@@ -4,6 +4,7 @@ LLMNightRun API 문서에 오신 것을 환영합니다.
 
 ## 목차
 
+- [Ab Testing API](./AB Testing.md)
 - [Llm API](./LLM.md)
 - [Local Llm API](./Local LLM.md)
 - [Agent API](./agent.md)

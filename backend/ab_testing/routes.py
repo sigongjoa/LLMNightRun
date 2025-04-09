@@ -4,10 +4,10 @@ A/B 테스트 라우터
 FastAPI 라우터 정의 및 API 엔드포인트를 구현합니다.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query, Path
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query, Path, Body, File, UploadFile, Form
 from fastapi.responses import JSONResponse, FileResponse
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime
 
@@ -15,16 +15,23 @@ from backend.database.connection import get_db
 from backend.logger import get_logger
 from . import schemas
 from . import controllers
-
+from .routes import templates_router, optimization_router, multi_language_router, batch_jobs_router, code_export_router
 
 # 로거 설정
 logger = get_logger(__name__)
 
-# 라우터 생성
+# 메인 라우터 생성
 router = APIRouter(
     prefix="/ab-testing",
     tags=["AB Testing"]
 )
+
+# 서브 라우터 포함
+router.include_router(templates_router)
+router.include_router(optimization_router)
+router.include_router(multi_language_router)
+router.include_router(batch_jobs_router)
+router.include_router(code_export_router)
 
 
 # 실험 세트 관리 엔드포인트
@@ -44,11 +51,17 @@ async def get_experiment_sets(
     skip: int = 0, 
     limit: int = 100,
     active_only: bool = True,
+    tag: Optional[str] = None,
+    search: Optional[str] = None,
+    sort_by: Optional[str] = 'created_at',
+    sort_order: Optional[str] = 'desc',
     db: Session = Depends(get_db)
 ):
     """실험 세트 목록 조회"""
     logger.info(f"실험 세트 목록 조회: skip={skip}, limit={limit}, active_only={active_only}")
-    return await controllers.get_experiment_sets(db, skip, limit, active_only)
+    return await controllers.get_experiment_sets(
+        db, skip, limit, active_only, tag, search, sort_by, sort_order
+    )
 
 
 @router.get("/experiment-sets/{set_id}", response_model=schemas.ExperimentSetDetailResponse)
@@ -161,6 +174,40 @@ async def run_experiment_set(
     }
 
 
+@router.post("/experiment-sets/{set_id}/schedule", response_model=schemas.RunResponse)
+async def schedule_experiment_set(
+    set_id: int = Path(..., title="실험 세트 ID"),
+    schedule_config: schemas.ScheduleConfig = None,
+    run_config: Optional[schemas.RunExperimentSet] = None,
+    db: Session = Depends(get_db)
+):
+    """실험 세트 스케줄 설정"""
+    logger.info(f"실험 세트 스케줄 설정: id={set_id}")
+    
+    # 기본 설정
+    if schedule_config is None:
+        schedule_config = schemas.ScheduleConfig()
+    
+    # 스케줄러에 작업 등록
+    run_id = str(uuid.uuid4())
+    result = await controllers.schedule_experiment_set(db, set_id, run_id, schedule_config, run_config)
+    
+    scheduled_info = {
+        "schedule_type": schedule_config.schedule_type,
+        "start_time": schedule_config.start_time,
+        "recurring_pattern": schedule_config.recurring_pattern
+    }
+    
+    return {
+        "experiment_set_id": set_id,
+        "run_id": run_id,
+        "status": "scheduled",
+        "message": "실험 세트가 스케줄에 등록되었습니다",
+        "started_at": datetime.utcnow(),
+        "scheduled_info": scheduled_info
+    }
+
+
 @router.get("/experiment-sets/{set_id}/status", response_model=schemas.StatusResponse)
 async def get_experiment_set_status(
     set_id: int = Path(..., title="실험 세트 ID"),
@@ -235,9 +282,11 @@ async def get_experiment_set_evaluations(
 @router.get("/experiment-sets/{set_id}/report", response_model=schemas.ReportResponse)
 async def generate_report(
     set_id: int = Path(..., title="실험 세트 ID"),
-    format: str = Query("html", title="보고서 형식", regex="^(html|pdf|json)$"),
+    format: str = Query("html", title="보고서 형식", regex="^(html|pdf|json|markdown|csv|excel)$"),
     run_id: Optional[str] = Query(None, title="실행 ID"),
     background_tasks: BackgroundTasks = None,
+    include_charts: bool = Query(True, title="차트 포함 여부"),
+    include_analysis: bool = Query(True, title="분석 포함 여부"),
     db: Session = Depends(get_db)
 ):
     """실험 세트 보고서 생성"""
@@ -245,13 +294,22 @@ async def generate_report(
     
     # 백그라운드 작업으로 보고서 생성
     task_id = str(uuid.uuid4())
+    
+    # 보고서 설정
+    report_config = {
+        "include_charts": include_charts,
+        "include_analysis": include_analysis,
+        "format": format
+    }
+    
     background_tasks.add_task(
         controllers.generate_report_background,
-        db, set_id, format, run_id, task_id
+        db, set_id, format, run_id, task_id, report_config
     )
     
     return {
         "experiment_set_id": set_id,
+        "name": "보고서 생성 중...",
         "report_url": f"/ab-testing/reports/{task_id}.{format}",
         "report_type": format,
         "generated_at": datetime.utcnow()

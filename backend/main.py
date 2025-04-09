@@ -29,6 +29,8 @@ from backend.api import indexing, export, docs_manager
 from backend.api import auto_debug, local_llm, mcp_status, model_installer, ai_environment
 # 메모리 관리
 from backend.api.memory.router import router as memory_router
+# A/B 테스팅
+from backend.ab_testing.routes import router as ab_testing_router
 
 # v2 API 라우터 임포트
 from backend.api.v2 import llm as llm_v2
@@ -79,6 +81,10 @@ tags_metadata = [
     {
         "name": "ai-environment",
         "description": "AI 환경설정 및 모델 관리 기능",
+    },
+    {
+        "name": "AB Testing",
+        "description": "LLM 모델과 프롬프트 조합의 A/B 테스트 기능",
     },
 ]
 
@@ -187,8 +193,13 @@ def register_routers():
         (mcp_chat_ws_router, None),
     ]
     
+    # A/B 테스팅 라우터
+    ab_testing_routers = [
+        (ab_testing_router, "AB Testing"),
+    ]
+    
     # 모든 라우터 목록
-    all_routers = core_routers + agent_routers + data_routers + system_routers + v2_routers + mcp_routers
+    all_routers = core_routers + agent_routers + data_routers + system_routers + v2_routers + mcp_routers + ab_testing_routers
     
     # 라우터 등록
     for router, tag in all_routers:

@@ -14,6 +14,20 @@ DEFAULT_METRIC_WEIGHTS = {
     "gpt_score": 0.5,
 }
 
+# 모델별 대략적인 가격 (USD/1K 토큰)
+MODEL_COSTS = {
+    "gpt-4": 0.03,
+    "gpt-4-turbo": 0.01,
+    "gpt-3.5-turbo": 0.002,
+    "claude-3-opus": 0.015,
+    "claude-3-sonnet": 0.008,
+    "claude-3-haiku": 0.003,
+    "mistral-small": 0.002,
+    "mistral-medium": 0.006,
+    "mistral-large": 0.012,
+    "local-model": 0.0001,  # 거의 무시할만한 수준
+}
+
 # 지원하는 모델별 최대 토큰 길이
 MODEL_MAX_TOKENS = {
     "gpt-4": 8192,
@@ -93,6 +107,16 @@ class ABTestingSettings(BaseModel):
     # 기본 평가 메트릭
     default_metrics: List[str] = Field(
         default=["bleu", "rouge", "gpt_score"]
+    )
+    
+    # 모델별 가격
+    model_costs: Dict[str, float] = Field(
+        default=MODEL_COSTS
+    )
+    
+    # 기본 평가 모델
+    default_evaluator_model: str = Field(
+        default="gpt-4"
     )
     
     # 기본 평가 메트릭 가중치

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 
 from backend.logger import get_logger
-from backend.database.connection import Session as DBSession
+from backend.database.connection import SessionLocal as DBSession
 from . import models, schemas
 from .config import ab_testing_settings
 from .services.evaluator import Evaluator

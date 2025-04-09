@@ -43,6 +43,44 @@ cd frontend
 npm run dev
 ```
 
+### 테스트 실행
+
+```bash
+# 테스트 의존성 설치
+pip install -r tests/requirements-test.txt
+
+# 모든 테스트 실행
+python run_tests.py
+
+# 단위 테스트만 실행
+python run_tests.py --unit
+
+# 통합 테스트만 실행
+python run_tests.py --integration
+
+# 커버리지 리포트 생성
+python run_tests.py --coverage
+
+# 특정 테스트 파일 실행
+python run_tests.py --test-file tests/unit/test_llm_service.py
+```
+
+## 프로젝트 구조
+
+주요 디렉토리 구조:
+
+```
+LLMNightRun/
+├── backend/         # 백엔드 코드 (FastAPI)
+├── docs/            # 프로젝트 문서
+│   └── features/    # 기능별 상세 문서
+├── frontend/        # 프론트엔드 코드 (Next.js)
+├── tests/           # 테스트 코드
+│   ├── unit/        # 단위 테스트
+│   └── integration/ # 통합 테스트
+└── scripts/         # 유틸리티 스크립트
+```
+
 ## 기술 스택
 
 - **백엔드**: FastAPI, Python

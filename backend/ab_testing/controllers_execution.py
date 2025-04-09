@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc
 
 from backend.logger import get_logger
-from backend.database.connection import Session as DBSession
+from backend.database.connection import SessionLocal as DBSession
 from . import models, schemas
 from .config import ab_testing_settings
 from .services.experiment import ExperimentRunner
@@ -140,6 +140,31 @@ async def get_experiment_set_status(
         "progress": progress,
         "started_at": started_at,
         "estimated_completion": estimated_completion
+    }
+
+
+async def schedule_experiment_set(
+    db: Session, experiment_set_id: int, schedule: schemas.ScheduleExperimentSet
+) -> Dict[str, Any]:
+    """실험 세트의 실행을 스케줄링합니다."""
+    logger.info(f"실험 세트 스케줄링: id={experiment_set_id}, schedule={schedule}")
+    
+    # 실험 세트 조회
+    db_experiment_set = db.query(models.ExperimentSet).filter(
+        models.ExperimentSet.id == experiment_set_id
+    ).first()
+    
+    if not db_experiment_set:
+        raise ValueError(f"실험 세트를 찾을 수 없습니다: id={experiment_set_id}")
+    
+    # TODO: 실제 스케줄링 로직 구현
+    # 현재는 더미 함수로, 스케줄링 시스템 구현 후 완성 필요
+    
+    # 스케줄 정보 반환
+    return {
+        "experiment_set_id": experiment_set_id,
+        "scheduled_time": schedule.scheduled_time,
+        "status": "scheduled"
     }
 
 
