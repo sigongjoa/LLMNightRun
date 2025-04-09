@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useState, useRef } from 'react';
+import React, { ReactNode, useEffect, useState, useRef, useMemo } from 'react';
 import { 
   AppBar, 
   Toolbar, 
@@ -15,8 +15,14 @@ import {
   IconButton,
   CssBaseline,
   useMediaQuery,
-  useTheme
+  useTheme,
+  Collapse,
+  Menu,
+  MenuItem,
+  Tooltip
 } from '@mui/material';
+import ExpandLess from '@mui/icons-material/ExpandLess';
+import ExpandMore from '@mui/icons-material/ExpandMore';
 import {
   Dashboard as DashboardIcon,
   QuestionAnswer as QuestionIcon,
@@ -70,23 +76,52 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     setDrawerOpen(open);
   };
 
-  // 메뉴 고유성 보장을 위한 로직
-  const getUniqueMenuItems = () => {
-    // 기본 메뉴 항목
-    const baseMenuItems = [
-      { text: '대시보드', icon: <DashboardIcon />, href: '/' },
-      { text: '질문 제출', icon: <QuestionIcon />, href: '/submit' },
-      { text: '코드 관리', icon: <CodeIcon />, href: '/code-manager' },
-      { text: 'MCP 채팅', icon: <SmartToyIcon />, href: '/mcp-chat/new' },
-      { text: '프롬프트 엔지니어링', icon: <EngineeringIcon />, href: '/prompt-engineering' },
-      { text: '내보내기', icon: <FileDownloadIcon />, href: '/export' },
-      { text: 'GitHub 업로드', icon: <GitHubIcon />, href: '/github-upload' },
-      { text: '문서 관리', icon: <DescriptionIcon />, href: '/docs-manager' },
-      { text: '로컬 LLM', icon: <MemoryIcon />, href: '/local-llm' },
-      { text: 'MCP 서버 관리', icon: <CloudIcon />, href: '/mcp' },
-      { text: '메모리 관리', icon: <PsychologyIcon />, href: '/memory-manager' },
-      { text: '설정', icon: <SettingsIcon />, href: '/settings' }
-    ];
+  // 메뉴 데이터 정의
+  const menuGroups = useMemo(() => [
+    {
+      groupName: '개발 및 관리',
+      items: [
+        { text: '대시보드', icon: <DashboardIcon />, href: '/' },
+        { text: '코드 관리', icon: <CodeIcon />, href: '/code-manager' },
+        { text: 'GitHub 연동', icon: <GitHubIcon />, href: '/github-upload' },
+        { text: '문서 관리', icon: <DescriptionIcon />, href: '/docs-manager' },
+      ]
+    },
+    {
+      groupName: 'LLM 및 AI',
+      items: [
+        { text: '질문 제출', icon: <QuestionIcon />, href: '/submit' },
+        { text: '로컬 LLM', icon: <MemoryIcon />, href: '/local-llm' },
+        { text: '프롬프트 엔지니어링', icon: <EngineeringIcon />, href: '/prompt-engineering' },
+        { text: 'AI 환경설정', icon: <SmartToyIcon />, href: '/ai-environment' },
+        { text: '메모리 관리', icon: <PsychologyIcon />, href: '/memory-manager' },
+      ]
+    },
+    {
+      groupName: 'MCP',
+      items: [
+        { text: 'MCP 채팅', icon: <SmartToyIcon />, href: '/mcp-chat/new' },
+        { text: 'MCP 서버 관리', icon: <CloudIcon />, href: '/mcp' },
+      ]
+    },
+    {
+      groupName: '시스템',
+      items: [
+        { text: '내보내기', icon: <FileDownloadIcon />, href: '/export' },
+        { text: '설정', icon: <SettingsIcon />, href: '/settings' },
+      ]
+    }
+  ], []);
+  
+  // 메뉴 그룹화 및 고유성 보장 로직
+  const menuItems = useMemo(() => {
+    // 모든 메뉴 항목을 플랫하게 만듦
+    const baseMenuItems = menuGroups.flatMap(group => {
+      return group.items.map(item => ({
+        ...item,
+        groupName: group.groupName // 그룹 정보 추가
+      }));
+    });
     
     // URL 기반 메뉴 필터링 (필요한 경우)
     if (typeof window !== 'undefined') {
@@ -104,9 +139,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
     
     return baseMenuItems;
-  };
-  
-  const menuItems = getUniqueMenuItems();
+  }, [menuGroups, router.pathname]);
 
   const isActive = (href: string) => {
     // pathname이 href로 시작하는지 확인
@@ -162,6 +195,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <Box sx={{ 
             display: { xs: 'none', sm: 'flex' }, 
             flexGrow: 1, 
+            alignItems: 'center',
             overflowX: 'auto',
             msOverflowStyle: 'none',  /* IE, Edge */
             scrollbarWidth: 'none',   /* Firefox */
@@ -169,25 +203,28 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               display: 'none'
             }
           }}>
-            {menuItems.map((item) => (
-              <Button 
-              key={item.text}
-              color="inherit"
-              onClick={() => handleNavigation(item.href)}
-              data-href={item.href}
-              sx={{ 
-              mx: 0.5,
-              px: 1.5,
-              whiteSpace: 'nowrap',
-              bgcolor: isActive(item.href) ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
-              '&:hover': {
-                bgcolor: 'rgba(255, 255, 255, 0.1)'
+            {/* 그룹별로 메뉴 구성 */}
+            {(() => {
+              // 그룹 이름으로 메뉴 아이템 그룹화
+              const groups = {};
+              menuItems.forEach(item => {
+                if (!groups[item.groupName]) {
+                  groups[item.groupName] = [];
                 }
-                }}
-              >
-                {item.text}
-              </Button>
-            ))}
+                groups[item.groupName].push(item);
+              });
+
+              // 각 그룹별 드롭다운 메뉴 렌더링
+              return Object.entries(groups).map(([groupName, items]: [string, any]) => (
+                <NavMenuGroup 
+                  key={groupName} 
+                  groupName={groupName} 
+                  items={items} 
+                  isActive={isActive} 
+                  onNavigate={handleNavigation} 
+                />
+              ));
+            })()}
           </Box>
         </Toolbar>
       </AppBar>
@@ -211,19 +248,28 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </Typography>
             </ListItem>
             <Divider />
-            {menuItems.map((item) => (
-              <ListItem 
-                button 
-                key={item.text} 
-                onClick={() => handleNavigation(item.href)}
-                sx={{ 
-                  bgcolor: isActive(item.href) ? 'rgba(63, 81, 181, 0.1)' : 'transparent',
-                }}
-              >
-                <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItem>
-            ))}
+            {/* 그룹별로 메뉴 구성 */}
+            {(() => {
+              // 그룹 이름으로 메뉴 아이템 그룹화
+              const groups = {};
+              menuItems.forEach(item => {
+                if (!groups[item.groupName]) {
+                  groups[item.groupName] = [];
+                }
+                groups[item.groupName].push(item);
+              });
+
+              // 각 그룹별 아코디언 메뉴 렌더링
+              return Object.entries(groups).map(([groupName, items]: [string, any]) => (
+                <MobileNavGroup 
+                  key={groupName} 
+                  groupName={groupName} 
+                  items={items} 
+                  isActive={isActive} 
+                  onNavigate={handleNavigation} 
+                />
+              ));
+            })()}
           </List>
         </Box>
       </Drawer>
@@ -240,6 +286,118 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </Typography>
       </Box>
     </Box>
+  );
+};
+
+// NavMenuGroup 컴포넌트 - 데스크탑용 드롭다운 메뉴
+interface NavMenuGroupProps {
+  groupName: string;
+  items: any[];
+  isActive: (href: string) => boolean;
+  onNavigate: (href: string) => void;
+}
+
+const NavMenuGroup: React.FC<NavMenuGroupProps> = ({ groupName, items, isActive, onNavigate }) => {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleMenuItemClick = (href: string) => {
+    handleClose();
+    onNavigate(href);
+  };
+
+  return (
+    <Box sx={{ position: 'relative', mx: 1 }}>
+      <Button
+        color="inherit"
+        onClick={handleClick}
+        endIcon={open ? <ExpandLess /> : <ExpandMore />}
+        sx={{ 
+          whiteSpace: 'nowrap',
+          bgcolor: open ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+          '&:hover': {
+            bgcolor: 'rgba(255, 255, 255, 0.1)'
+          }
+        }}
+      >
+        {groupName}
+      </Button>
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        MenuListProps={{
+          'aria-labelledby': 'basic-button',
+        }}
+      >
+        {items.map((item: any) => (
+          <MenuItem
+            key={item.text}
+            onClick={() => handleMenuItemClick(item.href)}
+            selected={isActive(item.href)}
+          >
+            <ListItemIcon sx={{ minWidth: '40px' }}>
+              {item.icon}
+            </ListItemIcon>
+            <ListItemText>
+              {item.text}
+            </ListItemText>
+          </MenuItem>
+        ))}
+      </Menu>
+    </Box>
+  );
+};
+
+// MobileNavGroup 컴포넌트 - 모바일용 아코디언 메뉴
+interface MobileNavGroupProps {
+  groupName: string;
+  items: any[];
+  isActive: (href: string) => boolean;
+  onNavigate: (href: string) => void;
+}
+
+const MobileNavGroup: React.FC<MobileNavGroupProps> = ({ groupName, items, isActive, onNavigate }) => {
+  const [open, setOpen] = useState(false);
+  
+  const handleToggle = () => {
+    setOpen(!open);
+  };
+
+  return (
+    <React.Fragment>
+      <ListItem button onClick={handleToggle}>
+        <ListItemText primary={<Typography variant="subtitle1" fontWeight="bold">{groupName}</Typography>} />
+        {open ? <ExpandLess /> : <ExpandMore />}
+      </ListItem>
+      <Collapse in={open} timeout="auto" unmountOnExit>
+        <List component="div" disablePadding>
+          {items.map((item: any) => (
+            <ListItem 
+              button 
+              key={item.text} 
+              onClick={() => onNavigate(item.href)}
+              sx={{ 
+                pl: 4,
+                bgcolor: isActive(item.href) ? 'rgba(63, 81, 181, 0.1)' : 'transparent',
+              }}
+            >
+              <ListItemIcon>{item.icon}</ListItemIcon>
+              <ListItemText primary={item.text} />
+            </ListItem>
+          ))}
+        </List>
+      </Collapse>
+      <Divider />
+    </React.Fragment>
   );
 };
 

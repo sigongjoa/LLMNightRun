@@ -6248,6 +6248,511 @@
         }
       }
     },
+    "/api/ai-environment/config": {
+      "get": {
+        "summary": "Get Ai Environment Config",
+        "description": "AI 환경설정 정보를 가져옵니다.",
+        "operationId": "get_ai_environment_config_api_ai_environment_config_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Get Ai Environment Config Api Ai Environment Config Get"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "not_found",
+                  "message": "요청한 리소스를 찾을 수 없습니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Save Ai Environment Config",
+        "description": "AI 환경설정 정보를 저장합니다.",
+        "operationId": "save_ai_environment_config_api_ai_environment_config_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "title": "Config"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "not_found",
+                  "message": "요청한 리소스를 찾을 수 없습니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai-environment/models": {
+      "get": {
+        "summary": "Get Available Models",
+        "description": "사용 가능한 LLM 모델 목록을 가져옵니다.",
+        "operationId": "get_available_models_api_ai_environment_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ModelInfo"
+                  },
+                  "type": "array",
+                  "title": "Response Get Available Models Api Ai Environment Models Get"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "not_found",
+                  "message": "요청한 리소스를 찾을 수 없습니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai-environment/vector-stores": {
+      "get": {
+        "summary": "Get Available Vector Stores",
+        "description": "사용 가능한 벡터 스토어 목록을 가져옵니다.",
+        "operationId": "get_available_vector_stores_api_ai_environment_vector_stores_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response Get Available Vector Stores Api Ai Environment Vector Stores Get"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "not_found",
+                  "message": "요청한 리소스를 찾을 수 없습니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai-environment/embedding-models": {
+      "get": {
+        "summary": "Get Available Embedding Models",
+        "description": "사용 가능한 임베딩 모델 목록을 가져옵니다.",
+        "operationId": "get_available_embedding_models_api_ai_environment_embedding_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response Get Available Embedding Models Api Ai Environment Embedding Models Get"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "not_found",
+                  "message": "요청한 리소스를 찾을 수 없습니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai-environment/test-connection": {
+      "post": {
+        "summary": "Test Connection",
+        "description": "API 엔드포인트 연결을 테스트합니다.",
+        "operationId": "test_connection_api_ai_environment_test_connection_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "title": "Endpoint"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "not_found",
+                  "message": "요청한 리소스를 찾을 수 없습니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/llm/generate": {
       "post": {
         "tags": [
@@ -10394,6 +10899,40 @@
         "title": "Message",
         "description": "대화 메시지"
       },
+      "ModelInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "type"
+        ],
+        "title": "ModelInfo"
+      },
       "ModelInstallRequest": {
         "properties": {
           "repo_url": {
@@ -11095,6 +11634,10 @@
     {
       "name": "model-installer",
       "description": "GitHub 모델 자동 설치 및 관리 기능"
+    },
+    {
+      "name": "ai-environment",
+      "description": "AI 환경설정 및 모델 관리 기능"
     }
   ],
   "servers": [
