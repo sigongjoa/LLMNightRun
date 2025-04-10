@@ -113,19 +113,19 @@ const Dashboard: React.FC = () => {
             <Card>
               <CardHeader title="시스템 상태" />
               <CardContent>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+                <Typography variant="body1" component="div" color="text.secondary" sx={{ mb: 1 }}>
                   API 상태: <span style={{ color: '#4caf50', fontWeight: 'bold' }}>정상</span>
                 </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+                <Typography variant="body1" component="div" color="text.secondary" sx={{ mb: 1 }}>
                   OpenAI API: <span style={{ color: '#4caf50', fontWeight: 'bold' }}>연결됨</span>
                 </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+                <Typography variant="body1" component="div" color="text.secondary" sx={{ mb: 1 }}>
                   Claude API: <span style={{ color: '#4caf50', fontWeight: 'bold' }}>연결됨</span>
                 </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+                <Typography variant="body1" component="div" color="text.secondary" sx={{ mb: 1 }}>
                   GitHub 연동: <span style={{ color: '#4caf50', fontWeight: 'bold' }}>활성화</span>
                 </Typography>
-                <Typography variant="body1" color="text.secondary">
+                <Typography variant="body1" component="div" color="text.secondary">
                   MCP 서버: <span style={{ color: '#4caf50', fontWeight: 'bold' }}>실행 중 (2)</span>
                 </Typography>
               </CardContent>

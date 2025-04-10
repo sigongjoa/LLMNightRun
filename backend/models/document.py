@@ -42,7 +42,7 @@ class Document(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.now)
     github_path: Optional[str] = None
     last_commit_id: Optional[str] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    doc_info: Dict[str, Any] = Field(default_factory=dict)
 
     class Config:
         schema_extra = {
@@ -56,7 +56,7 @@ class Document(BaseModel):
                 "updated_at": "2023-01-02T00:00:00",
                 "github_path": "docs/API.md",
                 "last_commit_id": "abc123",
-                "metadata": {"version": "1.0.0"}
+                "doc_info": {"version": "1.0.0"}
             }
         }
 
@@ -109,7 +109,7 @@ class DocumentResponse(BaseModel):
     updated_at: datetime
     github_path: Optional[str] = None
     last_commit_id: Optional[str] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    doc_info: Dict[str, Any] = Field(default_factory=dict)
 
 
 class DocumentListResponse(BaseModel):

@@ -60,6 +60,77 @@ class AgentPhaseEnum(enum.Enum):
     error = "error"
 
 
+# 프로젝트 모델
+class Project(Base):
+    """프로젝트 테이블"""
+    __tablename__ = "projects"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    tags = Column(JSON, default=list)
+    is_active = Column(Boolean, default=True)
+    project_data = Column(JSON, default=dict)  # metadata -> project_data
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # 관계 정의
+    questions = relationship("Question", back_populates="project")
+    code_snippets = relationship("CodeSnippet", back_populates="project")
+    documents = relationship("Document", back_populates="project")
+    github_repositories = relationship("GitHubRepository", back_populates="project")
+    responses = relationship("Response", back_populates="project", foreign_keys="Response.project_id")
+    code_templates = relationship("CodeTemplate", back_populates="project")
+    codebases = relationship("Codebase", back_populates="project")
+    agent_sessions = relationship("AgentSession", back_populates="project")
+
+
+# GitHub 저장소 모델
+class GitHubRepository(Base):
+    """GitHub 저장소 테이블"""
+    __tablename__ = "github_repositories"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    owner = Column(String(255), nullable=False)
+    token = Column(String(255), nullable=False)  # 실제로는 암호화하여 저장해야 함
+    is_default = Column(Boolean, default=False)
+    is_private = Column(Boolean, default=True)
+    url = Column(String(255), nullable=True)
+    branch = Column(String(50), default="main")
+    repo_info = Column(JSON, default=dict)  # metadata -> repo_info
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # 관계 정의
+    project = relationship("Project", back_populates="github_repositories")
+
+
+# 문서 모델
+class Document(Base):
+    """문서 테이블"""
+    __tablename__ = "documents"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(255), nullable=False)
+    content = Column(Text, nullable=False)
+    format = Column(String(50), default="markdown")  # markdown, html, pdf, etc.
+    doc_info = Column(JSON, default=dict)  # metadata -> doc_info
+    version = Column(Integer, default=1)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
+    question_id = Column(Integer, ForeignKey("questions.id"), nullable=True)
+    response_id = Column(Integer, ForeignKey("responses.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # 관계 정의
+    project = relationship("Project", back_populates="documents")
+    question = relationship("Question", back_populates="documents")
+    response = relationship("Response", back_populates="documents")
+
+
 # 기본 모델
 class Question(Base):
     """질문 테이블"""
@@ -68,11 +139,14 @@ class Question(Base):
     id = Column(Integer, primary_key=True, index=True)
     content = Column(Text, nullable=False)
     tags = Column(JSON, default=list)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # 관계 정의
+    project = relationship("Project", back_populates="questions")
     responses = relationship("Response", back_populates="question")
     code_snippets = relationship("CodeSnippet", back_populates="question")
+    documents = relationship("Document", back_populates="question")
 
 
 class Response(Base):
@@ -83,11 +157,14 @@ class Response(Base):
     question_id = Column(Integer, ForeignKey("questions.id"))
     llm_type = Column(Enum(LLMTypeEnum), nullable=False)
     content = Column(Text, nullable=False)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # 관계 정의
+    project = relationship("Project", back_populates="responses", foreign_keys=[project_id])
     question = relationship("Question", back_populates="responses")
     code_snippets = relationship("CodeSnippet", back_populates="response")
+    documents = relationship("Document", back_populates="response")
 
 
 class CodeSnippet(Base):
@@ -103,12 +180,14 @@ class CodeSnippet(Base):
     source_llm = Column(Enum(LLMTypeEnum), nullable=True)
     question_id = Column(Integer, ForeignKey("questions.id"), nullable=True)
     response_id = Column(Integer, ForeignKey("responses.id"), nullable=True)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
     parent_id = Column(Integer, ForeignKey("code_snippets.id"), nullable=True)
     version = Column(Integer, default=1)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # 관계 정의
+    project = relationship("Project", back_populates="code_snippets")
     question = relationship("Question", back_populates="code_snippets")
     response = relationship("Response", back_populates="code_snippets")
     children = relationship("CodeSnippet", 
@@ -126,8 +205,12 @@ class CodeTemplate(Base):
     content = Column(Text, nullable=False)
     language = Column(Enum(CodeLanguageEnum), nullable=False)
     tags = Column(JSON, default=list)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # 관계 정의
+    project = relationship("Project", back_populates="code_templates")
 
 
 class Settings(Base):
@@ -153,10 +236,12 @@ class Codebase(Base):
     repository_url = Column(String(255), nullable=True)
     language = Column(String(50), nullable=True)
     path = Column(String(255), nullable=True)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # 관계 정의
+    project = relationship("Project", back_populates="codebases")
     files = relationship("CodebaseFile", back_populates="codebase")
     indexing_settings = relationship("CodebaseIndexingSettings", back_populates="codebase", uselist=False)
     indexing_runs = relationship("CodebaseIndexingRun", back_populates="codebase")
@@ -263,9 +348,11 @@ class AgentSession(Base):
     status = Column(String(20), default="running")
     total_steps = Column(Integer, default=0)
     parameters = Column(JSON, default=dict)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
     
     # 관계 정의
     logs = relationship("AgentLog", back_populates="session")
+    project = relationship("Project", back_populates="agent_sessions")
 
 
 class AgentLog(Base):

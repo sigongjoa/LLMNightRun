@@ -27,6 +27,7 @@ import GitHubIcon from '@mui/icons-material/GitHub';
 import DescriptionIcon from '@mui/icons-material/Description';
 import CommitIcon from '@mui/icons-material/Commit';
 import PreviewIcon from '@mui/icons-material/Preview';
+import StorageIcon from '@mui/icons-material/Storage';
 import Head from 'next/head';
 import { 
   fetchQuestions,
@@ -36,12 +37,14 @@ import {
   generateReadme,
   uploadToGitHub
 } from '../utils/api';
-import { Question, CodeSnippet } from '../types';
+import { Question, CodeSnippet, GitHubRepository } from '../types';
+import RepositorySelector from '../components/github/RepositorySelector';
 
 const GitHubUploadPage: NextPage = () => {
   // 상태
   const [questions, setQuestions] = useState<Question[]>([]);
   const [selectedQuestionId, setSelectedQuestionId] = useState<number | ''>('');
+  const [selectedRepositoryId, setSelectedRepositoryId] = useState<number | null>(null);
   const [folderPath, setFolderPath] = useState<string>('');
   const [commitMessage, setCommitMessage] = useState<string>('');
   const [readmeContent, setReadmeContent] = useState<string>('');
@@ -63,9 +66,12 @@ const GitHubUploadPage: NextPage = () => {
   
   // 업로드 결과
   const [uploadResult, setUploadResult] = useState<{
+    success?: boolean;
+    message?: string;
     repo_url?: string;
     folder_path?: string;
     commit_message?: string;
+    files?: string[];
   } | null>(null);
   
   // 초기 데이터 로드
@@ -117,19 +123,53 @@ const GitHubUploadPage: NextPage = () => {
     setLoading(true);
     setLoadingMessage('데이터를 불러오는 중...');
     try {
-      // 질문 목록 로드
-      const questionsData = await fetchQuestions();
-      setQuestions(questionsData);
-      
-      // GitHub 설정 로드
-      const settings = await fetchSettings();
-      setGithub({
-        username: settings.github_username,
-        repo: settings.github_repo
-      });
-      
-      if (!settings.github_token || !settings.github_username || !settings.github_repo) {
-        showSnackbar('GitHub 연결이 구성되지 않았습니다. 먼저 설정에서 GitHub 정보를 구성하세요.', 'error');
+      try {
+        // 질문 목록 로드
+        try {
+          const questionsData = await fetchQuestions();
+          setQuestions(questionsData);
+        } catch (questionsErr) {
+          console.error('질문 목록 로드 오류:', questionsErr);
+          // 개발 모드에서는 샘플 데이터 사용
+          if (process.env.NODE_ENV === 'development') {
+            setQuestions([
+              { id: 1, content: '샘플 질문 1', tags: ['sample'] },
+              { id: 2, content: '샘플 질문 2', tags: ['sample'] }
+            ]);
+          } else {
+            setQuestions([]);
+          }
+        }
+        
+        // GitHub 설정 로드
+        try {
+          const settings = await fetchSettings();
+          setGithub({
+            username: settings.github_username,
+            repo: settings.github_repo
+          });
+          
+          if (!settings.github_token || !settings.github_username || !settings.github_repo) {
+            showSnackbar('GitHub 연결이 구성되지 않았습니다. 먼저 설정에서 GitHub 정보를 구성하세요.', 'warning');
+          }
+        } catch (settingsErr) {
+          console.error('설정 로드 오류:', settingsErr);
+          // localStorage에서 GitHub 정보 가져오기
+          const username = localStorage.getItem('github_username');
+          const repo = localStorage.getItem('github_repo');
+          
+          setGithub({
+            username: username || undefined,
+            repo: repo || undefined
+          });
+          
+          if (!username || !repo) {
+            showSnackbar('GitHub 연결이 구성되지 않았습니다. 먼저 설정에서 GitHub 정보를 구성하세요.', 'warning');
+          }
+        }
+      } catch (apiErr) {
+        console.error('API 오류:', apiErr);
+        showSnackbar('API 서버에 연결할 수 없습니다.', 'error');
       }
     } catch (error) {
       console.error('데이터 로드 오류:', error);
@@ -144,16 +184,42 @@ const GitHubUploadPage: NextPage = () => {
     setLoadingMessage('코드 스니펫을 불러오는 중...');
     setLoading(true);
     try {
-      const snippets = await fetchCodeSnippets();
-      // 질문 ID로 필터링
-      const filteredSnippets = snippets.filter(s => s.question_id === questionId);
-      setCodeSnippets(filteredSnippets);
-      
-      if (filteredSnippets.length === 0) {
-        showSnackbar('선택한 질문에 코드 스니펫이 없습니다.', 'error');
+      try {
+        const snippets = await fetchCodeSnippets();
+        // 질문 ID로 필터링
+        const filteredSnippets = snippets.filter(s => s.question_id === questionId);
+        setCodeSnippets(filteredSnippets);
+        
+        if (filteredSnippets.length === 0) {
+          showSnackbar('선택한 질문에 코드 스니펫이 없습니다.', 'error');
+        }
+      } catch (apiError) {
+        console.error('코드 스니펫 API 오류:', apiError);
+        
+        if (process.env.NODE_ENV === 'development') {
+          // 개발 모드에서는 샘플 데이터 사용
+          setCodeSnippets([
+            {
+              id: 1,
+              title: '샘플 코드 스니펫',
+              content: '// 이것은 샘플 코드입니다.\nconsole.log("백엔드 API가 준비되지 않아 샘플 데이터가 표시됩니다.");',
+              language: 'javascript',
+              tags: ['sample'],
+              question_id: questionId,
+              version: 1
+            }
+          ]);
+          
+          showSnackbar('백엔드 API가 준비되지 않아 샘플 데이터를 사용합니다.', 'warning');
+        } else {
+          // 프로덕션 모드에서는 에러 표시
+          setCodeSnippets([]);
+          showSnackbar('코드 스니펫을 불러오는 중 오류가 발생했습니다.', 'error');
+        }
       }
     } catch (error) {
       console.error('코드 스니펫 로드 오류:', error);
+      setCodeSnippets([]);
       showSnackbar('코드 스니펫을 불러오는 중 오류가 발생했습니다.', 'error');
     } finally {
       setLoading(false);
@@ -169,7 +235,10 @@ const GitHubUploadPage: NextPage = () => {
     
     setLoadingCommit(true);
     try {
-      const result = await generateCommitMessage(Number(selectedQuestionId));
+      const result = await generateCommitMessage(
+        Number(selectedQuestionId),
+        selectedRepositoryId || undefined
+      );
       setCommitMessage(result.commit_message);
     } catch (error) {
       console.error('커밋 메시지 생성 오류:', error);
@@ -188,7 +257,10 @@ const GitHubUploadPage: NextPage = () => {
     
     setLoadingReadme(true);
     try {
-      const result = await generateReadme(Number(selectedQuestionId));
+      const result = await generateReadme(
+        Number(selectedQuestionId),
+        selectedRepositoryId || undefined
+      );
       setReadmeContent(result.readme_content);
       setShowReadmePreview(true);
     } catch (error) {
@@ -213,9 +285,11 @@ const GitHubUploadPage: NextPage = () => {
     
     setLoadingUpload(true);
     try {
+      // 저장소를 지정하여 업로드
       const result = await uploadToGitHub(
         Number(selectedQuestionId),
-        folderPath || undefined
+        folderPath || undefined,
+        selectedRepositoryId || undefined
       );
       
       setUploadResult({
@@ -242,7 +316,8 @@ const GitHubUploadPage: NextPage = () => {
   
   // 질문 선택 처리
   const handleQuestionSelect = (event: React.ChangeEvent<{ value: unknown }>) => {
-    setSelectedQuestionId(event.target.value as number);
+    const value = event.target.value;
+    setSelectedQuestionId(value ? Number(value) : '');
     // 선택이 바뀌면 결과 초기화
     setUploadResult(null);
     setShowReadmePreview(false);
@@ -292,8 +367,8 @@ const GitHubUploadPage: NextPage = () => {
                 <InputLabel id="question-select-label">질문 선택</InputLabel>
                 <Select
                   labelId="question-select-label"
-                  value={selectedQuestionId}
-                  onChange={(e) => setSelectedQuestionId(e.target.value as number)}
+                  value={selectedQuestionId === '' ? '' : Number(selectedQuestionId)}
+                  onChange={handleQuestionSelect}
                   label="질문 선택"
                   disabled={loading}
                 >
@@ -324,15 +399,31 @@ const GitHubUploadPage: NextPage = () => {
               <Divider sx={{ my: 3 }} />
               
               <Typography variant="subtitle1" gutterBottom>
-                GitHub 저장소 정보
+                GitHub 저장소 선택
+              </Typography>
+              
+              <Box sx={{ mb: 2 }}>
+                <RepositorySelector 
+                  value={selectedRepositoryId}
+                  onChange={setSelectedRepositoryId}
+                  disabled={loading || loadingUpload}
+                />
+                
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                  저장소를 선택하지 않으면 기본 저장소가 사용됩니다
+                </Typography>
+              </Box>
+              
+              <Typography variant="subtitle1" gutterBottom sx={{ mt: 3 }}>
+                기본 GitHub 정보
               </Typography>
               
               <Box sx={{ mb: 2 }}>
                 <Typography variant="body2">
-                  사용자: <strong>{github.username || '설정되지 않음'}</strong>
+                  전역 사용자: <strong>{github.username || '설정되지 않음'}</strong>
                 </Typography>
                 <Typography variant="body2">
-                  저장소: <strong>{github.repo || '설정되지 않음'}</strong>
+                  전역 저장소: <strong>{github.repo || '설정되지 않음'}</strong>
                 </Typography>
               </Box>
               
@@ -341,14 +432,14 @@ const GitHubUploadPage: NextPage = () => {
               </Typography>
               
               <Box sx={{ mb: 2 }}>
-                <Typography variant="body2">
+                <Typography variant="body2" component="div">
                   활성화: <Chip 
                     size="small" 
                     color={localLLMStatus.enabled ? "success" : "default"}
                     label={localLLMStatus.enabled ? "활성화됨" : "비활성화됨"} 
                   />
                 </Typography>
-                <Typography variant="body2" sx={{ mt: 1 }}>
+                <Typography variant="body2" component="div" sx={{ mt: 1 }}>
                   연결 상태: <Chip 
                     size="small" 
                     color={localLLMStatus.connected ? "success" : "error"}

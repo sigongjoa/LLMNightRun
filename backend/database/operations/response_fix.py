@@ -1,7 +1,7 @@
 """
-응답 관련 데이터베이스 작업 모듈
+응답 관련 데이터베이스 작업 모듈 (수정된 버전)
 
-LLM 응답 데이터에 대한 CRUD 작업을 제공합니다.
+기존 코드에서 project_id 컬럼 관련 문제를 해결하기 위한 임시 모듈입니다.
 """
 
 from sqlalchemy.orm import Session
@@ -84,11 +84,11 @@ def create_response(db: Session, response: Union[Response, ResponseCreate, Dict[
         del response_data["created_at"]
     if "updated_at" in response_data:
         del response_data["updated_at"]
-    
+        
     # project_id 제거 (데이터베이스에 컬럼이 없음)
     if "project_id" in response_data:
         del response_data["project_id"]
-        
+    
     # LLM 타입 처리 (문자열 -> Enum)
     if "llm_type" in response_data and not isinstance(response_data["llm_type"], LLMTypeEnum):
         llm_type = response_data["llm_type"]
@@ -136,7 +136,7 @@ def update_response(
     # project_id 제거 (데이터베이스에 컬럼이 없음)
     if "project_id" in response_data:
         del response_data["project_id"]
-        
+    
     # LLM 타입 처리 (문자열 -> Enum)
     if "llm_type" in response_data and not isinstance(response_data["llm_type"], LLMTypeEnum):
         llm_type = response_data["llm_type"]

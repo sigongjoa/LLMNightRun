@@ -81,6 +81,17 @@ export interface Settings {
   updated_at?: string;
 }
 
+// GitHub 관련 타입
+export { 
+  GitHubRepository,
+  GitHubRepositoryCreate,
+  GitHubRepositoryUpdate,
+  GitHubUploadResult,
+  GitHubCommitMessage,
+  GitHubReadmeContent,
+  GitHubRepositoriesResponse
+} from './github';
+
 // API 응답 타입
 export interface ApiResponse<T> {
   data: T;

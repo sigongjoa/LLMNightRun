@@ -41,8 +41,8 @@ import {
   FilterList as FilterIcon
 } from '@mui/icons-material';
 import { CodeSnippet, CodeLanguage, Response, Question } from '../types';
-import { fetchCodeSnippets, createCodeSnippet, fetchResponses, fetchQuestion } from '../utils/api';
-import ExportButton, { ExportType } from '../components/ExportButton';
+import { fetchCodeSnippets, createCodeSnippet, updateCodeSnippet, fetchResponses, fetchQuestion } from '../utils/api';
+import ExportButton from '../components/ExportButton';
 
 // 언어별 구문 강조 및 아이콘
 const LANGUAGE_INFO: Record<CodeLanguage, { color: string; icon: string; name: string }> = {
@@ -75,7 +75,8 @@ const CodeManagerPage: React.FC = () => {
   const [selectedLanguage, setSelectedLanguage] = useState<string>('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   
-  // 코드 스니펫 편집 관련 상태
+  // 새 스니펫 추가 다이얼로그 관련 상태
+  const [newDialogOpen, setNewDialogOpen] = useState<boolean>(false);
   const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
   const [currentSnippet, setCurrentSnippet] = useState<CodeSnippet | null>(null);
   const [editedTitle, setEditedTitle] = useState<string>('');
@@ -179,6 +180,53 @@ const CodeManagerPage: React.FC = () => {
     }
   };
   
+  // 새 스니펫 다이얼로그 열기
+  const handleOpenNewDialog = () => {
+    setCurrentSnippet(null);
+    setEditedTitle('');
+    setEditedDescription('');
+    setEditedContent('');
+    setEditedLanguage(CodeLanguage.PYTHON); // 기본 언어 설정
+    setEditedTags([]);
+    setNewDialogOpen(true);
+  };
+
+  // 새 스니펫 다이얼로그 닫기
+  const handleCloseNewDialog = () => {
+    setNewDialogOpen(false);
+  };
+
+  // 새 스니펫 저장
+  const handleSaveNewSnippet = async () => {
+    try {
+      // 필수 필드 검증
+      if (!editedTitle.trim() || !editedContent.trim()) {
+        alert('제목과 코드는 필수 항목입니다.');
+        return;
+      }
+
+      const newSnippet: CodeSnippet = {
+        title: editedTitle,
+        description: editedDescription,
+        content: editedContent,
+        language: editedLanguage,
+        tags: editedTags,
+        version: 1, // 초기 버전
+        question_id: question?.id, // 현재 질문 ID (있는 경우)
+      };
+
+      const savedSnippet = await createCodeSnippet(newSnippet);
+      setCodeSnippets([savedSnippet, ...codeSnippets]);
+      setNewDialogOpen(false);
+
+      // 성공 메시지
+      alert('코드 스니펫이 성공적으로 생성되었습니다.');
+    } catch (err: any) {
+      console.error('코드 스니펫 생성 오류:', err);
+      alert(`코드 스니펫 생성 중 오류가 발생했습니다: ${err.detail || '알 수 없는 오류'}`);
+    }
+  };
+
   // 스니펫 편집 다이얼로그 열기
   const handleOpenEditDialog = (snippet: CodeSnippet) => {
     setCurrentSnippet(snippet);
@@ -196,10 +244,44 @@ const CodeManagerPage: React.FC = () => {
     setCurrentSnippet(null);
   };
   
-  // 스니펫 저장
+  // 스니펫 업데이트 저장
   const handleSaveSnippet = async () => {
-    // TODO: API 연동하여 스니펫 저장 구현
-    handleCloseEditDialog();
+    try {
+      if (!currentSnippet || !currentSnippet.id) {
+        console.error('업데이트할 스니펫이 없습니다.');
+        return;
+      }
+      
+      // 필수 필드 검증
+      if (!editedTitle.trim() || !editedContent.trim()) {
+        alert('제목과 코드는 필수 항목입니다.');
+        return;
+      }
+      
+      const updatedSnippet: Partial<CodeSnippet> = {
+        title: editedTitle,
+        description: editedDescription,
+        content: editedContent,
+        language: editedLanguage,
+        tags: editedTags,
+        version: (currentSnippet.version || 1) + 1, // 버전 증가
+      };
+      
+      const savedSnippet = await updateCodeSnippet(currentSnippet.id, updatedSnippet);
+      
+      // 코드 스니펫 목록 업데이트
+      setCodeSnippets(codeSnippets.map(snippet => 
+        snippet.id === savedSnippet.id ? savedSnippet : snippet
+      ));
+      
+      handleCloseEditDialog();
+      
+      // 성공 메시지
+      alert('코드 스니펫이 성공적으로 업데이트되었습니다.');
+    } catch (err: any) {
+      console.error('코드 스니펫 업데이트 오류:', err);
+      alert(`코드 스니펫 업데이트 중 오류가 발생했습니다: ${err.detail || '알 수 없는 오류'}`);
+    }
   };
   
   // 코드 복사
@@ -260,6 +342,7 @@ const CodeManagerPage: React.FC = () => {
             variant="contained"
             color="primary"
             startIcon={<AddIcon />}
+            onClick={handleOpenNewDialog}
           >
             새 코드 스니펫
           </Button>
@@ -419,7 +502,7 @@ const CodeManagerPage: React.FC = () => {
                     </Tooltip>
 
                     <ExportButton
-                      type={ExportType.CODE_SNIPPET}
+                      type="code_snippet"
                       id={snippet.id!}
                       buttonText=""
                       buttonVariant="text"
@@ -443,6 +526,115 @@ const CodeManagerPage: React.FC = () => {
           </Grid>
         )}
       </Box>
+      
+      {/* 새 스니펫 추가 다이얼로그 */}
+      <Dialog
+        open={newDialogOpen}
+        onClose={handleCloseNewDialog}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogTitle>
+          새 코드 스니펫 생성
+        </DialogTitle>
+        
+        <DialogContent>
+          <TextField
+            label="제목"
+            fullWidth
+            value={editedTitle}
+            onChange={(e) => setEditedTitle(e.target.value)}
+            margin="normal"
+            required
+          />
+          
+          <TextField
+            label="설명"
+            fullWidth
+            value={editedDescription}
+            onChange={(e) => setEditedDescription(e.target.value)}
+            margin="normal"
+            multiline
+            rows={2}
+          />
+          
+          <FormControl fullWidth margin="normal">
+            <InputLabel>언어</InputLabel>
+            <Select
+              value={editedLanguage}
+              onChange={(e) => setEditedLanguage(e.target.value as CodeLanguage)}
+              label="언어"
+            >
+              {Object.entries(LANGUAGE_INFO).map(([key, value]) => (
+                <MenuItem key={key} value={key}>
+                  {value.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          
+          <TextField
+            label="코드"
+            fullWidth
+            value={editedContent}
+            onChange={(e) => setEditedContent(e.target.value)}
+            margin="normal"
+            multiline
+            rows={10}
+            required
+            inputProps={{
+              style: { fontFamily: 'monospace' }
+            }}
+          />
+          
+          <Box sx={{ mt: 2 }}>
+            <TextField
+              label="태그 추가"
+              size="small"
+              value={currentTag}
+              onChange={(e) => setCurrentTag(e.target.value)}
+              onKeyPress={handleTagKeyPress}
+              placeholder="태그 입력 후 엔터"
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={handleAddTag}
+                      disabled={!currentTag.trim()}
+                      edge="end"
+                    >
+                      <AddIcon />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+            
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', mt: 1, gap: 0.5 }}>
+              {editedTags.map((tag, index) => (
+                <Chip
+                  key={index}
+                  label={tag}
+                  onDelete={() => handleDeleteTag(tag)}
+                  size="small"
+                />
+              ))}
+            </Box>
+          </Box>
+        </DialogContent>
+        
+        <DialogActions>
+          <Button onClick={handleCloseNewDialog}>취소</Button>
+          <Button 
+            onClick={handleSaveNewSnippet} 
+            variant="contained" 
+            color="primary"
+            startIcon={<SaveIcon />}
+          >
+            저장
+          </Button>
+        </DialogActions>
+      </Dialog>
       
       {/* 스니펫 편집 다이얼로그 */}
       <Dialog

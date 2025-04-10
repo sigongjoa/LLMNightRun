@@ -153,7 +153,7 @@ async def create_document(
             content=request.content or "",
             status=request.status,
             github_path=request.github_path,
-            metadata=request.metadata,
+            doc_info=request.metadata,
             created_at=datetime.now(),
             updated_at=datetime.now()
         )

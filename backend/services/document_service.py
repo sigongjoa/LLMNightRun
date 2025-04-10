@@ -172,7 +172,7 @@ class DocumentService:
                 status=DocumentStatus.GENERATED,
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
-                metadata={
+                doc_info={
                     "generated": True,
                     "generation_params": custom_params
                 }

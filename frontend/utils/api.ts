@@ -127,27 +127,76 @@ export const askLLM = async (llmType: LLMType, question: Question): Promise<{que
 // GitHub 관련 API 함수
 export const uploadToGitHub = async (
   questionId: number,
-  folderPath?: string
-): Promise<{message: string, repo_url: string, folder_path: string, commit_message: string}> => {
-  const response = await api.post('/github/upload', {
-    question_id: questionId,
-    folder_path: folderPath
-  });
-  return response.data;
+  folderPath?: string,
+  repoId?: number
+): Promise<{success: boolean, message: string, repo_url: string, folder_path: string, commit_message: string, files?: string[]}> => {
+  try {
+    const response = await api.post('/github/upload', {
+      question_id: questionId,
+      folder_path: folderPath,
+      repo_id: repoId
+    });
+    return response.data;
+  } catch (error) {
+    console.error('GitHub 업로드 오류:', error);
+    
+    // 개발 모드에서 임시 응답 제공
+    if (process.env.NODE_ENV === 'development') {
+      return {
+        success: false,
+        message: '백엔드 API가 준비되지 않았습니다.',
+        repo_url: `https://github.com/username/repo/tree/main/${folderPath || `question_${questionId}`}`,
+        folder_path: folderPath || `question_${questionId}`,
+        commit_message: '업로드 실패 - 백엔드 API가 준비되지 않음'
+      };
+    }
+    
+    throw error;
+  }
 };
 
 export const generateCommitMessage = async (
-  questionId: number
+  questionId: number,
+  repoId?: number
 ): Promise<{commit_message: string}> => {
-  const response = await api.get(`/github/generate-commit-message/${questionId}`);
-  return response.data;
+  try {
+    const params = repoId ? { repo_id: repoId } : {};
+    const response = await api.get(`/github/generate-commit-message/${questionId}`, { params });
+    return response.data;
+  } catch (error) {
+    console.error('커밋 메시지 생성 오류:', error);
+    
+    // 개발 모드에서 임시 응답 제공
+    if (process.env.NODE_ENV === 'development') {
+      return {
+        commit_message: `Add code for question #${questionId}`
+      };
+    }
+    
+    throw error;
+  }
 };
 
 export const generateReadme = async (
-  questionId: number
+  questionId: number,
+  repoId?: number
 ): Promise<{readme_content: string}> => {
-  const response = await api.get(`/github/generate-readme/${questionId}`);
-  return response.data;
+  try {
+    const params = repoId ? { repo_id: repoId } : {};
+    const response = await api.get(`/github/generate-readme/${questionId}`, { params });
+    return response.data;
+  } catch (error) {
+    console.error('README 생성 오류:', error);
+    
+    // 개발 모드에서 임시 응답 제공
+    if (process.env.NODE_ENV === 'development') {
+      return {
+        readme_content: `# Question ${questionId}\n\nThis is a placeholder README because the backend API is not available.`
+      };
+    }
+    
+    throw error;
+  }
 };
 
 // 코드 스니펫 관련 API 함수
@@ -155,11 +204,15 @@ export const fetchCodeSnippets = async (
   language?: string,
   tag?: string,
   skip = 0,
-  limit = 100
+  limit = 100,
+  questionId?: number,
+  responseId?: number
 ): Promise<CodeSnippet[]> => {
   const params: any = { skip, limit };
   if (language) params.language = language;
   if (tag) params.tag = tag;
+  if (questionId) params.question_id = questionId;
+  if (responseId) params.response_id = responseId;
   
   const response = await api.get<CodeSnippet[]>('/code-snippets/', { params });
   return response.data;
@@ -197,13 +250,54 @@ export const createCodeTemplate = async (template: CodeTemplate): Promise<CodeTe
 
 // 설정 관련 API 함수
 export const fetchSettings = async (): Promise<Settings> => {
-  const response = await api.get<Settings>('/settings/');
-  return response.data;
+  try {
+    const response = await api.get<Settings>('/settings/');
+    return response.data;
+  } catch (error) {
+    console.error('설정 가져오기 오류:', error);
+    
+    // localStorage에서 백업 데이터 가져오기
+    const backupSettings: Settings = {};
+    
+    if (localStorage.getItem('github_token')) {
+      backupSettings.github_token = localStorage.getItem('github_token') || undefined;
+    }
+    if (localStorage.getItem('github_username')) {
+      backupSettings.github_username = localStorage.getItem('github_username') || undefined;
+    }
+    if (localStorage.getItem('github_repo')) {
+      backupSettings.github_repo = localStorage.getItem('github_repo') || undefined;
+    }
+    
+    // 백업 데이터가 있으면 반환, 없으면 에러 전파
+    if (Object.keys(backupSettings).length > 0) {
+      return backupSettings;
+    }
+    
+    throw error;
+  }
 };
 
 export const updateSettings = async (settings: Partial<Settings>): Promise<Settings> => {
-  const response = await api.post<Settings>('/settings/', settings);
-  return response.data;
+  try {
+    const response = await api.post<Settings>('/settings/', settings);
+    return response.data;
+  } catch (error) {
+    console.error('설정 업데이트 오류:', error);
+    
+    // localStorage에 백업 저장
+    if (settings.github_token) {
+      localStorage.setItem('github_token', settings.github_token);
+    }
+    if (settings.github_username) {
+      localStorage.setItem('github_username', settings.github_username);
+    }
+    if (settings.github_repo) {
+      localStorage.setItem('github_repo', settings.github_repo);
+    }
+    
+    throw error;
+  }
 };
 
 // 내보내기 관련 API 함수

@@ -4,10 +4,14 @@ import type { NextComponentType } from 'next';
 import { CacheProvider, EmotionCache } from '@emotion/react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import Head from 'next/head';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import theme from '../styles/theme';
 import createEmotionCache from '../utils/createEmotionCache';
 import Layout from '../components/Layout';
 import '../styles/globals.css';
+
+// Create a client
+const queryClient = new QueryClient();
 
 // Client-side cache, shared for the whole session of the user in the browser.
 const clientSideEmotionCache = createEmotionCache();
@@ -60,21 +64,19 @@ export default function MyApp({
   }, []);
   
   return (
-    <CacheProvider value={emotionCache}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <Head>
-          {/* 모든 페이지에 공통으로 필요한 폰트 추가 */}
-          <link
-            href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap"
-            rel="stylesheet"
-          />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        </Head>
-        <Layout>
-          <Component {...pageProps} />
-        </Layout>
-      </ThemeProvider>
-    </CacheProvider>
+    <QueryClientProvider client={queryClient}>
+      <CacheProvider value={emotionCache}>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <Head>
+            {/* 메타 태그만 포함하고 폰트는 _document.tsx에서 관리 */}
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          </Head>
+          <Layout>
+            <Component {...pageProps} />
+          </Layout>
+        </ThemeProvider>
+      </CacheProvider>
+    </QueryClientProvider>
   );
 }

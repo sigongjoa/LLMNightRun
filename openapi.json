@@ -2985,6 +2985,1066 @@
         }
       }
     },
+    "/github-repos/": {
+      "get": {
+        "tags": [
+          "github-repos"
+        ],
+        "summary": "List Repositories",
+        "description": "GitHub 저장소 목록 조회\n\nArgs:\n    project_id: 프로젝트 ID (선택 사항)",
+        "operationId": "list_repositories_github_repos__get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GitHubRepositoryResponse"
+                  },
+                  "title": "Response List Repositories Github Repos  Get"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "github-repos"
+        ],
+        "summary": "Create Repository",
+        "description": "GitHub 저장소 정보 생성",
+        "operationId": "create_repository_github_repos__post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GitHubCreateRepositoryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitHubRepositoryResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/github-repos/{repo_id}": {
+      "get": {
+        "tags": [
+          "github-repos"
+        ],
+        "summary": "Get Repository",
+        "description": "GitHub 저장소 정보 조회",
+        "operationId": "get_repository_github_repos__repo_id__get",
+        "parameters": [
+          {
+            "name": "repo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "저장소 ID",
+              "title": "Repo Id"
+            },
+            "description": "저장소 ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitHubRepositoryResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "github-repos"
+        ],
+        "summary": "Update Repository",
+        "description": "GitHub 저장소 정보 업데이트",
+        "operationId": "update_repository_github_repos__repo_id__put",
+        "parameters": [
+          {
+            "name": "repo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "저장소 ID",
+              "title": "Repo Id"
+            },
+            "description": "저장소 ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GitHubUpdateRepositoryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitHubRepositoryResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "github-repos"
+        ],
+        "summary": "Delete Repository",
+        "description": "GitHub 저장소 정보 삭제",
+        "operationId": "delete_repository_github_repos__repo_id__delete",
+        "parameters": [
+          {
+            "name": "repo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "저장소 ID",
+              "title": "Repo Id"
+            },
+            "description": "저장소 ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Delete Repository Github Repos  Repo Id  Delete"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/github-repos/upload": {
+      "post": {
+        "tags": [
+          "github-repos"
+        ],
+        "summary": "Upload To Github",
+        "description": "코드 스니펫을 GitHub에 업로드",
+        "operationId": "upload_to_github_github_repos_upload_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GitHubUploadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Upload To Github Github Repos Upload Post"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/github-repos/upload-file": {
+      "post": {
+        "tags": [
+          "github-repos"
+        ],
+        "summary": "Upload File To Github",
+        "description": "단일 파일을 GitHub에 업로드",
+        "operationId": "upload_file_to_github_github_repos_upload_file_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GitHubFileUploadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Upload File To Github Github Repos Upload File Post"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/github-repos/commit-message/{question_id}": {
+      "post": {
+        "tags": [
+          "github-repos"
+        ],
+        "summary": "Generate Commit Message",
+        "description": "GitHub 커밋 메시지 생성",
+        "operationId": "generate_commit_message_github_repos_commit_message__question_id__post",
+        "parameters": [
+          {
+            "name": "question_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Question Id"
+            }
+          },
+          {
+            "name": "repo_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Repo Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Generate Commit Message Github Repos Commit Message  Question Id  Post"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/github-repos/readme/{question_id}": {
+      "post": {
+        "tags": [
+          "github-repos"
+        ],
+        "summary": "Generate Readme",
+        "description": "GitHub README 파일 생성",
+        "operationId": "generate_readme_github_repos_readme__question_id__post",
+        "parameters": [
+          {
+            "name": "question_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Question Id"
+            }
+          },
+          {
+            "name": "repo_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Repo Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Generate Readme Github Repos Readme  Question Id  Post"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/github-repos/remote": {
+      "get": {
+        "tags": [
+          "github-repos"
+        ],
+        "summary": "List Remote Repositories",
+        "description": "사용자의 GitHub 원격 저장소 목록 조회",
+        "operationId": "list_remote_repositories_github_repos_remote_get",
+        "parameters": [
+          {
+            "name": "repo_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Repo Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  },
+                  "title": "Response List Remote Repositories Github Repos Remote Get"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "github-repos"
+        ],
+        "summary": "Create Remote Repository",
+        "description": "GitHub 원격 저장소 생성",
+        "operationId": "create_remote_repository_github_repos_remote_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GitHubCreateRemoteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Create Remote Repository Github Repos Remote Post"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "validation_error",
+                  "message": "데이터 검증 오류가 발생했습니다",
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "필수 항목입니다"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "unauthorized",
+                  "message": "API 키가 필요합니다",
+                  "detail": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 내부 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error_code": "internal_server_error",
+                  "message": "서버 내부 오류가 발생했습니다",
+                  "detail": "오류에 대한 자세한 내용"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/codebases/{codebase_id}/indexing/settings": {
       "get": {
         "tags": [
@@ -11989,25 +13049,18 @@
             "type": "string",
             "title": "Id"
           },
-          "commit_id": {
-            "type": "string",
-            "title": "Commit Id"
-          },
           "message": {
             "type": "string",
             "title": "Message"
           },
-          "document_ids": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Document Ids"
+          "author": {
+            "type": "string",
+            "title": "Author"
           },
-          "timestamp": {
+          "date": {
             "type": "string",
             "format": "date-time",
-            "title": "Timestamp"
+            "title": "Date"
           },
           "url": {
             "anyOf": [
@@ -12020,45 +13073,33 @@
             ],
             "title": "Url"
           },
-          "status": {
-            "type": "string",
-            "title": "Status",
-            "default": "success"
-          },
-          "error": {
+          "files": {
             "anyOf": [
               {
-                "type": "string"
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Error"
-          },
-          "metadata": {
-            "type": "object",
-            "title": "Metadata"
+            "title": "Files"
           }
         },
         "type": "object",
         "required": [
           "id",
-          "commit_id",
           "message",
-          "document_ids",
-          "timestamp"
+          "author",
+          "date"
         ],
         "title": "GitHubCommit",
         "description": "GitHub 커밋 모델"
       },
       "GitHubConfig": {
         "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id",
-            "default": "github_config"
-          },
           "enabled": {
             "type": "boolean",
             "title": "Enabled",
@@ -12116,11 +13157,6 @@
             "type": "string",
             "title": "Commit Message Template",
             "default": "docs: Update {doc_type} documentation"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At"
           }
         },
         "type": "object",
@@ -12256,6 +13292,227 @@
         "title": "GitHubConfigUpdateRequest",
         "description": "GitHub 설정 업데이트 요청 모델"
       },
+      "GitHubCreateRemoteRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "private": {
+            "type": "boolean",
+            "title": "Private",
+            "default": true
+          },
+          "auto_init": {
+            "type": "boolean",
+            "title": "Auto Init",
+            "default": true
+          },
+          "repo_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "GitHubCreateRemoteRequest"
+      },
+      "GitHubCreateRepositoryRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "owner": {
+            "type": "string",
+            "title": "Owner"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default",
+            "default": false
+          },
+          "is_private": {
+            "type": "boolean",
+            "title": "Is Private",
+            "default": true
+          },
+          "branch": {
+            "type": "string",
+            "title": "Branch",
+            "default": "main"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "owner",
+          "token"
+        ],
+        "title": "GitHubCreateRepositoryRequest"
+      },
+      "GitHubFileUploadRequest": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "file_path": {
+            "type": "string",
+            "title": "File Path"
+          },
+          "commit_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commit Message"
+          },
+          "repo_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo Id"
+          },
+          "branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content",
+          "file_path"
+        ],
+        "title": "GitHubFileUploadRequest"
+      },
+      "GitHubRepositoryResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "owner": {
+            "type": "string",
+            "title": "Owner"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default"
+          },
+          "is_private": {
+            "type": "boolean",
+            "title": "Is Private"
+          },
+          "branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "owner",
+          "url",
+          "is_default",
+          "is_private"
+        ],
+        "title": "GitHubRepositoryResponse"
+      },
       "GitHubTestConnectionRequest": {
         "properties": {
           "repo_url": {
@@ -12290,17 +13547,6 @@
             "type": "string",
             "title": "Message"
           },
-          "repo_info": {
-            "anyOf": [
-              {
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Repo Info"
-          },
           "error": {
             "anyOf": [
               {
@@ -12311,6 +13557,17 @@
               }
             ],
             "title": "Error"
+          },
+          "repo_info": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo Info"
           }
         },
         "type": "object",
@@ -12320,6 +13577,135 @@
         ],
         "title": "GitHubTestConnectionResponse",
         "description": "GitHub 연결 테스트 응답 모델"
+      },
+      "GitHubUpdateRepositoryRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner"
+          },
+          "token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token"
+          },
+          "is_default": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Default"
+          },
+          "is_private": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Private"
+          },
+          "branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          }
+        },
+        "type": "object",
+        "title": "GitHubUpdateRepositoryRequest"
+      },
+      "GitHubUploadRequest": {
+        "properties": {
+          "question_id": {
+            "type": "integer",
+            "title": "Question Id"
+          },
+          "folder_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Path"
+          },
+          "repo_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "question_id"
+        ],
+        "title": "GitHubUploadRequest"
       },
       "HTTPValidationError": {
         "properties": {

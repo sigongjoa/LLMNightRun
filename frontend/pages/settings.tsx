@@ -15,16 +15,36 @@ import {
   IconButton,
   InputAdornment,
   Switch,
-  FormControlLabel
+  FormControlLabel,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  Card,
+  CardContent,
+  CardActions,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import {
   Save as SaveIcon,
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
-  CheckCircle as CheckCircleIcon
+  CheckCircle as CheckCircleIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+  Add as AddIcon,
+  Star as StarIcon
 } from '@mui/icons-material';
-import { Settings } from '../types';
+import { Settings, GitHubRepository } from '../types';
 import { fetchSettings, updateSettings } from '../utils/api';
+import axios from 'axios';
+
+// API 기본 URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -51,6 +71,407 @@ function TabPanel(props: TabPanelProps) {
     </div>
   );
 }
+
+// 저장소 목록 컴포넌트
+const GitHubRepositoriesList: React.FC = () => {
+  const [repositories, setRepositories] = useState<GitHubRepository[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingRepo, setEditingRepo] = useState<GitHubRepository | null>(null);
+  const [showTokens, setShowTokens] = useState<{[key: number]: boolean}>({});
+  
+  // 새 저장소 정보
+  const [newRepo, setNewRepo] = useState({
+    name: '',
+    owner: '',
+    token: '',
+    description: '',
+    is_default: false,
+    is_private: true,
+    branch: 'main'
+  });
+  
+  // 저장소 목록 로드
+  const loadRepositories = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/github/repositories`);
+        setRepositories(response.data.repositories || []);
+      } catch (err) {
+        console.error('저장소 목록 로드 오류:', err);
+        // 백엔드에 엔드포인트가 없는 경우 빈 배열로 초기화
+        setRepositories([]);
+        
+        // 개발 환경에서만 에러 메시지 표시
+        if (process.env.NODE_ENV === 'development') {
+          setError('백엔드 API가 준비되지 않았습니다: /github/repositories');
+        } else {
+          setError(null);
+        }
+      }
+    } catch (innerErr) {
+      console.error('예상치 못한 오류:', innerErr);
+      setError('저장소 목록을 불러오는 중 예상치 못한 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // 컴포넌트 마운트 시 저장소 목록 로드
+  useEffect(() => {
+    loadRepositories();
+  }, []);
+  
+  // 토큰 표시 토글
+  const toggleShowToken = (repoId: number) => {
+    setShowTokens(prev => ({
+      ...prev,
+      [repoId]: !prev[repoId]
+    }));
+  };
+  
+  // 저장소 추가 다이얼로그 열기
+  const handleOpenAddDialog = () => {
+    setEditingRepo(null);
+    setNewRepo({
+      name: '',
+      owner: '',
+      token: '',
+      description: '',
+      is_default: false,
+      is_private: true,
+      branch: 'main'
+    });
+    setDialogOpen(true);
+  };
+  
+  // 저장소 편집 다이얼로그 열기
+  const handleOpenEditDialog = (repo: GitHubRepository) => {
+    setEditingRepo(repo);
+    setNewRepo({
+      name: repo.name,
+      owner: repo.owner,
+      token: '',  // 보안상 비워둠
+      description: repo.description || '',
+      is_default: repo.is_default,
+      is_private: repo.is_private,
+      branch: repo.branch || 'main'
+    });
+    setDialogOpen(true);
+  };
+  
+  // 입력 변경 핸들러
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, checked, type } = e.target;
+    setNewRepo({
+      ...newRepo,
+      [name]: type === 'checkbox' ? checked : value
+    });
+  };
+  
+  // 저장소 추가 또는 업데이트
+  const handleSaveRepository = async () => {
+    try {
+      if (!newRepo.name || !newRepo.owner || (!editingRepo && !newRepo.token)) {
+        alert('이름, 소유자, 토큰은 필수 입력 필드입니다.');
+        return;
+      }
+      
+      try {
+        if (editingRepo) {
+          // 기존 저장소 업데이트
+          const updateData = { ...newRepo };
+          if (!updateData.token) {
+            delete updateData.token; // 토큰이 비어있으면 업데이트하지 않음
+          }
+          
+          await axios.put(`${API_BASE_URL}/github/repositories/${editingRepo.id}`, updateData);
+        } else {
+          // 새 저장소 추가
+          await axios.post(`${API_BASE_URL}/github/repositories`, newRepo);
+        }
+        
+        // API 호출이 성공하면 저장소 목록 새로고침
+        await loadRepositories();
+        setDialogOpen(false);
+        
+        // 로컬 저장소 정보를 임시로 업데이트 (APIs가 준비되지 않은 경우)
+        if (repositories.length === 0) {
+          const newRepoItem = {
+            id: Date.now(), // 임시 ID
+            name: newRepo.name,
+            owner: newRepo.owner,
+            description: newRepo.description,
+            is_default: newRepo.is_default,
+            is_private: newRepo.is_private,
+            branch: newRepo.branch
+          };
+          
+          setRepositories([newRepoItem]);
+        }
+      } catch (apiErr) {
+        console.error('저장소 API 오류:', apiErr);
+        
+        if (process.env.NODE_ENV === 'development') {
+          alert('백엔드 API가 준비되지 않았습니다. 개발 모드에서는 변경 사항이 저장되지 않습니다.');
+        } else {
+          alert('저장소를 저장하는 중 오류가 발생했습니다.');
+        }
+      }
+    } catch (err) {
+      console.error('저장소 저장 오류:', err);
+      alert('저장소를 저장하는 중 오류가 발생했습니다.');
+    }
+  };
+  
+  // 저장소 삭제
+  const handleDeleteRepository = async (repoId: number) => {
+    if (!confirm('정말로 이 저장소를 삭제하시겠습니까?')) {
+      return;
+    }
+    
+    try {
+      await axios.delete(`${API_BASE_URL}/github/repositories/${repoId}`);
+      await loadRepositories();
+    } catch (err) {
+      console.error('저장소 삭제 오류:', err);
+      alert('저장소를 삭제하는 중 오류가 발생했습니다.');
+    }
+  };
+  
+  // 기본 저장소로 설정
+  const handleSetDefault = async (repoId: number) => {
+    try {
+      await axios.put(`${API_BASE_URL}/github/repositories/${repoId}`, {
+        is_default: true
+      });
+      await loadRepositories();
+    } catch (err) {
+      console.error('기본 저장소 설정 오류:', err);
+      alert('기본 저장소를 설정하는 중 오류가 발생했습니다.');
+    }
+  };
+  
+  return (
+    <>
+      {loading ? (
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4 }}>
+          <CircularProgress size={24} sx={{ mr: 1 }} />
+          <Typography>저장소 목록을 불러오는 중...</Typography>
+        </Box>
+      ) : error ? (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      ) : repositories.length === 0 ? (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          연결된 GitHub 저장소가 없습니다. 저장소를 추가해 주세요.
+        </Alert>
+      ) : (
+        <List>
+          {repositories.map((repo) => (
+            <Card key={repo.id} sx={{ mb: 2 }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                    {repo.owner}/{repo.name}
+                  </Typography>
+                  {repo.is_default && (
+                    <Chip 
+                      size="small" 
+                      color="primary" 
+                      icon={<StarIcon />} 
+                      label="기본" 
+                      sx={{ ml: 1 }}
+                    />
+                  )}
+                </Box>
+                
+                {repo.description && (
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    {repo.description}
+                  </Typography>
+                )}
+                
+                <Grid container spacing={1} sx={{ mt: 1 }}>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" component="div">
+                      <strong>브랜치:</strong> {repo.branch || 'main'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" component="div">
+                      <strong>가시성:</strong> {repo.is_private ? '비공개' : '공개'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="body2" component="div" sx={{ display: 'flex', alignItems: 'center' }}>
+                      <strong>토큰:</strong> 
+                      <span style={{ marginLeft: '8px', flexGrow: 1 }}>
+                        {showTokens[repo.id] ? '••••••••' : '•••••••••••••••••••'}
+                      </span>
+                      <IconButton 
+                        size="small" 
+                        onClick={() => toggleShowToken(repo.id)}
+                      >
+                        {showTokens[repo.id] ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+                      </IconButton>
+                    </Typography>
+                  </Grid>
+                </Grid>
+              </CardContent>
+              <CardActions>
+                <Button 
+                  size="small" 
+                  startIcon={<EditIcon />} 
+                  onClick={() => handleOpenEditDialog(repo)}
+                >
+                  편집
+                </Button>
+                {!repo.is_default && (
+                  <Button 
+                    size="small" 
+                    startIcon={<StarIcon />} 
+                    onClick={() => handleSetDefault(repo.id)}
+                  >
+                    기본으로 설정
+                  </Button>
+                )}
+                <Button 
+                  size="small" 
+                  color="error" 
+                  startIcon={<DeleteIcon />} 
+                  onClick={() => handleDeleteRepository(repo.id)}
+                >
+                  삭제
+                </Button>
+              </CardActions>
+            </Card>
+          ))}
+        </List>
+      )}
+      
+      <Box sx={{ mt: 2, textAlign: 'center' }}>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          startIcon={<AddIcon />} 
+          onClick={handleOpenAddDialog}
+        >
+          GitHub 저장소 추가
+        </Button>
+      </Box>
+      
+      {/* 저장소 추가/편집 다이얼로그 */}
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          {editingRepo ? '저장소 편집' : '새 GitHub 저장소 추가'}
+        </DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                required
+                label="소유자"
+                name="owner"
+                value={newRepo.owner}
+                onChange={handleInputChange}
+                placeholder="사용자명 또는 조직명"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                required
+                label="저장소 이름"
+                name="name"
+                value={newRepo.name}
+                onChange={handleInputChange}
+                placeholder="repository-name"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                required={!editingRepo}
+                label="GitHub 토큰"
+                name="token"
+                type="password"
+                value={newRepo.token}
+                onChange={handleInputChange}
+                placeholder={editingRepo ? '변경하지 않으려면 비워두세요' : 'ghp_...'}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="설명 (선택사항)"
+                name="description"
+                value={newRepo.description}
+                onChange={handleInputChange}
+                placeholder="저장소에 대한 간단한 설명"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="기본 브랜치"
+                name="branch"
+                value={newRepo.branch}
+                onChange={handleInputChange}
+                placeholder="main"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Divider sx={{ my: 1 }} />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    name="is_private"
+                    checked={newRepo.is_private}
+                    onChange={handleInputChange}
+                  />
+                }
+                label="비공개 저장소"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    name="is_default"
+                    checked={newRepo.is_default}
+                    onChange={handleInputChange}
+                  />
+                }
+                label="기본 저장소로 설정"
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialogOpen(false)}>
+            취소
+          </Button>
+          <Button 
+            onClick={handleSaveRepository} 
+            variant="contained" 
+            color="primary"
+          >
+            {editingRepo ? '저장소 업데이트' : '저장소 추가'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+};
 
 const SettingsPage: React.FC = () => {
   // 상태 관리
@@ -80,8 +501,18 @@ const SettingsPage: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        const settingsData = await fetchSettings();
-        setSettings(settingsData);
+        try {
+          const settingsData = await fetchSettings();
+          setSettings(settingsData);
+        } catch (apiErr: any) {
+          console.error('설정 로딩 오류:', apiErr);
+          // API가 준비되지 않은 경우 빈 설정 객체로 초기화
+          setSettings({});
+          
+          if (process.env.NODE_ENV === 'development') {
+            setError('백엔드 API가 준비되지 않았습니다: /settings');
+          }
+        }
         
         // 환경 변수에서 웹 크롤링 설정 로드 (실제로는 API를 통해 가져와야 함)
         setEnableWebCrawling(localStorage.getItem('enable_web_crawling') === 'true');
@@ -112,8 +543,19 @@ const SettingsPage: React.FC = () => {
       setError(null);
       setSuccess(false);
       
-      // API 설정 저장
-      await updateSettings(settings);
+      try {
+        // API 설정 저장
+        await updateSettings(settings);
+      } catch (apiErr: any) {
+        console.error('API 설정 저장 오류:', apiErr);
+        
+        if (process.env.NODE_ENV === 'development') {
+          // 개발 환경에서는 경고만 표시하고 계속 진행
+          console.warn('백엔드 API가 준비되지 않았습니다. 로컬 스토리지에만 저장합니다.');
+        } else {
+          throw apiErr; // 프로덕션 환경에서는 에러 발생
+        }
+      }
       
       // 웹 크롤링 설정 저장 (로컬 스토리지에 임시 저장)
       localStorage.setItem('enable_web_crawling', enableWebCrawling.toString());
@@ -121,6 +563,17 @@ const SettingsPage: React.FC = () => {
       localStorage.setItem('openai_password', openaiPassword);
       localStorage.setItem('claude_username', claudeUsername);
       localStorage.setItem('claude_password', claudePassword);
+      
+      // GitHub 설정도 로컬 스토리지에 백업 (API 실패 대비)
+      if (settings.github_token) {
+        localStorage.setItem('github_token', settings.github_token);
+      }
+      if (settings.github_username) {
+        localStorage.setItem('github_username', settings.github_username);
+      }
+      if (settings.github_repo) {
+        localStorage.setItem('github_repo', settings.github_repo);
+      }
       
       setSuccess(true);
       
@@ -273,6 +726,24 @@ const SettingsPage: React.FC = () => {
             </Typography>
             <Typography variant="body2" color="text.secondary" paragraph>
               응답과 코드를 GitHub 저장소에 저장하기 위한 설정을 구성합니다.
+              여러 개의 저장소를 추가하고 관리할 수 있습니다.
+            </Typography>
+            
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="subtitle1" gutterBottom sx={{ mt: 3, fontWeight: 'bold' }}>
+                연결된 GitHub 저장소
+              </Typography>
+              
+              <GitHubRepositoriesList />
+            </Box>
+            
+            <Divider sx={{ my: 3 }} />
+            
+            <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
+              기본 GitHub 설정
+            </Typography>
+            <Typography variant="body2" color="text.secondary" paragraph>
+              전역 기본 설정으로 사용됩니다. 특정 저장소가 선택되지 않은 경우 이 설정이 적용됩니다.
             </Typography>
             
             <Grid container spacing={3}>

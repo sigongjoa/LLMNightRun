@@ -25,7 +25,7 @@ import {
 } from '@mui/icons-material';
 import { Question, Response, LLMType } from '../types';
 import { fetchQuestion, fetchResponses, uploadToGitHub } from '../utils/api';
-import ExportButton, { ExportType } from '../components/ExportButton';
+import ExportButton from '../components/ExportButton';
 
 // LLM 유형별 아이콘 및 색상
 const LLM_ICONS: Record<LLMType, { name: string; color: string }> = {
@@ -223,7 +223,7 @@ const ResultsPage: React.FC = () => {
               </Button>
               
               <ExportButton 
-                type={ExportType.QUESTION}
+                type="question"
                 id={question.id!}
                 buttonVariant="outlined"
                 buttonSize="medium"

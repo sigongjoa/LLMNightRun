@@ -79,28 +79,27 @@ const RecentQuestions: React.FC<RecentQuestionsProps> = ({ questions, loading = 
       {questions.map((question, index) => (
         <React.Fragment key={question.id || index}>
           <ListItem alignItems="flex-start">
-            <ListItemText
-              primary={
-                <Typography variant="subtitle1">
-                  {summarizeContent(question.content)}
+            {/* ListItemText를 사용하지 않고 직접 구성 */}
+            <Box sx={{ flexGrow: 1, pr: 3 }}>
+              <Typography variant="subtitle1" component="div" gutterBottom>
+                {summarizeContent(question.content)}
+              </Typography>
+              
+              <Box sx={{ mt: 0.5 }}>
+                <Typography variant="body2" color="text.secondary" component="div">
+                  {formatDate(question.created_at)}
                 </Typography>
-              }
-              secondary={
-                <Box sx={{ mt: 1 }}>
-                  <Typography variant="body2" color="text.secondary" component="span">
-                    {formatDate(question.created_at)}
-                  </Typography>
-                  
-                  {question.tags && question.tags.length > 0 && (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                      {question.tags.map((tag, tagIndex) => (
-                        <Chip key={tagIndex} label={tag} size="small" variant="outlined" />
-                      ))}
-                    </Box>
-                  )}
-                </Box>
-              }
-            />
+                
+                {question.tags && question.tags.length > 0 && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                    {question.tags.map((tag, tagIndex) => (
+                      <Chip key={tagIndex} label={tag} size="small" variant="outlined" />
+                    ))}
+                  </Box>
+                )}
+              </Box>
+            </Box>
+            
             <ListItemSecondaryAction>
               <IconButton 
                 edge="end" 

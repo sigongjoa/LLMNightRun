@@ -13,6 +13,7 @@ LLMNightRun API 문서에 오신 것을 환영합니다.
 - [Docs-Manager API](./docs-manager.md)
 - [Export API](./export.md)
 - [Github API](./github.md)
+- [Github-Repos API](./github-repos.md)
 - [Indexing API](./indexing.md)
 - [Mcp API](./mcp.md)
 - [Mcp-Api API](./mcp-api.md)
