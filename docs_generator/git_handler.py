@@ -24,7 +24,8 @@ class GitHandler:
             repo_path: Git 저장소 경로 (기본값: 현재 디렉토리)
         """
         self.repo_path = os.path.abspath(repo_path)
-        if not self._is_git_repo():
+        self.is_git_repo = self._is_git_repo()
+        if not self.is_git_repo:
             raise ValueError(f"{self.repo_path}는 유효한 Git 저장소가 아닙니다.")
 
     def _is_git_repo(self) -> bool:

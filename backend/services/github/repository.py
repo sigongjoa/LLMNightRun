@@ -7,8 +7,9 @@ GitHub 저장소 관리 모듈
 from typing import Dict, List, Optional, Any
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
+from datetime import datetime
 
-from backend.database.models import GitHubRepository, Settings
+from backend.database.models import GitHubRepository, Settings, User, UserActivity
 from backend.database.operations.settings import get_settings
 from .models import GitHubRepositoryData
 
@@ -99,17 +100,35 @@ class RepositoryService:
             is_private = getattr(repo_data, 'is_private', True)
             branch = getattr(repo_data, 'branch', 'main')
             
-            new_repo = GitHubRepository(
-                name=name,
-                description=description,
-                owner=owner,
-                token=token,
-                is_default=is_default,
-                is_private=is_private,
-                branch=branch,
-                url=f"https://github.com/{owner}/{name}",
-                project_id=project_id
-            )
+            # 명시적으로 컬럼을 지정하여 repo_info 컬럼 사용하지 않음
+            from sqlalchemy import insert
+            from backend.database.models import GitHubRepository
+            
+            # 저장소 데이터 준비
+            repo_values = {
+                "name": name,
+                "description": description,
+                "owner": owner,
+                "token": token,
+                "is_default": is_default,
+                "is_private": is_private,
+                "branch": branch,
+                "url": f"https://github.com/{owner}/{name}",
+                "project_id": project_id,
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow()
+            }
+            
+            # SQLAlchemy Core를 사용하여 직접 쿼리 실행
+            stmt = insert(GitHubRepository).values(**repo_values)
+            result = self.db.execute(stmt)
+            self.db.commit()
+            
+            # 새로 생성된 저장소 ID 가져오기
+            new_repo_id = result.inserted_primary_key[0]
+            
+            # 저장소 객체 조회
+            new_repo = self.db.query(GitHubRepository).filter(GitHubRepository.id == new_repo_id).first()
             
             self.db.add(new_repo)
             self.db.commit()
@@ -197,9 +216,48 @@ class RepositoryService:
         Returns:
             저장소 목록
         """
-        query = self.db.query(GitHubRepository)
-        
-        if project_id:
-            query = query.filter(GitHubRepository.project_id == project_id)
-        
-        return query.all()
+        try:
+            # 안전하게 컬럼을 명시적으로 선택하여 쿼리
+            query = self.db.query(
+                GitHubRepository.id,
+                GitHubRepository.name,
+                GitHubRepository.description,
+                GitHubRepository.owner,
+                GitHubRepository.token,
+                GitHubRepository.is_default,
+                GitHubRepository.is_private,
+                GitHubRepository.url,
+                GitHubRepository.branch,
+                GitHubRepository.project_id,
+                GitHubRepository.created_at,
+                GitHubRepository.updated_at
+            )
+            
+            if project_id:
+                query = query.filter(GitHubRepository.project_id == project_id)
+            
+            # GitHubRepository 객체로 조합
+            result = []
+            for row in query.all():
+                repo = GitHubRepository(
+                    id=row.id,
+                    name=row.name,
+                    description=row.description,
+                    owner=row.owner,
+                    token=row.token,
+                    is_default=row.is_default,
+                    is_private=row.is_private,
+                    url=row.url,
+                    branch=row.branch,
+                    project_id=row.project_id,
+                    created_at=row.created_at,
+                    updated_at=row.updated_at
+                )
+                result.append(repo)
+            
+            return result
+        except Exception as e:
+            # 오류 로깅
+            print(f"저장소 목록 조회 중 오류 발생: {str(e)}")
+            # 빈 목록 반환
+            return []

@@ -4,6 +4,15 @@ body {
   margin: 0;
   font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
     Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+body > div#__next {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 a {
@@ -46,6 +55,12 @@ main header,
 main nav, 
 main .MuiAppBar-root {
   display: none !important;
+}
+
+/* 메인 컨텐츠가 헤더 아래에 표시되도록 수정 */
+.MuiContainer-root.MuiContainer-maxWidthLg {
+  margin-top: 16px;
+  flex-grow: 1;
 }
 
 /* MCP 채팅 스타일 개선 */

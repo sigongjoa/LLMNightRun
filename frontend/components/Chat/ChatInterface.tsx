@@ -20,6 +20,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import ToolsPanel from './ToolsPanel';
+import { ExportToMemoryButton } from '../Memory';
 
 // 메시지 타입 정의
 export interface ChatMessage {
@@ -335,6 +336,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           >
             도구 {showTools ? '숨기기' : '보기'}
           </Button>
+          
+          <ExportToMemoryButton 
+            messages={messages}
+            buttonVariant="outlined"
+            buttonSize="medium"
+            buttonColor="success"
+            buttonText="메모리로 저장"
+            sx={{ mr: 1 }}
+          />
           
           <Button 
             startIcon={<RefreshIcon />}

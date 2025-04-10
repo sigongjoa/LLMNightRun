@@ -4,7 +4,7 @@
 SQLAlchemy ORM 모델을 정의합니다.
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, JSON, Boolean, Float
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, JSON, Boolean, Float, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from datetime import datetime
@@ -70,11 +70,14 @@ class Project(Base):
     description = Column(Text, nullable=True)
     tags = Column(JSON, default=list)
     is_active = Column(Boolean, default=True)
-    project_data = Column(JSON, default=dict)  # metadata -> project_data
+    is_public = Column(Boolean, default=False)
+    project_data = Column(JSON, default=dict)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # 관계 정의
+    owner = relationship("User", back_populates="projects")
     questions = relationship("Question", back_populates="project")
     code_snippets = relationship("CodeSnippet", back_populates="project")
     documents = relationship("Document", back_populates="project")
@@ -83,6 +86,27 @@ class Project(Base):
     code_templates = relationship("CodeTemplate", back_populates="project")
     codebases = relationship("Codebase", back_populates="project")
     agent_sessions = relationship("AgentSession", back_populates="project")
+    collaborators = relationship("ProjectCollaborator", back_populates="project")
+    
+
+class ProjectCollaborator(Base):
+    """프로젝트 협업자 테이블"""
+    __tablename__ = "project_collaborators"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    role = Column(String(20), default="editor")  # admin, editor, viewer
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # 유니크 제약 조건 (한 프로젝트에 각 사용자는 한 번만 협업자로 추가 가능)
+    __table_args__ = (
+        UniqueConstraint('project_id', 'user_id', name='uq_project_user'),
+    )
+    
+    # 관계 정의
+    project = relationship("Project", back_populates="collaborators")
+    user = relationship("User")
 
 
 # GitHub 저장소 모델
@@ -93,19 +117,68 @@ class GitHubRepository(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
-    owner = Column(String(255), nullable=False)
-    token = Column(String(255), nullable=False)  # 실제로는 암호화하여 저장해야 함
+    github_owner = Column(String(255), nullable=False, comment="GitHub 사용자명/조직명")
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, comment="시스템의 저장소 소유자")
+    token = Column(String(255), nullable=False)  # 암호화 필요
     is_default = Column(Boolean, default=False)
     is_private = Column(Boolean, default=True)
-    url = Column(String(255), nullable=True)
+    url = Column(String(255), nullable=False)
     branch = Column(String(50), default="main")
-    repo_info = Column(JSON, default=dict)  # metadata -> repo_info
+    webhook_id = Column(String(100), nullable=True)
+    webhook_secret = Column(String(100), nullable=True)
+    repo_info = Column(JSON, default=dict)
+    sync_enabled = Column(Boolean, default=False)
+    last_synced_at = Column(DateTime, nullable=True)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # 관계 정의
+    owner = relationship("User", back_populates="github_repositories")
     project = relationship("Project", back_populates="github_repositories")
+    commits = relationship("GitHubCommit", back_populates="repository")
+    webhook_events = relationship("GitHubWebhookEvent", back_populates="repository")
+
+class GitHubCommit(Base):
+    """GitHub 커밋 히스토리 테이블"""
+    __tablename__ = "github_commits"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    repository_id = Column(Integer, ForeignKey("github_repositories.id"), nullable=False)
+    commit_hash = Column(String(40), nullable=False)
+    author = Column(String(100), nullable=False)
+    message = Column(Text, nullable=False)
+    commit_date = Column(DateTime, nullable=False)
+    files_changed = Column(Integer, default=0)
+    additions = Column(Integer, default=0)
+    deletions = Column(Integer, default=0)
+    commit_data = Column(JSON, default=dict)
+    related_question_id = Column(Integer, ForeignKey("questions.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # 관계 정의
+    repository = relationship("GitHubRepository", back_populates="commits")
+    related_question = relationship("Question")
+    
+    # 유니크 제약 조건 (한 저장소에 같은 커밋은 한 번만 기록)
+    __table_args__ = (
+        UniqueConstraint('repository_id', 'commit_hash', name='uq_repo_commit'),
+    )
+
+class GitHubWebhookEvent(Base):
+    """GitHub 웹훅 이벤트 테이블"""
+    __tablename__ = "github_webhook_events"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    repository_id = Column(Integer, ForeignKey("github_repositories.id"), nullable=False)
+    event_type = Column(String(50), nullable=False)  # push, pull_request, etc.
+    payload = Column(JSON, nullable=False)
+    processed = Column(Boolean, default=False)
+    processed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # 관계 정의
+    repository = relationship("GitHubRepository", back_populates="webhook_events")
 
 
 # 문서 모델
@@ -117,7 +190,7 @@ class Document(Base):
     title = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
     format = Column(String(50), default="markdown")  # markdown, html, pdf, etc.
-    doc_info = Column(JSON, default=dict)  # metadata -> doc_info
+    meta_data = Column(JSON, default=dict)
     version = Column(Integer, default=1)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
     question_id = Column(Integer, ForeignKey("questions.id"), nullable=True)
@@ -213,16 +286,106 @@ class CodeTemplate(Base):
     project = relationship("Project", back_populates="code_templates")
 
 
-class Settings(Base):
-    """설정 테이블"""
-    __tablename__ = "settings"
-
+class User(Base):
+    """사용자 테이블"""
+    __tablename__ = "users"
+    
     id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), unique=True, nullable=False, index=True)
+    email = Column(String(100), unique=True, nullable=False, index=True)
+    hashed_password = Column(String(255), nullable=False)
+    first_name = Column(String(50), nullable=True)
+    last_name = Column(String(50), nullable=True)
+    is_active = Column(Boolean, default=True)
+    is_admin = Column(Boolean, default=False)
+    profile_image = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_login = Column(DateTime, nullable=True)
+    
+    # 관계 정의
+    projects = relationship("Project", back_populates="owner")
+    github_repositories = relationship("GitHubRepository", back_populates="owner")
+    user_settings = relationship("UserSettings", back_populates="user", uselist=False)
+    api_keys = relationship("ApiKey", back_populates="user")
+    oauth_accounts = relationship("OAuthAccount", back_populates="user")
+
+
+class UserSettings(Base):
+    """사용자 설정 테이블"""
+    __tablename__ = "user_settings"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
     openai_api_key = Column(String(255), nullable=True)
     claude_api_key = Column(String(255), nullable=True)
     github_token = Column(String(255), nullable=True)
-    github_repo = Column(String(255), nullable=True)
-    github_username = Column(String(255), nullable=True)
+    default_github_repo = Column(String(255), nullable=True)
+    default_github_username = Column(String(255), nullable=True)
+    theme = Column(String(20), default="light")
+    language = Column(String(10), default="ko")
+    notification_enabled = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # 관계 정의
+    user = relationship("User", back_populates="user_settings")
+
+
+class ApiKey(Base):
+    """API 키 테이블"""
+    __tablename__ = "api_keys"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    key_name = Column(String(50), nullable=False)
+    key_value = Column(String(255), nullable=False, unique=True)
+    is_active = Column(Boolean, default=True)
+    expires_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_used_at = Column(DateTime, nullable=True)
+    
+    # 관계 정의
+    user = relationship("User", back_populates="api_keys")
+
+
+class OAuthAccount(Base):
+    """OAuth 계정 테이블"""
+    __tablename__ = "oauth_accounts"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    provider = Column(String(20), nullable=False)  # 'github', 'google', etc.
+    provider_user_id = Column(String(100), nullable=False)
+    access_token = Column(String(255), nullable=False)
+    refresh_token = Column(String(255), nullable=True)
+    expires_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # 유니크 제약 조건 (한 유저는 한 제공자당 하나의 계정만 연결 가능)
+    __table_args__ = (
+        UniqueConstraint('provider', 'provider_user_id', name='uq_oauth_provider_id'),
+    )
+    
+    # 관계 정의
+    user = relationship("User", back_populates="oauth_accounts")
+
+
+class Settings(Base):
+    """글로벌 설정 테이블"""
+    __tablename__ = "settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    site_name = Column(String(100), default="LLMNightRun")
+    site_description = Column(Text, nullable=True)
+    maintenance_mode = Column(Boolean, default=False)
+    default_openai_api_key = Column(String(255), nullable=True)
+    default_claude_api_key = Column(String(255), nullable=True)
+    default_github_token = Column(String(255), nullable=True)
+    default_github_repo = Column(String(255), nullable=True)
+    default_github_username = Column(String(255), nullable=True)
+    max_file_size_mb = Column(Integer, default=10)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
@@ -326,7 +489,7 @@ class CodeEmbedding(Base):
     content = Column(Text, nullable=False)  # 원본 코드 청크
     embedding_key = Column(String(255), nullable=True)  # 외부 벡터 DB에서의 키
     embedding = Column(JSON, nullable=True)  # 내부 저장 시 임베딩 벡터
-    meta_info = Column(JSON, default=dict)
+    meta_data = Column(JSON, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -371,3 +534,89 @@ class AgentLog(Base):
     
     # 관계 정의
     session = relationship("AgentSession", back_populates="logs")
+
+
+# 사용자 활동 및 작업 관련 모델
+class UserActivity(Base):
+    """사용자 활동 로그 테이블"""
+    __tablename__ = "user_activities"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    activity_type = Column(String(50), nullable=False)  # login, create_project, generate_code, etc.
+    description = Column(Text, nullable=True)
+    ip_address = Column(String(45), nullable=True)  # IPv6 길이 고려
+    user_agent = Column(String(255), nullable=True)
+    meta_data = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # 관계 정의
+    user = relationship("User")
+
+
+class BackgroundTask(Base):
+    """백그라운드 작업 테이블"""
+    __tablename__ = "background_tasks"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(String(36), unique=True, nullable=False, index=True)  # UUID
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    task_type = Column(String(50), nullable=False)  # github_sync, code_indexing, etc.
+    status = Column(String(20), default="pending")  # pending, running, completed, failed
+    progress = Column(Float, default=0.0)
+    result = Column(JSON, nullable=True)
+    error = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    
+    # 관계 정의
+    user = relationship("User")
+
+
+class Notification(Base):
+    """알림 테이블"""
+    __tablename__ = "notifications"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    title = Column(String(100), nullable=False)
+    message = Column(Text, nullable=False)
+    category = Column(String(50), nullable=False)  # system, github, task, etc.
+    is_read = Column(Boolean, default=False)
+    action_url = Column(String(255), nullable=True)
+    meta_data = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # 관계 정의
+    user = relationship("User")
+
+
+# GitHub 저장소 파일 및 관리 모델
+class GitHubRepositoryFile(Base):
+    """GitHub 저장소 파일 테이블"""
+    __tablename__ = "github_repository_files"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    repository_id = Column(Integer, ForeignKey("github_repositories.id"), nullable=False)
+    path = Column(String(255), nullable=False)
+    name = Column(String(100), nullable=False)
+    size = Column(Integer, nullable=True)
+    sha = Column(String(40), nullable=True)
+    last_commit_hash = Column(String(40), nullable=True)
+    last_updated = Column(DateTime, nullable=True)
+    is_directory = Column(Boolean, default=False)
+    content_type = Column(String(50), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # 관계 정의
+    repository = relationship("GitHubRepository")
+    
+    # 유니크 제약 조건 (저장소 내 동일 경로에 같은 이름의 파일은 존재할 수 없음)
+    __table_args__ = (
+        UniqueConstraint('repository_id', 'path', 'name', name='uq_repo_file_path'),
+    )
+
+
+from sqlalchemy import UniqueConstraint

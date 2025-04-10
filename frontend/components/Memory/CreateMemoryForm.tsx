@@ -24,6 +24,7 @@ import {
   Save as SaveIcon
 } from '@mui/icons-material';
 import axios from 'axios';
+import { API_BASE_URL } from '../../utils/constants';
 import { MemoryType } from './MemoryList';
 
 interface CreateMemoryFormProps {
@@ -60,8 +61,7 @@ const CreateMemoryForm: React.FC<CreateMemoryFormProps> = ({ onMemoryCreated }) 
         }
       };
 
-      await axios.post('/api/memory/add', memory, {
-        baseURL: window.location.origin,
+      await axios.post(`${API_BASE_URL}/memory/add`, memory, {
         headers: {
           'Content-Type': 'application/json'
         },

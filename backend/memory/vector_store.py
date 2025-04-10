@@ -87,7 +87,9 @@ class FAISSVectorStore(VectorStore):
     """Vector store using FAISS for efficient similarity search."""
     
     def __init__(self, embedding_model: Optional[EmbeddingModel] = None, 
-                 index_path: Optional[str] = None):
+                 index_path: Optional[str] = None,
+                 use_ivf_index: bool = False,
+                 max_memory_days: Optional[int] = None):
         """Initialize FAISS vector store.
         
         Args:

@@ -23,6 +23,7 @@ import {
   BubbleChart as BubbleChartIcon
 } from '@mui/icons-material';
 import axios from 'axios';
+import { API_BASE_URL } from '../../utils/constants';
 import MemoryList, { Memory } from './MemoryList';
 import MemoryDetail from './MemoryDetail';
 import CreateMemoryForm from './CreateMemoryForm';
@@ -71,9 +72,8 @@ const MemoryDashboard: React.FC = () => {
   // 서버 상태 확인
   const checkServerStatus = async () => {
     try {
-      await axios.get('/api/memory/health', {
-        baseURL: window.location.origin,
-        timeout: 5000
+      await axios.get(`${API_BASE_URL}/memory/health`, {
+        timeout: 30000 // 30초로 타임아웃 증가
       });
       setError(null);
     } catch (err) {
@@ -85,9 +85,8 @@ const MemoryDashboard: React.FC = () => {
   const loadMemoryCount = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/memory/count', {
-        baseURL: window.location.origin,
-        timeout: 5000
+      const response = await axios.get(`${API_BASE_URL}/memory/count`, {
+        timeout: 30000 // 30초로 타임아웃 증가
       });
       setMemoryCount(response.data.count);
       setError(null);

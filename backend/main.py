@@ -18,10 +18,13 @@ from backend.core.service_locator import setup_services
 
 # API 라우터 임포트
 from backend.api import code, github, github_repo
+from backend.api.github import router as github_api_router
 from backend.api import indexing, export, docs_manager
 from backend.api import auto_debug, local_llm, mcp_status, model_installer, ai_environment
+from backend.api.direct_endpoints import router as direct_endpoints_router
 from backend.api.memory.router import router as memory_router
 from backend.ab_testing.routes import router as ab_testing_router
+from backend.auth.router import router as auth_router
 
 # 질문 및 응답 라우터 임포트
 from backend.api.question_fix import router as question_router
@@ -140,6 +143,7 @@ def register_routers():
         (agent.router, "agent"),
         (github.router, "agent"),
         (github_repo.router, "agent"),
+        (github_api_router, "agent"),
     ]
     
     # 데이터 관리 (Data)
@@ -176,8 +180,18 @@ def register_routers():
         (ab_testing_router, "AB Testing"),
     ]
     
+    # 직접 엔드포인트 (테스트 및 디버깅)
+    direct_routers = [
+        (direct_endpoints_router, None),
+    ]
+    
+    # 인증 관련 라우터
+    auth_routers = [
+        (auth_router, "auth"),
+    ]
+    
     # 모든 라우터 목록
-    all_routers = core_routers + agent_routers + data_routers + system_routers + v2_routers + mcp_routers + ab_testing_routers
+    all_routers = core_routers + agent_routers + data_routers + system_routers + v2_routers + mcp_routers + ab_testing_routers + direct_routers + auth_routers
     
     # 라우터 등록
     for router, tag in all_routers:
@@ -260,31 +274,6 @@ def get_app_info() -> dict:
     }
 
 
-@app.get("/settings/")
-async def direct_settings():
-    """
-    설정 직접 엔드포인트 - 디버그용
-    """
-    return {
-        "id": 1,
-        "openai_api_key": "test-key",
-        "claude_api_key": "test-key",
-        "github_token": "test-token",
-        "github_repo": "test-repo",
-        "github_username": "test-user"
-    }
-
-@app.get("/github/repositories")
-async def direct_github_repositories():
-    """
-    GitHub 저장소 목록 직접 엔드포인트 - 디버그용
-    """
-    return {
-        "repositories": [
-            {"id": 1, "name": "test-repo-1", "description": "테스트 저장소 1"},
-            {"id": 2, "name": "test-repo-2", "description": "테스트 저장소 2"}
-        ]
-    }
 
 
 # 메인 엔드포인트

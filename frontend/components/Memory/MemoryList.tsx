@@ -39,6 +39,7 @@ import {
   Memory as MemoryIcon
 } from '@mui/icons-material';
 import axios from 'axios';
+import { API_BASE_URL } from '../../utils/constants';
 
 // 메모리 유형 정의
 export enum MemoryType {
@@ -97,9 +98,8 @@ const MemoryList: React.FC<MemoryListProps> = ({ onSelectMemory, selectedMemoryI
   // 메모리 총 개수 조회
   const countMemories = async () => {
     try {
-      const response = await axios.get('/api/memory/count', {
-        baseURL: window.location.origin,
-        timeout: 5000
+      const response = await axios.get(`${API_BASE_URL}/memory/count`, {
+        timeout: 30000 // 30초로 타임아웃 증가
       });
       setTotalCount(response.data.count);
     } catch (err) {
@@ -123,12 +123,11 @@ const MemoryList: React.FC<MemoryListProps> = ({ onSelectMemory, selectedMemoryI
         searchParams.memory_types = selectedTypes;
       }
       
-      const response = await axios.post('/api/memory/search', searchParams, {
-        baseURL: window.location.origin,  // 명시적 기본 URL
+      const response = await axios.post(`${API_BASE_URL}/memory/search`, searchParams, {
         headers: {
           'Content-Type': 'application/json'
         },
-        timeout: 10000  // 10초 타임아웃
+        timeout: 30000  // 30초 타임아웃
       });
       setMemories(response.data);
       
@@ -163,9 +162,8 @@ const MemoryList: React.FC<MemoryListProps> = ({ onSelectMemory, selectedMemoryI
     if (!deleteMemoryId) return;
     
     try {
-      await axios.delete(`/api/memory/delete/${deleteMemoryId}`, {
-        baseURL: window.location.origin,
-        timeout: 10000
+      await axios.delete(`${API_BASE_URL}/memory/delete/${deleteMemoryId}`, {
+        timeout: 30000 // 30초로 타임아웃 증가
       });
       
       // 메모리 목록에서 삭제된 항목 제거

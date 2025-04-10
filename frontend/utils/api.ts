@@ -10,13 +10,19 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 120000,  // 120초 타임아웃
+  timeout: 180000,  // 180초 타임아웃 (3분)
 });
 
-// 요청 인터셉터 (예: 인증 토큰 추가)
+// 요청 인터셉터 (인증 토큰 추가)
 api.interceptors.request.use(
   (config) => {
-    // 필요시 여기에 인증 토큰 추가
+    // 브라우저 환경에서만 로컬 스토리지 접근
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
     return config;
   },
   (error) => {
@@ -24,12 +30,26 @@ api.interceptors.request.use(
   }
 );
 
-// 응답 인터셉터 (오류 처리 등)
+// 응답 인터셉터 (오류 처리 및 인증 관련 처리)
 api.interceptors.response.use(
   (response) => {
     return response;
   },
   (error) => {
+    // 인증 오류 처리 (401 오류)
+    if (error.response && error.response.status === 401) {
+      // 브라우저 환경에서만 실행
+      if (typeof window !== 'undefined') {
+        // 로그인 페이지가 아닌 경우에만 리디렉션
+        if (!window.location.pathname.includes('/login')) {
+          // 토큰 제거
+          localStorage.removeItem('token');
+          // 로그인 페이지로 리디렉션
+          window.location.href = '/login?expired=true';
+        }
+      }
+    }
+    
     // API 오류 처리
     const apiError: ApiError = error.response?.data || { detail: '알 수 없는 오류가 발생했습니다.' };
     console.error('API 오류:', apiError);
@@ -162,6 +182,12 @@ export const generateCommitMessage = async (
   try {
     const params = repoId ? { repo_id: repoId } : {};
     const response = await api.get(`/github/generate-commit-message/${questionId}`, { params });
+    // API 응답에 message 또는 commit_message 모두 지원
+    if (response.data.commit_message) {
+      return response.data;
+    } else if (response.data.message) {
+      return { commit_message: response.data.message };
+    }
     return response.data;
   } catch (error) {
     console.error('커밋 메시지 생성 오류:', error);
@@ -169,7 +195,7 @@ export const generateCommitMessage = async (
     // 개발 모드에서 임시 응답 제공
     if (process.env.NODE_ENV === 'development') {
       return {
-        commit_message: `Add code for question #${questionId}`
+        commit_message: `feat: Add solution for question #${questionId}`
       };
     }
     
@@ -184,6 +210,12 @@ export const generateReadme = async (
   try {
     const params = repoId ? { repo_id: repoId } : {};
     const response = await api.get(`/github/generate-readme/${questionId}`, { params });
+    // API 응답에 content 또는 readme_content 모두 지원
+    if (response.data.readme_content) {
+      return response.data;
+    } else if (response.data.content) {
+      return { readme_content: response.data.content };
+    }
     return response.data;
   } catch (error) {
     console.error('README 생성 오류:', error);
@@ -191,7 +223,7 @@ export const generateReadme = async (
     // 개발 모드에서 임시 응답 제공
     if (process.env.NODE_ENV === 'development') {
       return {
-        readme_content: `# Question ${questionId}\n\nThis is a placeholder README because the backend API is not available.`
+        readme_content: `# Question ${questionId}\n\n## 문제 설명\n\n이 저장소는 질문 #${questionId}에 대한 해결책을 담고 있습니다.\n\n## 구현 내용\n\n- 주요 기능 구현\n- 테스트 코드 작성`
       };
     }
     
@@ -251,7 +283,7 @@ export const createCodeTemplate = async (template: CodeTemplate): Promise<CodeTe
 // 설정 관련 API 함수
 export const fetchSettings = async (): Promise<Settings> => {
   try {
-    const response = await api.get<Settings>('/settings/');
+    const response = await api.get<Settings>('/settings');
     return response.data;
   } catch (error) {
     console.error('설정 가져오기 오류:', error);
@@ -280,7 +312,7 @@ export const fetchSettings = async (): Promise<Settings> => {
 
 export const updateSettings = async (settings: Partial<Settings>): Promise<Settings> => {
   try {
-    const response = await api.post<Settings>('/settings/', settings);
+    const response = await api.post<Settings>('/settings', settings);
     return response.data;
   } catch (error) {
     console.error('설정 업데이트 오류:', error);

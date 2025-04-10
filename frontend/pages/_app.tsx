@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import theme from '../styles/theme';
 import createEmotionCache from '../utils/createEmotionCache';
 import Layout from '../components/Layout';
+import { AuthProvider } from '../components/auth/AuthProvider';
 import '../styles/globals.css';
 
 // Create a client
@@ -63,18 +64,29 @@ export default function MyApp({
     }
   }, []);
   
+  // GetLayout 패턴: 페이지별 레이아웃 지원
+  const getLayout = Component.getLayout || ((page) => <Layout>{page}</Layout>);
+  
+  // 로그인/회원가입 페이지는 Layout을 사용하지 않음
+  const authPages = ['/login', '/register', '/reset-password'];
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const isAuthPage = authPages.includes(pathname);
+
   return (
     <QueryClientProvider client={queryClient}>
       <CacheProvider value={emotionCache}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
           <Head>
-            {/* 메타 태그만 포함하고 폰트는 _document.tsx에서 관리 */}
             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
           </Head>
-          <Layout>
-            <Component {...pageProps} />
-          </Layout>
+          <AuthProvider>
+            {isAuthPage ? (
+              <Component {...pageProps} />
+            ) : (
+              getLayout(<Component {...pageProps} />)
+            )}
+          </AuthProvider>
         </ThemeProvider>
       </CacheProvider>
     </QueryClientProvider>

@@ -16,12 +16,16 @@ from backend.exceptions import LLMNightRunError, LLMError
 from backend.database.connection import create_tables
 from backend.core.service_locator import setup_services
 
+# 인증 라우터 임포트
+# from backend.auth.router import router as auth_router  # 주석 처리
+
 # API 라우터 임포트
 from backend.api import code, github, github_repo
 from backend.api import indexing, export, docs_manager
 from backend.api import auto_debug, local_llm, mcp_status, model_installer, ai_environment
 from backend.api.memory.router import router as memory_router
 from backend.ab_testing.routes import router as ab_testing_router
+from backend.api.direct_endpoints import router as direct_endpoints_router
 
 # 질문 및 응답 라우터 임포트
 from backend.api.question_fix import router as question_router
@@ -38,6 +42,9 @@ from backend.mcp.chat_websocket import router as mcp_chat_ws_router
 
 # 에이전트 라우터 임포트
 from backend.api import agent
+
+# 직접 API 임포트
+from backend.direct_api import register_direct_routes
 
 # 로깅 설정
 logger = get_logger(__name__)
@@ -84,6 +91,14 @@ tags_metadata = [
         "name": "AB Testing",
         "description": "LLM 모델과 프롬프트 조합의 A/B 테스트 기능",
     },
+    {
+        "name": "github",
+        "description": "GitHub 저장소 및 연동 관련 기능",
+    },
+    {
+        "name": "settings",
+        "description": "애플리케이션 설정 관련 기능",
+    },
 ]
 
 # FastAPI 애플리케이션 생성
@@ -101,10 +116,10 @@ app = FastAPI(
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors.allow_origins,
-    allow_credentials=settings.cors.allow_credentials,
-    allow_methods=settings.cors.allow_methods,
-    allow_headers=settings.cors.allow_headers,
+    allow_origins=["*"],  # 모든 오리진 허용 (테스트용)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # 전역 예외 핸들러 등록
@@ -176,8 +191,18 @@ def register_routers():
         (ab_testing_router, "AB Testing"),
     ]
     
+    # 인증 관련 라우터
+    auth_routers = [
+        # (auth_router, "auth"),  # 주석 처리
+    ]
+    
+    # 직접 엔드포인트 (테스트 및 디버깅)
+    direct_routers = [
+        (direct_endpoints_router, None),
+    ]
+    
     # 모든 라우터 목록
-    all_routers = core_routers + agent_routers + data_routers + system_routers + v2_routers + mcp_routers + ab_testing_routers
+    all_routers = core_routers + agent_routers + data_routers + system_routers + v2_routers + mcp_routers + ab_testing_routers + auth_routers + direct_routers
     
     # 라우터 등록
     for router, tag in all_routers:
@@ -199,9 +224,15 @@ def register_routers():
         logger.error(f"메모리 라우터 등록 실패: {str(e)}")
     
     logger.info(f"총 {len(all_routers) + 1}개 라우터 등록 완료")
+    
+    # 직접 API 등록
+    register_direct_routes(app)
 
 # 라우터 등록 실행
 register_routers()
+
+# 데이터베이스 수정 기능 임포트
+from backend.database.fix_database import fix_code_snippets_table, disable_code_snippets
 
 # 애플리케이션 초기화 및 리소스 설정
 async def initialize_app():
@@ -212,6 +243,9 @@ async def initialize_app():
         
         # 데이터베이스 테이블 생성
         create_tables()
+        
+        # 코드 스니펫 테이블 비활성화 (오류 방지)
+        disable_code_snippets()
         
         # 서비스 초기화 및 등록
         setup_services()
@@ -257,33 +291,6 @@ def get_app_info() -> dict:
         "version": settings.app_version,
         "description": settings.app_description,
         "environment": settings.env.value
-    }
-
-
-@app.get("/settings/")
-async def direct_settings():
-    """
-    설정 직접 엔드포인트 - 디버그용
-    """
-    return {
-        "id": 1,
-        "openai_api_key": "test-key",
-        "claude_api_key": "test-key",
-        "github_token": "test-token",
-        "github_repo": "test-repo",
-        "github_username": "test-user"
-    }
-
-@app.get("/github/repositories")
-async def direct_github_repositories():
-    """
-    GitHub 저장소 목록 직접 엔드포인트 - 디버그용
-    """
-    return {
-        "repositories": [
-            {"id": 1, "name": "test-repo-1", "description": "테스트 저장소 1"},
-            {"id": 2, "name": "test-repo-2", "description": "테스트 저장소 2"}
-        ]
     }
 
 

@@ -59,7 +59,7 @@ async def call_lm_studio(
         if msg.name is not None:
             formatted_msg["name"] = msg.name
             
-        if msg.base64_image is not None:
+        if hasattr(msg, 'base64_image') and msg.base64_image is not None:
             # 다중 모달리티 지원 (이미지 포함)
             formatted_msg["content"] = [
                 {"type": "text", "text": msg.content or ""},
@@ -86,6 +86,10 @@ async def call_lm_studio(
     
     logger.info(f"사용하는 모델 ID: {model_id}")
     
+    # URL 슬래시 정리 (중복 슬래시 방지)
+    if base_url.endswith('/'):
+        base_url = base_url[:-1]
+    
     # OpenAI 호환 형식으로 요청 데이터 구성
     request_data = {
         "model": model_id,
@@ -108,7 +112,7 @@ async def call_lm_studio(
     logger.info(f"LM Studio API 호출: {base_url}{endpoint}")
     
     try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:  # 타임아웃 감소
             response = await client.post(
                 f"{base_url}{endpoint}",
                 json=request_data,
@@ -121,13 +125,18 @@ async def call_lm_studio(
             else:
                 logger.error(f"LM Studio API 오류: {response.status_code} {response.text}")
                 raise Exception(f"LM Studio API 오류: {response.status_code} {response.text}")
-            
-            response.raise_for_status()
-            return response.json()
     
+    except httpx.ConnectError as e:
+        logger.error(f"LM Studio 연결 오류: {str(e)}")
+        raise Exception(f"LM Studio 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요: {base_url}")
+    
+    except httpx.TimeoutException as e:
+        logger.error(f"LM Studio API 타임아웃: {str(e)}")
+        raise Exception(f"LM Studio API 요청 타임아웃. 서버 응답이 너무 느립니다.")
+        
     except Exception as e:
         logger.error(f"LM Studio API 호출 오류: {str(e)}")
-        raise e
+        raise Exception(f"LM Studio API 호출 오류: {str(e)}")
 
 
 def extract_tool_calls(response_data: Dict[str, Any]) -> List[ToolCall]:

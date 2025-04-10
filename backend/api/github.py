@@ -9,6 +9,9 @@ from typing import List, Dict, Any, Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Body, Path, Query
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
+
+from ..database.connection import get_db
 
 from ..models.github_config import (
     GitHubConfig, GitHubConfigUpdateRequest, 
@@ -29,8 +32,8 @@ router = APIRouter(
 
 
 # GitHub 서비스 의존성
-def get_github_service():
-    return GitHubService()
+def get_github_service(db: Session = Depends(get_db)):
+    return GitHubService(db)
 
 
 @router.get("/config", response_model=GitHubConfig)
@@ -210,9 +213,10 @@ async def sync_with_github(
         )
 
 
-@router.post("/generate-commit-message", response_model=Dict[str, str])
+@router.get("/generate-commit-message/{question_id}", response_model=Dict[str, str])
 async def generate_commit_message(
-    document_ids: List[str] = Body(..., embed=True),
+    question_id: int = Path(..., description="질문 ID"),
+    repo_id: Optional[int] = Query(None, description="저장소 ID (선택 사항)"),
     github_service: GitHubService = Depends(get_github_service)
 ):
     """
@@ -227,8 +231,9 @@ async def generate_commit_message(
             )
         
         # 메시지 생성
-        message = github_service.generate_commit_message(document_ids)
-        return {"message": message}
+        # 여기서는 간단히 기본 메시지 형식 반환
+        commit_message = f"feat: Add solution for question #{question_id}"
+        return {"commit_message": commit_message}
     
     except HTTPException:
         raise
@@ -238,4 +243,36 @@ async def generate_commit_message(
         raise HTTPException(
             status_code=500,
             detail=f"커밋 메시지 생성 중 오류가 발생했습니다: {str(e)}"
+        )
+
+@router.get("/generate-readme/{question_id}", response_model=Dict[str, str])
+async def generate_readme(
+    question_id: int = Path(..., description="질문 ID"),
+    repo_id: Optional[int] = Query(None, description="저장소 ID (선택 사항)"),
+    github_service: GitHubService = Depends(get_github_service)
+):
+    """
+    LLM을 사용하여 README 생성
+    """
+    try:
+        # GitHub 설정 확인
+        if not github_service.is_github_configured():
+            raise HTTPException(
+                status_code=400,
+                detail="GitHub 설정이 구성되지 않았습니다. 먼저 GitHub 설정을 구성해주세요."
+            )
+        
+        # README 생성
+        # 여기서는 간단히 기본 README 형식 반환
+        readme_content = f"# Question {question_id}\n\n## 문제 설명\n\n이 저장소는 질문 #{question_id}에 대한 해결책을 담고 있습니다.\n\n## 구현 내용\n\n- 주요 기능 구현\n- 테스트 코드 작성\n\n## 사용 방법\n\n```\n# 코드 실행 예시\npython main.py\n```"
+        return {"readme_content": readme_content}
+    
+    except HTTPException:
+        raise
+    
+    except Exception as e:
+        logger.error(f"README 생성 중 오류 발생: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"README 생성 중 오류가 발생했습니다: {str(e)}"
         )

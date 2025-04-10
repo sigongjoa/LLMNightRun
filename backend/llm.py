@@ -260,6 +260,19 @@ class LLM:
                     if hasattr(settings, "llm") and hasattr(settings.llm, "local_llm_model_id"):
                         model_id = settings.llm.local_llm_model_id
                 
+                # LM Studio 서버가 실행 중인지 확인
+                import httpx
+                try:
+                    # 빠른 핑 테스트
+                    async with httpx.AsyncClient(timeout=3.0) as client:
+                        ping_response = await client.get(f"{self.base_url}/v1/models")
+                        if ping_response.status_code != 200:
+                            logger.error(f"LM Studio 서버 응답 오류: {ping_response.status_code}")
+                            return f"LM Studio 서버가 비정상적으로 응답합니다 ({self.base_url}). 상태 코드: {ping_response.status_code}"
+                except Exception as ping_error:
+                    logger.error(f"LM Studio 서버 연결 실패: {str(ping_error)}")
+                    return f"LM Studio 서버에 연결할 수 없습니다 ({self.base_url}). 서버가 실행 중인지 확인하세요."
+                
                 # LM Studio API 호출
                 response_data = await call_lm_studio(
                     messages=messages,
@@ -293,6 +306,14 @@ class LLM:
                 logger.error(f"LLM API 응답 형식 오류: {response_data}")
                 return "LLM 응답을 처리할 수 없습니다."
                 
+            except httpx.ConnectError as e:
+                logger.error(f"LM Studio 연결 오류: {str(e)}")
+                return f"LM Studio 서버에 연결할 수 없습니다 ({self.base_url}). 서버가 실행 중인지 확인하세요."
+            
+            except httpx.TimeoutException as e:
+                logger.error(f"LM Studio API 타임아웃: {str(e)}")
+                return "LM Studio API 요청 타임아웃. 서버 응답이 너무 느립니다."
+            
             except Exception as e:
                 logger.error(f"LLM API 호출 오류: {str(e)}")
                 return f"LLM API 오류: {str(e)}"

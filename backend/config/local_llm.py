@@ -19,7 +19,7 @@ class LocalLLMConfig(BaseModel):
     max_tokens: int = 1000
     temperature: float = 0.7
     top_p: float = 0.9
-    timeout: int = 60  # 초
+    timeout: int = 30  # 초
 
 
 # 기본 로컬 LLM 구성

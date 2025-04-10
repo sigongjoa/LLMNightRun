@@ -50,7 +50,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <Container>
-      <Box sx={{ my: 4 }}>
+      <Box sx={{ my: 2 }}>
         <Typography variant="h4" component="h1" gutterBottom>
           LLMNightRun 대시보드
         </Typography>

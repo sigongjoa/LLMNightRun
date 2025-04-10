@@ -45,7 +45,7 @@ class LLMSettings(BaseSettings):
     """LLM 관련 설정"""
     openai_api_key: Optional[str] = Field(None, env="OPENAI_API_KEY")
     claude_api_key: Optional[str] = Field(None, env="ANTHROPIC_API_KEY")
-    local_llm_url: Optional[str] = Field("http://127.0.0.1:11434", env="LOCAL_LLM_URL")
+    local_llm_url: Optional[str] = Field("http://127.0.0.1:1234", env="LOCAL_LLM_URL")
     local_llm_model_id: Optional[str] = Field("deepseek-r1-distill-qwen-7b", env="LOCAL_LLM_MODEL_ID")
     model_name: str = "gpt-4"
     temperature: float = 0.7
@@ -150,9 +150,11 @@ class SecuritySettings(BaseSettings):
     """보안 관련 설정"""
     api_key_enabled: bool = Field(False, env="SECURITY_API_KEY_ENABLED")
     api_key: Optional[str] = Field(None, env="SECURITY_API_KEY")
+    secret_key: str = Field("09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7", env="SECURITY_SECRET_KEY")
     jwt_secret: Optional[str] = Field(None, env="SECURITY_JWT_SECRET")
     jwt_algorithm: str = Field("HS256", env="SECURITY_JWT_ALGORITHM")
     jwt_expire_minutes: int = Field(60 * 24, env="SECURITY_JWT_EXPIRE_MINUTES")  # 24시간
+    password_reset_token_expire_hours: int = Field(24, env="SECURITY_PASSWORD_RESET_TOKEN_EXPIRE_HOURS")
     
     model_config = SettingsConfigDict(env_prefix="SECURITY_")
 

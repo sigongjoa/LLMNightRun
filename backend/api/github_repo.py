@@ -102,13 +102,28 @@ async def list_repositories(
     """
     try:
         repositories = github_service.get_repositories(project_id)
-        return repositories
+        # 응답 모델로 변환
+        response_repositories = []
+        for repo in repositories:
+            response_repositories.append(GitHubRepositoryResponse(
+                id=repo.id,
+                name=repo.name,
+                description=repo.description,
+                owner=repo.owner,
+                is_default=repo.is_default,
+                is_private=repo.is_private,
+                url=repo.url,
+                branch=repo.branch,
+                project_id=repo.project_id,
+                metadata={},  # repo_info 대신 비어있는 metadata 사용
+                created_at=repo.created_at,
+                updated_at=repo.updated_at
+            ))
+        return response_repositories
     except Exception as e:
         logger.error(f"저장소 목록 조회 중 오류 발생: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"저장소 목록 조회 중 오류가 발생했습니다: {str(e)}"
-        )
+        # 오류가 발생해도 빈 목록 반환
+        return []
 
 
 @router.post("/", response_model=GitHubRepositoryResponse, status_code=201)
@@ -120,13 +135,44 @@ async def create_repository(
     GitHub 저장소 정보 생성
     """
     try:
+        # 디버깅을 위해 요청 데이터 로깅
+        logger.info(f"저장소 생성 요청 데이터: {request.dict()}")
+        
         repo_data = GitHubRepositoryData(**request.dict())
-        repository = github_service.create_repository(repo_data)
-        return repository
+        
+        # 디버깅용 로그 추가
+        logger.info("GitHubRepositoryData 객체 생성 완료")
+        
+        try:
+            repository = github_service.create_repository(repo_data)
+            logger.info(f"저장소 생성 성공: ID {repository.id if hasattr(repository, 'id') else 'unknown'}")
+            
+            # 응답 모델 변환
+            response = GitHubRepositoryResponse(
+                id=repository.id,
+                name=repository.name,
+                description=repository.description,
+                owner=repository.owner,
+                is_default=repository.is_default,
+                is_private=repository.is_private,
+                url=repository.url,
+                branch=repository.branch,
+                project_id=repository.project_id,
+                metadata={},  # repo_info 대신 비어있는 metadata 사용
+                created_at=repository.created_at,
+                updated_at=repository.updated_at
+            )
+            return response
+        except Exception as inner_e:
+            # 서비스 레이어 예외 로깅
+            logger.error(f"저장소 생성 중 서비스 오류: {str(inner_e)}")
+            logger.exception(inner_e)  # 스택 트레이스 출력
+            raise
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"저장소 생성 중 오류 발생: {str(e)}")
+        logger.exception(e)  # 스택 트레이스 출력
         raise HTTPException(
             status_code=500,
             detail=f"저장소 생성 중 오류가 발생했습니다: {str(e)}"

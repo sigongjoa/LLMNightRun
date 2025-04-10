@@ -269,23 +269,38 @@ async def get_github_status() -> Dict[str, Any]:
     try:
         paths = get_project_paths()
         
-        # Git 핸들러 초기화
-        git = GitHandler(paths["repo_root"])
-        
-        # 상태 정보 수집
-        current_branch = git.get_branch_name()
-        staged_files = git.get_staged_files()
-        uncommitted_changes = git.get_uncommitted_changes()
-        
-        return {
-            "status": "success",
-            "git_status": {
-                "current_branch": current_branch,
-                "staged_files": staged_files,
-                "uncommitted_changes": uncommitted_changes,
-                "has_changes": len(staged_files) > 0 or len(uncommitted_changes) > 0
+        # Git 저장소 확인
+        try:
+            # Git 핸들러 초기화
+            git = GitHandler(paths["repo_root"])
+            
+            # 상태 정보 수집
+            current_branch = git.get_branch_name()
+            staged_files = git.get_staged_files()
+            uncommitted_changes = git.get_uncommitted_changes()
+            
+            return {
+                "status": "success",
+                "git_status": {
+                    "current_branch": current_branch,
+                    "staged_files": staged_files,
+                    "uncommitted_changes": uncommitted_changes,
+                    "has_changes": len(staged_files) > 0 or len(uncommitted_changes) > 0
+                }
             }
-        }
+        except ValueError as e:
+            # Git 저장소가 초기화되지 않은 경우
+            return {
+                "status": "warning",
+                "message": "Git 저장소가 초기화되지 않았습니다.",
+                "git_status": {
+                    "current_branch": None,
+                    "staged_files": [],
+                    "uncommitted_changes": [],
+                    "has_changes": False,
+                    "initialized": False
+                }
+            }
         
     except Exception as e:
         logger.error(f"GitHub 상태 조회 실패: {str(e)}")

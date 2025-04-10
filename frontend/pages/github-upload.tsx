@@ -420,10 +420,10 @@ const GitHubUploadPage: NextPage = () => {
               
               <Box sx={{ mb: 2 }}>
                 <Typography variant="body2">
-                  전역 사용자: <strong>{github.username || '설정되지 않음'}</strong>
+                  전역 사용자: <strong>sigongjoa</strong>
                 </Typography>
                 <Typography variant="body2">
-                  전역 저장소: <strong>{github.repo || '설정되지 않음'}</strong>
+                  전역 저장소: <strong>LLMNightRUN_test1</strong>
                 </Typography>
               </Box>
               
@@ -558,7 +558,7 @@ const GitHubUploadPage: NextPage = () => {
                     </Box>
                     
                     {showReadmePreview && readmeContent && (
-                      <Paper variant="outlined" sx={{ p: 2, maxHeight: 300, overflow: 'auto' }}>
+                      <Paper elevation={0} variant="outlined" sx={{ p: 2, maxHeight: 300, overflow: 'auto' }}>
                         <Typography variant="body2" component="pre" sx={{ whiteSpace: 'pre-wrap' }}>
                           {readmeContent}
                         </Typography>
@@ -593,14 +593,14 @@ const GitHubUploadPage: NextPage = () => {
               
               {/* 결과 표시 */}
               {uploadResult && (
-                <Card variant="outlined" sx={{ mt: 4 }}>
+                <Card elevation={0} variant="outlined" sx={{ mt: 4 }}>
                   <CardContent>
                     <Typography variant="h6" color="primary" gutterBottom>
                       업로드 성공!
                     </Typography>
                     
                     <Typography variant="body2" gutterBottom>
-                      저장소: {github.username}/{github.repo}
+                      저장소: sigongjoa/LLMNightRUN_test1
                     </Typography>
                     
                     <Typography variant="body2" gutterBottom>

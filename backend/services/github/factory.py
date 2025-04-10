@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, Any, Union
 
 from .repository import RepositoryService
 from .content import ContentService
+from .connection import ConnectionService
 from .models import GitHubRepositoryData
 
 
@@ -29,6 +30,7 @@ class GitHubServiceFactory:
         self.db = db
         self.repository_service = RepositoryService(db)
         self.content_service = ContentService(db, self.repository_service)
+        self.connection_service = ConnectionService(db)
     
     def get_repository(self, repo_id: Optional[int] = None):
         """
@@ -174,3 +176,17 @@ class GitHubServiceFactory:
             생성된 원격 저장소 정보
         """
         return await self.content_service.create_remote_repository(name, description, private, auto_init, repo_id)
+        
+    async def test_connection(self, repo_url: str, token: str, username: str):
+        """
+        GitHub 연결을 테스트합니다.
+        
+        Args:
+            repo_url: 저장소 URL
+            token: GitHub 토큰
+            username: GitHub 사용자 이름
+            
+        Returns:
+            연결 테스트 결과
+        """
+        return await self.connection_service.test_connection(repo_url, token, username)

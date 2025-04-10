@@ -36,6 +36,7 @@ import {
 } from '@mui/icons-material';
 import { Memory, MemoryType } from './MemoryList';
 import axios from 'axios';
+import { API_BASE_URL } from '../../utils/constants';
 
 interface MemoryDetailProps {
   memory: Memory | null;
@@ -84,8 +85,7 @@ const MemoryDetail: React.FC<MemoryDetailProps> = ({ memory, onRefresh }) => {
         content: editedContent
       };
       
-      await axios.post('/api/memory/add', updatedMemory, {
-        baseURL: window.location.origin,
+      await axios.post(`${API_BASE_URL}/memory/add`, updatedMemory, {
         headers: {
           'Content-Type': 'application/json'
         },

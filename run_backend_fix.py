@@ -21,7 +21,7 @@ def main():
     
     # 서버 실행
     uvicorn.run(
-        "backend.main:app",
+        "backend.main_fix:app",
         host=settings.host,
         port=settings.port,
         reload=settings.debug,

@@ -99,7 +99,7 @@ const GitHubRepositoriesList: React.FC = () => {
     
     try {
       try {
-        const response = await axios.get(`${API_BASE_URL}/github/repositories`);
+        const response = await axios.get(`${API_BASE_URL}/github-repos`);
         setRepositories(response.data.repositories || []);
       } catch (err) {
         console.error('저장소 목록 로드 오류:', err);
@@ -108,7 +108,7 @@ const GitHubRepositoriesList: React.FC = () => {
         
         // 개발 환경에서만 에러 메시지 표시
         if (process.env.NODE_ENV === 'development') {
-          setError('백엔드 API가 준비되지 않았습니다: /github/repositories');
+          setError('백엔드 API가 준비되지 않았습니다: /github-repos');
         } else {
           setError(null);
         }
@@ -189,10 +189,10 @@ const GitHubRepositoriesList: React.FC = () => {
             delete updateData.token; // 토큰이 비어있으면 업데이트하지 않음
           }
           
-          await axios.put(`${API_BASE_URL}/github/repositories/${editingRepo.id}`, updateData);
+          await axios.put(`${API_BASE_URL}/github-repos/${editingRepo.id}`, updateData);
         } else {
           // 새 저장소 추가
-          await axios.post(`${API_BASE_URL}/github/repositories`, newRepo);
+          await axios.post(`${API_BASE_URL}/github-repos`, newRepo);
         }
         
         // API 호출이 성공하면 저장소 목록 새로고침
@@ -235,7 +235,7 @@ const GitHubRepositoriesList: React.FC = () => {
     }
     
     try {
-      await axios.delete(`${API_BASE_URL}/github/repositories/${repoId}`);
+      await axios.delete(`${API_BASE_URL}/github-repos/${repoId}`);
       await loadRepositories();
     } catch (err) {
       console.error('저장소 삭제 오류:', err);
@@ -246,7 +246,7 @@ const GitHubRepositoriesList: React.FC = () => {
   // 기본 저장소로 설정
   const handleSetDefault = async (repoId: number) => {
     try {
-      await axios.put(`${API_BASE_URL}/github/repositories/${repoId}`, {
+      await axios.put(`${API_BASE_URL}/github-repos/${repoId}`, {
         is_default: true
       });
       await loadRepositories();
@@ -590,9 +590,42 @@ const SettingsPage: React.FC = () => {
   };
   
   // 테스트 연결 핸들러
-  const handleTestConnection = (service: string) => {
-    // 실제로는 API를 통해 연결 테스트
-    alert(`${service} 연결 테스트를 수행합니다.`);
+  const handleTestConnection = async (service: string) => {
+    try {
+      if (service === 'GitHub') {
+        if (!settings.github_token || !settings.github_username || !settings.github_repo) {
+          alert("GitHub 토큰, 사용자명, 저장소 이름을 모두 입력해주세요.");
+          return;
+        }
+        
+        setLoading(true);
+        try {
+          // GitHub 연결 테스트 API 호출
+          const response = await axios.post(`${API_BASE_URL}/github/test-connection`, {
+            token: settings.github_token,
+            username: settings.github_username,
+            repo_url: settings.github_repo
+          });
+          
+          if (response.data.success) {
+            alert(`GitHub 연결 테스트가 성공했습니다!\n저장소: ${response.data.repo_info?.full_name || 'N/A'}\n기본 브랜치: ${response.data.repo_info?.default_branch || 'main'}`);
+          } else {
+            alert(`GitHub 연결 테스트 실패: ${response.data.message}\n${response.data.error || ''}`);
+          }
+        } catch (apiError) {
+          console.error("API 오류:", apiError);
+          alert(`GitHub 연결 테스트 중 오류가 발생했습니다.\n고급 모드: API 업데이트를 위해 서버를 재시작해주세요.`);
+        }
+      } else {
+        // OpenAI, Claude 등 다른 서비스 연결 테스트
+        alert(`${service} 연결 테스트를 수행합니다.`);
+      }
+    } catch (error) {
+      console.error(`${service} 연결 테스트 오류:`, error);
+      alert(`${service} 연결 테스트 중 오류가 발생했습니다.`);
+    } finally {
+      setLoading(false);
+    }
   };
   
   // 로딩 화면

@@ -1,5 +1,15 @@
-export { default as MemoryList } from './MemoryList';
-export { default as MemoryDetail } from './MemoryDetail';
-export { default as CreateMemoryForm } from './CreateMemoryForm';
-export { default as MemoryDashboard } from './MemoryDashboard';
-export * from './MemoryList';
+import MemoryDashboard from './MemoryDashboard';
+import MemoryList from './MemoryList';
+import MemoryDetail from './MemoryDetail';
+import CreateMemoryForm from './CreateMemoryForm';
+import ExportToMemoryButton from './ExportToMemoryButton';
+
+export {
+  MemoryDashboard,
+  MemoryList,
+  MemoryDetail,
+  CreateMemoryForm,
+  ExportToMemoryButton
+};
+
+export default MemoryDashboard;

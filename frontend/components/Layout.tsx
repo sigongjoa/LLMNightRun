@@ -109,6 +109,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       items: [
         { text: '내보내기', icon: <FileDownloadIcon />, href: '/export' },
         { text: '설정', icon: <SettingsIcon />, href: '/settings' },
+        { text: 'GitHub 설정', icon: <GitHubIcon />, href: '/github-settings' },
       ]
     }
   ], []);
@@ -275,7 +276,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </Drawer>
       
       {/* 메인 컨텐츠 */}
-      <Container component="main" sx={{ flexGrow: 1, py: 4 }}>
+      <Container component="main" sx={{ flexGrow: 1, py: 2, mt: 2 }}>
         {children}
       </Container>
       

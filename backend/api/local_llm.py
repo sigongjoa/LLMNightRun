@@ -120,18 +120,39 @@ async def get_status() -> LocalLLMStatusResponse:
     if not current_config.enabled:
         return status
     
-    # 연결 테스트
+    # 연결 테스트 - 직접 API 호출
     try:
-        llm = get_llm_instance()
-        # 간단한 테스트 메시지
-        test_message = Message(role="user", content="테스트 메시지입니다.")
-        
-        # LLM 호출 (비동기)
-        await llm.ask([test_message], max_tokens=10)
-        
-        # 연결 성공
-        status.connected = True
-        
+        # 모델 정보를 가져오는 API 호출 (LM Studio의 모델 정보 API)
+        import httpx
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            # 기본 모델 리스트 API 또는 간단한 채팅 완성 API
+            endpoint = "/v1/models"
+            logger.info(f"LM Studio 연결 확인: {current_config.base_url}{endpoint}")
+            
+            response = await client.get(f"{current_config.base_url}{endpoint}")
+            
+            if response.status_code == 200:
+                status.connected = True
+                logger.info("LM Studio 연결 성공")
+                
+                # 추가 정보가 있으면 저장
+                response_data = response.json()
+                if "data" in response_data and len(response_data["data"]) > 0:
+                    found_model = False
+                    # 현재 설정된 모델이 로드되어 있는지 확인
+                    for model in response_data["data"]:
+                        if model.get("id") == current_config.model_id:
+                            found_model = True
+                            break
+                    
+                    if not found_model and len(response_data["data"]) > 0:
+                        # 첫 번째 모델 ID 사용
+                        current_config.model_id = response_data["data"][0].get("id", current_config.model_id)
+                        status.model_id = current_config.model_id
+                        logger.info(f"모델 ID 업데이트: {current_config.model_id}")
+            else:
+                logger.error(f"LM Studio API 오류 응답: {response.status_code} {response.text}")
+                status.error = f"LM Studio API 오류: {response.status_code}"
     except Exception as e:
         # 연결 실패
         logger.error(f"로컬 LLM 연결 오류: {str(e)}")
