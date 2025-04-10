@@ -1,5 +1,5 @@
 """
-백엔드 서버 실행 스크립트 (수정 버전)
+백엔드 서버 실행 스크립트 (etc 폴더용 백업)
 """
 
 import os
@@ -11,7 +11,7 @@ def main():
     """백엔드 서버 실행 함수"""
     # 실행 안내 메시지
     print("=" * 80)
-    print(f"  {settings.app_name} 백엔드 서버 실행 (수정 버전)")
+    print(f"  {settings.app_name} 백엔드 서버 실행 (etc 백업 버전)")
     print(f"  환경: {settings.env.value.upper()}")
     print(f"  host: {settings.host}")
     print(f"  port: {settings.port}")
@@ -21,7 +21,7 @@ def main():
     
     # 서버 실행
     uvicorn.run(
-        "backend.main:app",
+        "backend.main_fix:app",
         host=settings.host,
         port=settings.port,
         reload=settings.debug,
@@ -29,5 +29,5 @@ def main():
     )
 
 if __name__ == "__main__":
-    sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+    sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
     main()

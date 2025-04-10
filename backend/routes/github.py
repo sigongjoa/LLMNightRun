@@ -14,7 +14,6 @@ from backend.models.github_config import GitHubRepositoryCreate, GitHubRepositor
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
-    prefix="/github",
     tags=["github"],
     responses={404: {"description": "리소스를 찾을 수 없음"}},
 )

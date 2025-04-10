@@ -61,7 +61,7 @@ class IndexingService:
                 self.db, 
                 run_id, 
                 {
-                    "status": IndexingStatus.IN_PROGRESS,
+                    "status": IndexingStatus.in_progress,
                     "start_time": datetime.utcnow()
                 }
             )
@@ -74,7 +74,7 @@ class IndexingService:
                     self.db, 
                     run_id, 
                     {
-                        "status": IndexingStatus.FAILED,
+                        "status": IndexingStatus.failed,
                         "end_time": datetime.utcnow(),
                         "error_message": f"코드베이스 ID {run.codebase_id}의 인덱싱 설정을 찾을 수 없습니다"
                     }
@@ -89,7 +89,7 @@ class IndexingService:
                     self.db, 
                     run_id, 
                     {
-                        "status": IndexingStatus.FAILED,
+                        "status": IndexingStatus.failed,
                         "end_time": datetime.utcnow(),
                         "error_message": f"코드베이스 ID {run.codebase_id}의 파일을 찾을 수 없습니다"
                     }
@@ -179,7 +179,7 @@ class IndexingService:
                 self.db, 
                 run_id, 
                 {
-                    "status": IndexingStatus.COMPLETED,
+                    "status": IndexingStatus.completed,
                     "end_time": datetime.utcnow(),
                     "files_processed": files_processed,
                     "files_indexed": files_indexed,
@@ -196,7 +196,7 @@ class IndexingService:
                     self.db, 
                     run_id, 
                     {
-                        "status": IndexingStatus.FAILED,
+                        "status": IndexingStatus.failed,
                         "end_time": datetime.utcnow(),
                         "error_message": str(e)
                     }
@@ -655,8 +655,8 @@ class IndexingService:
                 "last_updated": settings.updated_at
             },
             "status": {
-                "is_indexing_now": latest_run is not None and latest_run.status == IndexingStatus.IN_PROGRESS,
-                "current_run_id": latest_run.id if latest_run and latest_run.status == IndexingStatus.IN_PROGRESS else None,
+                "is_indexing_now": latest_run is not None and latest_run.status == IndexingStatus.in_progress,
+                "current_run_id": latest_run.id if latest_run and latest_run.status == IndexingStatus.in_progress else None,
                 "last_run": self._format_run(latest_run) if latest_run else None,
                 "recent_runs": [
                     self._format_run_summary(run) 

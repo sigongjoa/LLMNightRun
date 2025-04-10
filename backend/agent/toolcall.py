@@ -79,7 +79,7 @@ class ToolCallAgent(ReActAgent):
                         f"최대 토큰 제한에 도달하여 실행을 계속할 수 없습니다: {str(token_limit_error)}"
                     )
                 )
-                self.state = AgentState.FINISHED
+                self.state = AgentState.finished
                 return False
             raise
 
@@ -247,7 +247,7 @@ class ToolCallAgent(ReActAgent):
         if self._should_finish_execution(name=name, result=result, **kwargs):
             # 에이전트 상태를 종료로 설정
             logger.info(f"🏁 특수 도구 '{name}'이(가) 작업을 완료했습니다!")
-            self.state = AgentState.FINISHED
+            self.state = AgentState.finished
 
     @staticmethod
     def _should_finish_execution(**kwargs) -> bool:

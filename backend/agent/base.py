@@ -51,7 +51,7 @@ class BaseAgent(BaseModel, ABC):
     # 의존성
     llm: LLM = Field(default_factory=LLM, description="LLM 인스턴스")
     memory: Memory = Field(default_factory=Memory, description="에이전트 메모리")
-    state: AgentState = Field(default=AgentState.IDLE, description="현재 상태")
+    state: AgentState = Field(default=AgentState.idle, description="현재 상태")
 
     # 실행 제어
     max_steps: int = Field(default=10, description="최대 실행 단계 수")
@@ -94,7 +94,7 @@ class BaseAgent(BaseModel, ABC):
         try:
             yield
         except Exception as e:
-            self.state = AgentState.ERROR  # 오류 발생 시 ERROR 상태로 전환
+            self.state = AgentState.error  # 오류 발생 시 error 상태로 전환
             raise e
         finally:
             self.state = previous_state  # 이전 상태로 복원
@@ -143,16 +143,16 @@ class BaseAgent(BaseModel, ABC):
         Raises:
             RuntimeError: 에이전트가 IDLE 상태가 아닌 경우
         """
-        if self.state != AgentState.IDLE:
+        if self.state != AgentState.idle:
             raise RuntimeError(f"상태 {self.state}에서 에이전트를 실행할 수 없습니다")
 
         if request:
             self.update_memory("user", request)
 
         results: List[str] = []
-        async with self.state_context(AgentState.RUNNING):
+        async with self.state_context(AgentState.running):
             while (
-                self.current_step < self.max_steps and self.state != AgentState.FINISHED
+                self.current_step < self.max_steps and self.state != AgentState.finished
             ):
                 self.current_step += 1
                 logger.info(f"단계 {self.current_step}/{self.max_steps} 실행 중")
@@ -166,7 +166,7 @@ class BaseAgent(BaseModel, ABC):
 
             if self.current_step >= self.max_steps:
                 self.current_step = 0
-                self.state = AgentState.IDLE
+                self.state = AgentState.idle
                 results.append(f"종료: 최대 단계 수({self.max_steps})에 도달")
         
         # 임시: 자원 정리 함수 호출

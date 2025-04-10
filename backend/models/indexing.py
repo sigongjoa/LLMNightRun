@@ -16,7 +16,7 @@ class CodebaseIndexingSettings(IdentifiedModel):
     """코드베이스 인덱싱 설정 모델"""
     codebase_id: int
     is_enabled: bool = True
-    frequency: IndexingFrequency = IndexingFrequency.ON_COMMIT
+    frequency: IndexingFrequency = IndexingFrequency.on_commit
     excluded_patterns: List[str] = Field(default_factory=list)  # e.g. ["*.log", "node_modules/*"]
     priority_patterns: List[str] = Field(default_factory=list)  # e.g. ["src/main/*", "*.py"]
     embedding_model: str = "openai/text-embedding-ada-002"  # 기본 임베딩 모델
@@ -29,7 +29,7 @@ class CodebaseIndexingSettings(IdentifiedModel):
 class CodebaseIndexingRun(IdentifiedModel):
     """코드베이스 인덱싱 실행 기록 모델"""
     codebase_id: int
-    status: IndexingStatus = IndexingStatus.PENDING
+    status: IndexingStatus = IndexingStatus.pending
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
     files_processed: int = 0

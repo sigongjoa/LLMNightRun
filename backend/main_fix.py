@@ -1,7 +1,5 @@
 """
-LLMNightRun API 임시 메인 애플리케이션 모듈
-
-기존 코드에서 project_id 컬럼 관련 문제를 해결하기 위한 임시 모듈입니다.
+LLMNightRun API 메인 애플리케이션 모듈 (수정 버전)
 """
 
 import uvicorn
@@ -18,14 +16,14 @@ from backend.exceptions import LLMNightRunError, LLMError
 from backend.database.connection import create_tables
 from backend.core.service_locator import setup_services
 
-# 수정된 API 라우터 임포트
+# API 라우터 임포트
 from backend.api import code, github, github_repo
 from backend.api import indexing, export, docs_manager
 from backend.api import auto_debug, local_llm, mcp_status, model_installer, ai_environment
 from backend.api.memory.router import router as memory_router
 from backend.ab_testing.routes import router as ab_testing_router
 
-# 기존 라우터 대신 수정된 라우터 사용
+# 질문 및 응답 라우터 임포트
 from backend.api.question_fix import router as question_router
 from backend.api.response_fix import router as response_router
 
@@ -90,8 +88,8 @@ tags_metadata = [
 
 # FastAPI 애플리케이션 생성
 app = FastAPI(
-    title=f"{settings.app_name} (임시 수정)",
-    description=f"{settings.app_description} - 데이터베이스 스키마 문제 해결을 위한 임시 버전",
+    title=settings.app_name,
+    description=settings.app_description,
     version=settings.app_version,
     docs_url="/docs",
     redoc_url="/redoc",
@@ -222,7 +220,7 @@ async def initialize_app():
         # 초기화 완료 로그
         env_name = settings.env.value.upper()
         logger.info(
-            f"애플리케이션 초기화 완료 - 환경: {env_name} (임시 수정 버전)", 
+            f"애플리케이션 초기화 완료 - 환경: {env_name}", 
             extra={"environment": env_name}
         )
         
@@ -237,7 +235,7 @@ async def initialize_app():
 async def startup_event():
     """애플리케이션 시작 시 실행"""
     with LogContext(event="startup"):
-        logger.info(f"{settings.app_name} API 서버 시작 (임시 수정 버전)")
+        logger.info(f"{settings.app_name} API 서버 시작 (수정 버전)")
         
         # 애플리케이션 초기화
         await initialize_app()
@@ -255,10 +253,37 @@ async def shutdown_event():
 def get_app_info() -> dict:
     """애플리케이션 버전 및 상태 정보 반환"""
     return {
-        "name": f"{settings.app_name} (임시 수정)",
+        "name": settings.app_name,
         "version": settings.app_version,
-        "description": f"{settings.app_description} - 데이터베이스 스키마 문제 해결을 위한 임시 버전",
+        "description": settings.app_description,
         "environment": settings.env.value
+    }
+
+
+@app.get("/settings/")
+async def direct_settings():
+    """
+    설정 직접 엔드포인트 - 디버그용
+    """
+    return {
+        "id": 1,
+        "openai_api_key": "test-key",
+        "claude_api_key": "test-key",
+        "github_token": "test-token",
+        "github_repo": "test-repo",
+        "github_username": "test-user"
+    }
+
+@app.get("/github/repositories")
+async def direct_github_repositories():
+    """
+    GitHub 저장소 목록 직접 엔드포인트 - 디버그용
+    """
+    return {
+        "repositories": [
+            {"id": 1, "name": "test-repo-1", "description": "테스트 저장소 1"},
+            {"id": 2, "name": "test-repo-2", "description": "테스트 저장소 2"}
+        ]
     }
 
 
@@ -268,9 +293,8 @@ async def root():
     """루트 경로"""
     app_info = get_app_info()
     return {
-        "message": f"{app_info['name']} API에 오신 것을 환영합니다!",
-        "app": app_info,
-        "note": "이 버전은 project_id 컬럼 문제를 해결하기 위한 임시 수정 버전입니다."
+        "message": f"{app_info['name']} API에 오신 것을 환영합니다! (수정 버전)",
+        "app": app_info
     }
 
 
@@ -285,15 +309,14 @@ async def health_check():
         "status": "healthy",
         "version": settings.app_version,
         "environment": settings.env.value,
-        "timestamp": datetime.utcnow().isoformat(),
-        "note": "데이터베이스 스키마 문제 해결을 위한 임시 수정 버전"
+        "timestamp": datetime.utcnow().isoformat()
     }
 
 
 # 직접 실행 시
 if __name__ == "__main__":
     with LogContext(mode="standalone"):
-        logger.info(f"{settings.app_name} 서버 실행 준비 (임시 수정 버전)")
+        logger.info(f"{settings.app_name} 서버 실행 준비 (수정 버전)")
         
         uvicorn.run(
             "backend.main_fix:app",

@@ -38,6 +38,9 @@ template_router = APIRouter(
     responses={404: {"description": "찾을 수 없음"}},
 )
 
+# 메인 라우터에 템플릿 라우터 포함
+router.include_router(template_router)
+
 
 # 코드 스니펫 엔드포인트
 @router.post("/", response_model=CodeSnippetResponse)

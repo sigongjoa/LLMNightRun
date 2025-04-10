@@ -1,5 +1,5 @@
 """
-백엔드 서버 실행 스크립트 (수정 버전)
+백엔드 서버 실행 스크립트
 """
 
 import os
@@ -11,7 +11,7 @@ def main():
     """백엔드 서버 실행 함수"""
     # 실행 안내 메시지
     print("=" * 80)
-    print(f"  {settings.app_name} 백엔드 서버 실행 (수정 버전)")
+    print(f"  {settings.app_name} 백엔드 서버 실행")
     print(f"  환경: {settings.env.value.upper()}")
     print(f"  host: {settings.host}")
     print(f"  port: {settings.port}")

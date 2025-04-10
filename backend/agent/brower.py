@@ -86,7 +86,7 @@ class BrowserAgent(BaseAgent):
             return response
         except Exception as e:
             logger.error(f"브라우저 단계 실행 중 오류 발생: {e}")
-            self.state = AgentState.ERROR
+            self.state = AgentState.error
             return f"오류: {str(e)}"
     
     async def _visit_url(self, url: str) -> ToolResult:

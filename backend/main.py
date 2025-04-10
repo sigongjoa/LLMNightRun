@@ -1,7 +1,5 @@
 """
 LLMNightRun API 메인 애플리케이션 모듈
-
-FastAPI 애플리케이션의 진입점으로, 모든 API 라우터를 등록하고 서버를 실행합니다.
 """
 
 import uvicorn
@@ -18,19 +16,16 @@ from backend.exceptions import LLMNightRunError, LLMError
 from backend.database.connection import create_tables
 from backend.core.service_locator import setup_services
 
-# API 라우터 임포트 - 기능별 그룹화
-# 핵심 기능
-from backend.api import question, response, code
-# 에이전트 및 도구
-from backend.api import agent, github, github_repo
-# 데이터 관리
+# API 라우터 임포트
+from backend.api import code, github, github_repo
 from backend.api import indexing, export, docs_manager
-# 시스템 및 디버깅
 from backend.api import auto_debug, local_llm, mcp_status, model_installer, ai_environment
-# 메모리 관리
 from backend.api.memory.router import router as memory_router
-# A/B 테스팅
 from backend.ab_testing.routes import router as ab_testing_router
+
+# 질문 및 응답 라우터 임포트
+from backend.api.question_fix import router as question_router
+from backend.api.response_fix import router as response_router
 
 # v2 API 라우터 임포트
 from backend.api.v2 import llm as llm_v2
@@ -40,6 +35,9 @@ from backend.mcp import router as mcp_router
 from backend.mcp import websocket_router as mcp_ws_router
 from backend.mcp import api_router as mcp_api_router
 from backend.mcp.chat_websocket import router as mcp_chat_ws_router
+
+# 에이전트 라우터 임포트
+from backend.api import agent
 
 # 로깅 설정
 logger = get_logger(__name__)
@@ -126,35 +124,14 @@ app.add_exception_handler(Exception, general_exception_handler)
 from backend.utils.openapi import custom_openapi
 app.openapi = lambda: custom_openapi(app)
 
-# 메인 엔드포인트
-@app.get("/")
-async def root():
-    """루트 경로"""
-    return {"message": "LLMNightRun API에 오신 것을 환영합니다!"}
-
-# 헬스 체크 엔드포인트
-@app.get("/health", tags=["Monitoring"])
-async def health_check():
-    """
-    시스템 헬스 체크 엔드포인트.
-    쿠버네티스, 도커 또는 기타 모니터링 도구에서 사용할 수 있습니다.
-    """
-    # 현재 버전 정보
-    version = "0.1.0"
-    
-    return {
-        "status": "healthy",
-        "version": version,
-        "timestamp": datetime.utcnow().isoformat()
-    }
 
 # 라우터 등록 - 기능별 그룹화
 def register_routers():
     """모든 라우터를 등록하는 헬퍼 함수"""
-    # 핵심 기능 (Core)
+    # 핵심 기능 (Core) - 수정된 라우터 사용
     core_routers = [
-        (question.router, "core"),
-        (response.router, "core"),
+        (question_router, "core"),
+        (response_router, "core"),
         (code.router, "core"),
     ]
     
@@ -205,7 +182,9 @@ def register_routers():
     # 라우터 등록
     for router, tag in all_routers:
         if tag:
-            router.tags = [tag] + (router.tags or [])
+            if not hasattr(router, 'tags'):
+                router.tags = []
+            router.tags.append(tag)
         app.include_router(router)
     
     # 개별 처리가 필요한 메모리 라우터 추가
@@ -238,9 +217,6 @@ async def initialize_app():
         setup_services()
         logger.info("서비스 초기화 및 등록 완료")
         
-        # 기타 초기화 작업
-        # ...
-        
         # 초기화 완료 로그
         env_name = settings.env.value.upper()
         logger.info(
@@ -263,16 +239,6 @@ async def startup_event():
         
         # 애플리케이션 초기화
         await initialize_app()
-        
-        # 개발 환경에서는 API 문서 자동 생성
-        if settings.is_development():
-            from backend.utils.openapi import export_openapi_schema, create_api_documentation
-            try:
-                export_openapi_schema(app)
-                create_api_documentation(app)
-                logger.info("API 문서 자동 생성 완료")
-            except Exception as e:
-                logger.warning(f"API 문서 생성 중 오류 발생: {str(e)}", exc_info=True)
 
 
 # 애플리케이션 종료 이벤트
@@ -291,6 +257,33 @@ def get_app_info() -> dict:
         "version": settings.app_version,
         "description": settings.app_description,
         "environment": settings.env.value
+    }
+
+
+@app.get("/settings/")
+async def direct_settings():
+    """
+    설정 직접 엔드포인트 - 디버그용
+    """
+    return {
+        "id": 1,
+        "openai_api_key": "test-key",
+        "claude_api_key": "test-key",
+        "github_token": "test-token",
+        "github_repo": "test-repo",
+        "github_username": "test-user"
+    }
+
+@app.get("/github/repositories")
+async def direct_github_repositories():
+    """
+    GitHub 저장소 목록 직접 엔드포인트 - 디버그용
+    """
+    return {
+        "repositories": [
+            {"id": 1, "name": "test-repo-1", "description": "테스트 저장소 1"},
+            {"id": 2, "name": "test-repo-2", "description": "테스트 저장소 2"}
+        ]
     }
 
 

@@ -60,7 +60,7 @@ async def create_agent():
         
         return {
             "agent_id": agent_id,
-            "state": AgentState.IDLE,
+            "state": AgentState.idle,
             "messages": [msg.dict() for msg in agent.messages],
             "result": ""
         }
@@ -238,7 +238,7 @@ async def get_agent_status(agent_id: str):
             logger.warning(f"에이전트 {agent_id} 없음, 빈 상태 반환")
             return {
                 "agent_id": agent_id,
-                "state": AgentState.IDLE,
+                "state": AgentState.idle,
                 "messages": [],
                 "result": ""
             }

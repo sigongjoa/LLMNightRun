@@ -1,178 +1,129 @@
 """
 응답 관련 데이터베이스 작업 모듈
-
-LLM 응답 데이터에 대한 CRUD 작업을 제공합니다.
 """
 
+from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
-from typing import List, Optional, Union, Dict, Any
-
-from ..models import Response as DBResponse, LLMTypeEnum
-from ...models.response import Response, ResponseCreate
-from ...models.enums import LLMType
+from ..models import Response, LLMTypeEnum
 
 
-def get_responses(
-    db: Session, 
-    response_id: Optional[int] = None,
-    question_id: Optional[int] = None,
-    llm_type: Optional[LLMType] = None,
-    skip: int = 0, 
-    limit: int = 100
-) -> List[Response]:
+def get_responses(db: Session, response_id: Optional[int] = None, question_id: Optional[int] = None, 
+                llm_type: Optional[str] = None, skip: int = 0, limit: int = 100):
     """
-    응답을 조회하는 함수
+    응답 목록 또는 단일 응답을 가져옵니다.
     
     Args:
         db: 데이터베이스 세션
-        response_id: 조회할 응답 ID (지정 시 해당 응답만 조회)
-        question_id: 특정 질문에 대한 응답만 조회
-        llm_type: 특정 LLM 유형에 대한 응답만 조회
-        skip: 건너뛸 항목 수
-        limit: 최대 조회 항목 수
+        response_id: 응답 ID (선택 사항)
+        question_id: 질문 ID (선택 사항)
+        llm_type: LLM 유형 (선택 사항)
+        skip: 건너뛸 결과 수
+        limit: 최대 결과 수
         
     Returns:
-        응답 목록
+        응답 목록 또는 단일 응답
     """
-    # 데이터베이스 컬럼과 모델 간 불일치로 인한 오류 방지를 위해
-    # 특정 컬럼만 명시적으로 선택
-    query = db.query(
-        DBResponse.id,
-        DBResponse.question_id,
-        DBResponse.llm_type,
-        DBResponse.content,
-        DBResponse.created_at
-    )
+    query = db.query(Response)
     
     if response_id:
-        query = query.filter(DBResponse.id == response_id)
+        return query.filter(Response.id == response_id).first()
     
     if question_id:
-        query = query.filter(DBResponse.question_id == question_id)
+        query = query.filter(Response.question_id == question_id)
     
     if llm_type:
-        # Enum 변환
-        db_llm_type = LLMTypeEnum[llm_type.value]
-        query = query.filter(DBResponse.llm_type == db_llm_type)
+        try:
+            llm_type_enum = LLMTypeEnum[llm_type]
+            query = query.filter(Response.llm_type == llm_type_enum)
+        except KeyError:
+            # 유효하지 않은 LLM 유형은 무시
+            pass
     
     return query.offset(skip).limit(limit).all()
 
 
-def create_response(db: Session, response: Union[Response, ResponseCreate, Dict[str, Any]]) -> Response:
+def create_response(db: Session, question_id: int, llm_type: str, content: str, project_id: Optional[int] = None) -> Response:
     """
-    새 응답을 생성하는 함수
+    새 응답을 생성합니다.
     
     Args:
         db: 데이터베이스 세션
-        response: 생성할 응답 데이터
+        question_id: 질문 ID
+        llm_type: LLM 유형
+        content: 응답 내용
+        project_id: 프로젝트 ID (선택 사항)
         
     Returns:
-        생성된 응답 객체
+        생성된 응답
     """
-    # 딕셔너리인 경우 처리
-    if isinstance(response, dict):
-        response_data = response
-    else:
-        response_data = response.dict()
+    try:
+        llm_type_enum = LLMTypeEnum[llm_type]
+    except KeyError:
+        llm_type_enum = LLMTypeEnum.manual
     
-    # ID 제거 (자동 생성)
-    if "id" in response_data:
-        del response_data["id"]
+    response = Response(
+        question_id=question_id,
+        llm_type=llm_type_enum,
+        content=content,
+        project_id=project_id
+    )
     
-    # 생성 시간 및 업데이트 시간 필드 제거
-    if "created_at" in response_data:
-        del response_data["created_at"]
-    if "updated_at" in response_data:
-        del response_data["updated_at"]
-    
-    # project_id 제거 (데이터베이스에 컬럼이 없음)
-    if "project_id" in response_data:
-        del response_data["project_id"]
-        
-    # LLM 타입 처리 (문자열 -> Enum)
-    if "llm_type" in response_data and not isinstance(response_data["llm_type"], LLMTypeEnum):
-        llm_type = response_data["llm_type"]
-        if isinstance(llm_type, LLMType):
-            response_data["llm_type"] = LLMTypeEnum[llm_type.value]
-        else:
-            response_data["llm_type"] = LLMTypeEnum[llm_type]
-    
-    # 데이터베이스 모델 생성
-    db_response = DBResponse(**response_data)
-    
-    # 데이터베이스에 저장
-    db.add(db_response)
+    db.add(response)
     db.commit()
-    db.refresh(db_response)
+    db.refresh(response)
     
-    return db_response
+    return response
 
 
-def update_response(
-    db: Session, 
-    response_id: int, 
-    response_data: Union[Response, Dict[str, Any]]
-) -> Optional[Response]:
+def update_response(db: Session, response_id: int, response_data: Dict[str, Any]) -> Optional[Response]:
     """
-    응답을 업데이트하는 함수
+    응답을 업데이트합니다.
     
     Args:
         db: 데이터베이스 세션
-        response_id: 업데이트할 응답 ID
-        response_data: 업데이트할 데이터
+        response_id: 응답 ID
+        response_data: 업데이트할 응답 데이터
         
     Returns:
-        업데이트된 응답 객체 또는 None (존재하지 않는 경우)
+        업데이트된 응답 또는 None
     """
-    # 응답 조회
-    db_response = db.query(DBResponse).filter(DBResponse.id == response_id).first()
-    if not db_response:
+    response = db.query(Response).filter(Response.id == response_id).first()
+    
+    if not response:
         return None
     
-    # 딕셔너리로 변환
-    if not isinstance(response_data, dict):
-        response_data = response_data.dict(exclude_unset=True)
-    
-    # project_id 제거 (데이터베이스에 컬럼이 없음)
-    if "project_id" in response_data:
-        del response_data["project_id"]
-        
-    # LLM 타입 처리 (문자열 -> Enum)
-    if "llm_type" in response_data and not isinstance(response_data["llm_type"], LLMTypeEnum):
-        llm_type = response_data["llm_type"]
-        if isinstance(llm_type, LLMType):
-            response_data["llm_type"] = LLMTypeEnum[llm_type.value]
-        else:
-            response_data["llm_type"] = LLMTypeEnum[llm_type]
-    
-    # 업데이트할 필드 설정
     for key, value in response_data.items():
-        if hasattr(db_response, key):
-            setattr(db_response, key, value)
+        if hasattr(response, key) and value is not None:
+            if key == 'llm_type' and isinstance(value, str):
+                try:
+                    value = LLMTypeEnum[value]
+                except KeyError:
+                    continue
+            setattr(response, key, value)
     
-    # 변경사항 저장
     db.commit()
-    db.refresh(db_response)
+    db.refresh(response)
     
-    return db_response
+    return response
 
 
 def delete_response(db: Session, response_id: int) -> bool:
     """
-    응답을 삭제하는 함수
+    응답을 삭제합니다.
     
     Args:
         db: 데이터베이스 세션
-        response_id: 삭제할 응답 ID
+        response_id: 응답 ID
         
     Returns:
-        성공 여부
+        삭제 성공 여부
     """
-    db_response = db.query(DBResponse).filter(DBResponse.id == response_id).first()
-    if not db_response:
+    response = db.query(Response).filter(Response.id == response_id).first()
+    
+    if not response:
         return False
     
-    db.delete(db_response)
+    db.delete(response)
     db.commit()
     
     return True

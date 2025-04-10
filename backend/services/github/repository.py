@@ -8,9 +8,8 @@ from typing import Dict, List, Optional, Any
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
-from ...database.models import GitHubRepository, Settings
-from ...database.operations.settings import get_settings
-from ...database.operations.project import get_project
+from backend.database.models import GitHubRepository, Settings
+from backend.database.operations.settings import get_settings
 from .models import GitHubRepositoryData
 
 
@@ -83,15 +82,6 @@ class RepositoryService:
             
             # 프로젝트 ID가 있는 경우 프로젝트 존재 여부 확인
             project_id = getattr(repo_data, 'project_id', None)
-            if project_id:
-                try:
-                    project = get_project(self.db, project_id)
-                    if not project:
-                        raise HTTPException(status_code=404, detail=f"프로젝트 ID {project_id}를 찾을 수 없습니다.")
-                except Exception as e:
-                    print(f"프로젝트 조회 오류: {str(e)}")
-                    # 프로젝트 조회 실패 시 project_id를 None으로 설정
-                    project_id = None
             
             # 기본 저장소로 설정하려는 경우 기존 기본 저장소 해제
             is_default = getattr(repo_data, 'is_default', False)

@@ -27,7 +27,7 @@ router = APIRouter(
 @router.post("/analyze")
 async def analyze_error(
     error_data: Dict[str, Any] = Body(...),
-    llm_type: Optional[LLMType] = Query(LLMType.OPENAI_API, description="사용할 LLM 유형"),
+    llm_type: Optional[LLMType] = Query(LLMType.openai_api, description="사용할 LLM 유형"),
     db: Session = Depends(get_db)
 ):
     """
@@ -83,7 +83,7 @@ async def analyze_error(
 async def auto_fix_error(
     error_data: Dict[str, Any] = Body(...),
     apply_fix: bool = Query(False, description="수정 사항 즉시 적용 여부"),
-    llm_type: Optional[LLMType] = Query(LLMType.OPENAI_API, description="사용할 LLM 유형"),
+    llm_type: Optional[LLMType] = Query(LLMType.openai_api, description="사용할 LLM 유형"),
     db: Session = Depends(get_db)
 ):
     """
@@ -140,7 +140,7 @@ async def auto_fix_error(
 @router.post("/import-error")
 async def debug_import_error(
     import_error_data: Dict[str, Any] = Body(...),
-    llm_type: Optional[LLMType] = Query(LLMType.OPENAI_API, description="사용할 LLM 유형"),
+    llm_type: Optional[LLMType] = Query(LLMType.openai_api, description="사용할 LLM 유형"),
     db: Session = Depends(get_db)
 ):
     """

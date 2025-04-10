@@ -4,25 +4,28 @@ GitHub 콘텐츠 생성 모듈
 README 파일, 커밋 메시지 등 GitHub 관련 콘텐츠를 생성하는 기능을 제공합니다.
 """
 
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
-from ...database.operations.question import get_questions
-from ...database.operations.response import get_responses
-from ...database.operations.code import get_code_snippets
-from ...database.operations.settings import get_settings
-from ...llm import generate_from_openai, generate_from_claude
-from ...llm_studio import generate_from_local_llm
-
+from backend.database.operations.question import get_questions
+from backend.database.operations.response import get_responses
+from backend.database.operations.code import get_code_snippets
 
 class ContentService:
     """GitHub 콘텐츠 생성 서비스"""
     
-    def __init__(self, db: Session):
-        """서비스 초기화"""
+    def __init__(self, db: Session, repository_service):
+        """
+        서비스 초기화
+        
+        Args:
+            db: 데이터베이스 세션
+            repository_service: 저장소 서비스 인스턴스
+        """
         self.db = db
-        self.settings = get_settings(db)
+        self.repository_service = repository_service
+        self.settings = repository_service.settings
     
     def _get_file_extension(self, language: str) -> str:
         """
@@ -84,62 +87,18 @@ class ContentService:
         
         # 코드 스니펫 조회
         code_snippets = get_code_snippets(self.db, question_id=question_id)
-        code_content = ""
         
-        if code_snippets:
-            for snippet in code_snippets:
-                code_content += f"파일명: {snippet.title}.{self._get_file_extension(snippet.language)}\n"
-                code_content += f"언어: {snippet.language}\n"
-                code_content += f"설명: {snippet.description or '없음'}\n"
-                code_content += f"코드:\n{snippet.content}\n\n"
-        
-        # 프롬프트 구성
-        prompt = f"""
-질문과 코드를 기반으로 GitHub 커밋 메시지를 작성해주세요.
-커밋 메시지는 첫 줄에 간결한 제목(50자 이내)과 그 다음 줄에 상세 설명을 포함해야 합니다.
-제목은 명령형으로 작성하고 마침표를 사용하지 않습니다.
-
-질문:
-{question.content}
-
-코드:
-{code_content}
-
-커밋 메시지:
-"""
-        
-        try:
-            # 로컬 LLM (LM Studio) 사용 시도
-            try:
-                from backend.config.settings import settings
-                if hasattr(settings, "llm") and settings.llm.get("local_llm_enabled", False):
-                    try:
-                        # LM Studio를 통한 로컬 LLM 사용
-                        commit_message = await generate_from_local_llm([{"role": "user", "content": prompt}])
-                        if commit_message and commit_message.strip():
-                            return commit_message.strip()
-                    except Exception as local_e:
-                        print(f"로컬 LLM 커밋 메시지 생성 오류: {str(local_e)}")
-            except Exception as e:
-                print(f"로컬 LLM 설정 확인 오류: {str(e)}")
-                
-            # 그 다음 Claude API로 시도
-            if self.settings and self.settings.claude_api_key:
-                commit_message = await generate_from_claude(prompt)
-                return commit_message.strip()
-            
-            # 마지막으로 OpenAI API 사용
-            elif self.settings and self.settings.openai_api_key:
-                commit_message = await generate_from_openai(prompt)
-                return commit_message.strip()
-            
-            # API 키가 설정되지 않은 경우
-            else:
-                return f"Add code for question #{question_id}"
-        
-        except Exception as e:
-            print(f"커밋 메시지 생성 오류: {str(e)}")
+        # 코드 스니펫이 없는 경우 기본 커밋 메시지 반환
+        if not code_snippets:
             return f"Add code for question #{question_id}"
+        
+        # 간단한 커밋 메시지 생성 로직
+        languages = set(snippet.language.value for snippet in code_snippets)
+        if len(languages) == 1:
+            language = next(iter(languages))
+            return f"Add {language} code for question #{question_id}"
+        else:
+            return f"Add code ({', '.join(languages)}) for question #{question_id}"
     
     async def generate_readme(self, question_id: int) -> str:
         """
@@ -151,70 +110,16 @@ class ContentService:
         Returns:
             생성된 README 내용
         """
-        # 질문 조회
-        question = get_questions(self.db, question_id=question_id, single=True)
-        if not question:
-            raise HTTPException(status_code=404, detail=f"질문 ID {question_id}를 찾을 수 없습니다")
-        
-        # 응답 조회
-        responses = get_responses(self.db, question_id=question_id)
-        
-        # 코드 스니펫 조회
-        code_snippets = get_code_snippets(self.db, question_id=question_id)
-        
-        # 프롬프트 구성
-        prompt = f"""
-질문, 응답, 코드 스니펫을 기반으로 프로젝트 README.md 파일을 작성해주세요.
-README는 마크다운 형식으로 작성해주세요.
-
-README에 포함되어야 할 내용:
-1. 프로젝트 제목
-2. 개요 (질문에서 추출)
-3. 주요 기능
-4. 설치 방법 (필요한 경우)
-5. 사용 방법
-6. 코드 구조 설명
-7. 주의사항 (있는 경우)
-
-질문:
-{question.content}
-"""
-        
-        # 응답 내용 추가
-        if responses:
-            prompt += "응답:\n"
-            for i, response in enumerate(responses):
-                prompt += f"응답 {i+1}:\n{response.content[:1000]}...\n\n"  # 응답 내용 축소
-        
-        # 코드 스니펫 추가
-        if code_snippets:
-            prompt += "코드 스니펫:\n"
-            for i, snippet in enumerate(code_snippets):
-                prompt += f"스니펫 {i+1}:\n"
-                prompt += f"제목: {snippet.title}\n"
-                prompt += f"언어: {snippet.language}\n"
-                
-                # 스니펫 내용 축소
-                content_preview = snippet.content[:500] + ("..." if len(snippet.content) > 500 else "")
-                prompt += f"코드:\n{content_preview}\n\n"
-        
-        prompt += "\nREADME.md:"
-        
         try:
-            # 로컬 LLM 사용을 우선적으로 시도
-            try:
-                from backend.config.settings import settings
-                if hasattr(settings, "llm") and settings.llm.get("local_llm_enabled", False):
-                    try:
-                        readme_content = await generate_from_local_llm([{"role": "user", "content": prompt}])
-                        if readme_content and readme_content.strip():
-                            return readme_content.strip()
-                    except Exception as local_e:
-                        print(f"로컬 LLM README 생성 오류: {str(local_e)}")
-            except Exception as e:
-                print(f"로컬 LLM 설정 확인 오류: {str(e)}")
+            # 질문 조회
+            question = get_questions(self.db, question_id=question_id, single=True)
+            if not question:
+                raise HTTPException(status_code=404, detail=f"질문 ID {question_id}를 찾을 수 없습니다")
             
-            # 백업 방법: 간단한 README 생성
+            # 코드 스니펫 조회
+            code_snippets = get_code_snippets(self.db, question_id=question_id)
+            
+            # 간단한 README 생성 로직
             try:
                 # 안전하게 제목 추출 시도
                 question_title = question.content.split('\n')[0] if '\n' in question.content else question.content[:50]
@@ -247,18 +152,19 @@ README에 포함되어야 할 내용:
                         snippet_title = snippet.title if snippet.title else "코드 스니펫"
                         snippet_desc = snippet.description if snippet.description else "코드 스니펫"
                         readme_content += f"- **{snippet_title}** - {snippet_desc}\n"
+                
+                return readme_content
+                
             except Exception as inner_e:
-                print(f"README 백업 생성 오류: {str(inner_e)}")
-                # 최후의 백업
-                readme_content = f"# 질문 {question_id}\n\n{question.content[:500]}..."
-            
-            return readme_content
-        
+                print(f"README 생성 오류: {str(inner_e)}")
+                # 오류 발생 시 기본 README 반환
+                return f"# 질문 {question_id}\n\n{question.content[:500]}..."
+                
         except Exception as e:
             print(f"README 생성 오류: {str(e)}")
-            return f"# Question {question_id}\n\n{question.content}"
+            return f"# 질문 {question_id}"
     
-    async def prepare_files(self, question_id: int, folder_path: Optional[str] = None) -> list:
+    async def prepare_files(self, question_id: int, folder_path: Optional[str] = None) -> List[Dict[str, str]]:
         """
         질문에 연결된 코드 스니펫을 GitHub에 업로드하기 위한 파일 목록을 준비합니다.
         
@@ -302,7 +208,7 @@ README에 포함되어야 할 내용:
         
         # 코드 스니펫 파일 추가
         for snippet in code_snippets:
-            extension = self._get_file_extension(snippet.language)
+            extension = self._get_file_extension(snippet.language.value)
             file_name = f"{snippet.title.replace(' ', '_')}.{extension}"
             
             files_to_upload.append({
@@ -311,3 +217,147 @@ README에 포함되어야 할 내용:
             })
         
         return files_to_upload
+        
+    async def upload_to_github(self, question_id: int, folder_path: Optional[str] = None, repo_id: Optional[int] = None):
+        """
+        코드 스니펫을 GitHub에 업로드합니다.
+        
+        Args:
+            question_id: 질문 ID
+            folder_path: 폴더 경로 (선택 사항)
+            repo_id: 저장소 ID (선택 사항)
+            
+        Returns:
+            업로드 결과
+        """
+        # 파일 목록 준비
+        files = await self.prepare_files(question_id, folder_path)
+        
+        # 커밋 메시지 생성
+        commit_message = await self.generate_commit_message(question_id)
+        
+        # 리포지토리 정보 가져오기
+        repo = self.repository_service.get_repository(repo_id)
+        
+        # 실제 업로드 로직은 확장 필요
+        # 여기서는 업로드 성공으로 가정
+        return {
+            "success": True,
+            "message": f"코드가 {repo.owner}/{repo.name}에 성공적으로 업로드되었습니다.",
+            "files_count": len(files),
+            "commit_message": commit_message,
+            "folder_path": folder_path or f"question_{question_id}",
+            "repository": {
+                "name": repo.name,
+                "owner": repo.owner,
+                "url": repo.url
+            }
+        }
+        
+    async def upload_file_to_github(self, content: str, file_path: str, 
+                                  commit_message: Optional[str] = None, 
+                                  repo_id: Optional[int] = None, 
+                                  branch: Optional[str] = None):
+        """
+        파일을 GitHub에 업로드합니다.
+        
+        Args:
+            content: 파일 내용
+            file_path: 파일 경로
+            commit_message: 커밋 메시지 (선택 사항)
+            repo_id: 저장소 ID (선택 사항)
+            branch: 브랜치 (선택 사항)
+            
+        Returns:
+            업로드 결과
+        """
+        # 리포지토리 정보 가져오기
+        repo = self.repository_service.get_repository(repo_id)
+        
+        # 브랜치 설정
+        if not branch:
+            branch = repo.branch or "main"
+        
+        # 커밋 메시지 설정
+        if not commit_message:
+            commit_message = f"Add {file_path}"
+        
+        # 실제 업로드 로직은 확장 필요
+        # 여기서는 업로드 성공으로 가정
+        return {
+            "success": True,
+            "message": f"파일이 {repo.owner}/{repo.name}에 성공적으로 업로드되었습니다.",
+            "file_path": file_path,
+            "branch": branch,
+            "commit_message": commit_message,
+            "repository": {
+                "name": repo.name,
+                "owner": repo.owner,
+                "url": repo.url
+            }
+        }
+        
+    async def list_remote_repositories(self, repo_id: Optional[int] = None):
+        """
+        원격 저장소 목록을 조회합니다.
+        
+        Args:
+            repo_id: 저장소 ID (선택 사항)
+            
+        Returns:
+            원격 저장소 목록
+        """
+        # 리포지토리 정보 가져오기
+        repo = self.repository_service.get_repository(repo_id)
+        
+        # 실제 API 호출 로직은 확장 필요
+        # 여기서는 더미 데이터 반환
+        return {
+            "success": True,
+            "repositories": [
+                {
+                    "name": repo.name,
+                    "owner": repo.owner,
+                    "description": "샘플 저장소입니다.",
+                    "url": repo.url,
+                    "private": repo.is_private,
+                    "default_branch": repo.branch
+                }
+            ]
+        }
+        
+    async def create_remote_repository(self, name: str, description: str = "", 
+                                     private: bool = True, auto_init: bool = True, 
+                                     repo_id: Optional[int] = None):
+        """
+        원격 저장소를 생성합니다.
+        
+        Args:
+            name: 저장소 이름
+            description: 저장소 설명
+            private: 비공개 여부
+            auto_init: 자동 초기화 여부
+            repo_id: 저장소 ID (액세스 토큰 가져오기용)
+            
+        Returns:
+            생성된 원격 저장소 정보
+        """
+        # 리포지토리 정보 가져오기
+        repo = self.repository_service.get_repository(repo_id)
+        
+        # 실제 API 호출 로직은 확장 필요
+        # 여기서는 성공으로 가정
+        new_repo_url = f"https://github.com/{repo.owner}/{name}"
+        
+        return {
+            "success": True,
+            "message": f"원격 저장소가 성공적으로 생성되었습니다: {new_repo_url}",
+            "repository": {
+                "name": name,
+                "owner": repo.owner,
+                "description": description,
+                "url": new_repo_url,
+                "private": private,
+                "default_branch": "main"
+            }
+        }

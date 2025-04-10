@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 class AutoDebugService:
     """자동 디버깅 서비스 클래스"""
     
-    def __init__(self, db: Session, llm_type: LLMType = LLMType.OPENAI_API):
+    def __init__(self, db: Session, llm_type: LLMType = LLMType.openai_api):
         """서비스 초기화"""
         self.db = db
         self.llm_type = llm_type

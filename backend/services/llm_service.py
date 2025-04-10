@@ -440,7 +440,7 @@ class LLMService(ILLMService):
         # OpenAI 제공자
         if settings.llm.openai_api_key:
             try:
-                self.providers[LLMType.OPENAI_API] = OpenAIProvider(settings.llm.openai_api_key)
+                self.providers[LLMType.openai_api] = OpenAIProvider(settings.llm.openai_api_key)
                 logger.info("OpenAI 제공자 초기화 완료")
             except Exception as e:
                 logger.error(f"OpenAI 제공자 초기화 실패: {str(e)}")
@@ -448,14 +448,14 @@ class LLMService(ILLMService):
         # Claude 제공자
         if settings.llm.claude_api_key:
             try:
-                self.providers[LLMType.CLAUDE_API] = ClaudeProvider(settings.llm.claude_api_key)
+                self.providers[LLMType.claude_api] = ClaudeProvider(settings.llm.claude_api_key)
                 logger.info("Claude 제공자 초기화 완료")
             except Exception as e:
                 logger.error(f"Claude 제공자 초기화 실패: {str(e)}")
         
         # 로컬 LLM 제공자
         try:
-            self.providers[LLMType.LOCAL_LLM] = LocalLLMProvider()
+            self.providers[LLMType.local_llm] = LocalLLMProvider()
             logger.info("로컬 LLM 제공자 초기화 완료")
         except Exception as e:
             logger.error(f"로컬 LLM 제공자 초기화 실패: {str(e)}")

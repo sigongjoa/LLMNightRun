@@ -120,20 +120,20 @@ class LLMController(BaseController):
         # 추후 동적 모델 목록 조회로 변경 가능
         
         models = {
-            LLMType.OPENAI_API: [
+            LLMType.openai_api: [
                 "gpt-3.5-turbo", 
                 "gpt-4",
                 "gpt-4-turbo"
             ],
-            LLMType.CLAUDE_API: [
+            LLMType.claude_api: [
                 "claude-1", 
                 "claude-2",
                 "claude-instant-1"
             ],
-            LLMType.LOCAL_LLM: [
+            LLMType.local_llm: [
                 "local-default"
             ],
-            LLMType.CUSTOM_API: [
+            LLMType.claude_web: [
                 "custom-default"
             ]
         }

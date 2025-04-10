@@ -8,8 +8,14 @@ from pydantic import Field, BaseModel
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
-from .base import IdentifiedModel, TimeStampedModel
+class TimeStampedModel(BaseModel):
+    """타임스탬프가 있는 기본 모델"""
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
+class IdentifiedModel(TimeStampedModel):
+    """ID가 있는 기본 모델"""
+    id: Optional[int] = None
 
 class GitHubRepository(IdentifiedModel):
     """GitHub 저장소 정보 모델"""

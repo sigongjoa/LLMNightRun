@@ -163,7 +163,7 @@ class LLM:
     def __init__(
         self, 
         config_name: str = "default", 
-        llm_type: LLMType = LLMType.OPENAI_API, 
+        llm_type: LLMType = LLMType.openai_api, 
         base_url: Optional[str] = None,
         use_memory: bool = False
     ):
@@ -181,7 +181,7 @@ class LLM:
         self.use_memory = use_memory
         
         # 로컬 LLM인 경우 기본 URL 설정
-        if self.llm_type == LLMType.LOCAL_LLM and base_url is None:
+        if self.llm_type == LLMType.local_llm and base_url is None:
             self.base_url = settings.llm.local_llm_url
         else:
             self.base_url = base_url
@@ -250,7 +250,7 @@ class LLM:
         logger.info(f"LLM 요청: {len(messages)}개 메시지")
         
         # LM Studio 로컬 LLM 처리
-        if self.llm_type == LLMType.LOCAL_LLM and self.base_url:
+        if self.llm_type == LLMType.local_llm and self.base_url:
             try:
                 # 설정에서 모델 ID 가져오지 않고, kwargs에서 가져온다
                 model_id = kwargs.pop("model_id", None)  # pop으로 파라미터 제거
@@ -363,7 +363,7 @@ class LLM:
         logger.info(f"LLM 도구 요청: {len(messages)}개 메시지, {len(tools) if tools else 0}개 도구")
         
         # LM Studio 로컬 LLM 처리
-        if self.llm_type == LLMType.LOCAL_LLM and self.base_url:
+        if self.llm_type == LLMType.local_llm and self.base_url:
             try:
                 # 도구 선택 모드 문자열 변환
                 tool_choice_str = None

@@ -140,7 +140,7 @@ MCP 서버를 통해 파일 시스템, 데이터베이스, API 등 다양한 리
                 
         except Exception as e:
             logger.error(f"MCP 단계 실행 중 오류 발생: {e}")
-            self.state = AgentState.ERROR
+            self.state = AgentState.error
             return f"오류: {str(e)}"
     
     async def _communicate_with_lmstudio(self, messages: List[Dict[str, Any]]) -> str:
