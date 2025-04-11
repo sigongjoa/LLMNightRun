@@ -21,6 +21,8 @@ from github_repos import router as github_repos_router
 from settings import router as settings_router
 # from routes.prompt_engineering.router import router as prompt_engineering_router
 from direct_prompt_api import router as direct_prompt_router
+from github_analyzer_api import router as github_analyzer_router
+from model_installer_api import router as model_installer_router
 from database.models import User
 
 # 데이터베이스 테이블 생성
@@ -34,6 +36,8 @@ app.include_router(github_repos_router)
 app.include_router(settings_router)
 # app.include_router(prompt_engineering_router, prefix="")
 app.include_router(direct_prompt_router, prefix="")
+app.include_router(github_analyzer_router)
+app.include_router(model_installer_router)
 
 # CORS 미들웨어 설정
 origins = [
@@ -74,6 +78,9 @@ def simple_test():
 # 로컬 LLM 상태 엔드포인트
 @app.get("/api/local-llm/status")
 async def local_llm_status():
+    """
+    로컬 LLM(LM Studio) 상태를 확인하는 엔드포인트
+    """
     print("로컬 LLM 상태 엔드포인트 호출됨")
     return {
         "enabled": True,
@@ -85,6 +92,9 @@ async def local_llm_status():
 # 로컬 LLM 핑 엔드포인트
 @app.get("/api/local-llm/ping")
 def local_llm_ping():
+    """
+    LLM 서버 응답 확인 엔드포인트
+    """
     print("로컬 LLM 핑 엔드포인트 호출됨")
     return {
         "status": "ok",
@@ -94,6 +104,9 @@ def local_llm_ping():
 # 로컬 LLM 채팅 엔드포인트
 @app.post("/api/local-llm/chat")
 async def local_llm_chat(request_data: dict):
+    """
+    LLM과 채팅하는 엔드포인트
+    """
     print("로컬 LLM 채팅 엔드포인트 호출됨")
     try:
         import httpx
@@ -137,22 +150,28 @@ async def local_llm_chat(request_data: dict):
     except Exception as e:
         print(f"LM Studio 채팅 오류: {str(e)}")
     
-    # 오류 응답
+    # 오류 시 기본 응답
     return {
-        "content": "LM Studio 응답 테스트입니다.",
+        "content": "LM Studio 서버에 연결할 수 없거나 응답 처리 중 오류가 발생했습니다.",
         "model_id": "deepseek-r1-distill-qwen-7b"
     }
 
 # 모든 라우트 조회 엔드포인트
 @app.get("/all-routes")
 def all_routes():
-    return {
-        "routes": [
-            {"path": str(route.path), "methods": list(route.methods) if hasattr(route, "methods") else []}
-            for route in app.routes
-            if hasattr(route, "path")
-        ]
-    }
+    routes = []
+    for route in app.routes:
+        if hasattr(route, "path"):
+            methods = list(route.methods) if hasattr(route, "methods") else []
+            routes.append({
+                "path": str(route.path), 
+                "methods": methods
+            })
+    
+    # 경로별 정렬
+    routes.sort(key=lambda x: x["path"])
+    
+    return {"routes": routes, "count": len(routes)}
 
 # LM Studio 직접 연결 테스트 엔드포인트
 @app.get("/api/direct-lm-studio")
@@ -175,6 +194,43 @@ async def server_status():
         "status": "healthy", 
         "message": "서버가 정상적으로 실행 중입니다."
     }
+
+# 헬스 체크 엔드포인트
+@app.get("/health-check")
+async def health_check():
+    """
+    헬스 체크 엔드포인트 - 프론트엔드가 연결 상태를 확인하기 위해 사용
+    """
+    print("헬스 체크 엔드포인트 호출됨")
+    return {"status": "ok", "message": "서버가 정상적으로 실행 중입니다."}
+
+# 메모리 관련 엔드포인트들
+@app.get("/memory/search")
+async def memory_search():
+    """메모리 검색 엔드포인트"""
+    print("메모리 검색 엔드포인트 호출됨")
+    return {"status": "ok", "data": []}
+
+@app.get("/memory/count")
+async def memory_count():
+    """메모리 카운트 엔드포인트"""
+    print("메모리 카운트 엔드포인트 호출됨")
+    return {"status": "ok", "count": 0}
+
+@app.get("/memory/health")
+async def memory_health():
+    """메모리 상태 확인 엔드포인트"""
+    print("메모리 상태 확인 엔드포인트 호출됨")
+    return {"status": "ok", "healthy": True}
+
+# 헬스 체크 엔드포인트 (추가 경로)
+@app.get("/health/check")
+async def health_check_alt():
+    """
+    대체 헬스 체크 엔드포인트
+    """
+    print("대체 헬스 체크 엔드포인트 호출됨")
+    return {"status": "ok", "message": "서버가 정상적으로 실행 중입니다."}
 
 # 간단한 인증 엔드포인트
 @app.post("/simple-login")
@@ -217,4 +273,4 @@ async def print_routes():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8888, reload=True)

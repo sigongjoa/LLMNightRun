@@ -1,69 +1,46 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-import sys
-from pathlib import Path
 
-# 프로젝트 루트 디렉토리 설정
-ROOT_DIR = Path(__file__).resolve().parent
-sys.path.append(str(ROOT_DIR))
+app = FastAPI()
 
-# 직접 API 가져오기
-from backend.direct_prompt_api import router as prompt_router
-
-# FastAPI 앱 생성
-app = FastAPI(title="Test Prompt API Server")
-
-# 라우터 등록
-app.include_router(prompt_router, prefix="")
-
-# CORS 미들웨어 설정
-origins = ["*"]  # 개발 중 모든 출처 허용
-
+# CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 루트 경로
 @app.get("/")
-async def root_endpoint():
-    print("루트 엔드포인트 호출됨")
-    return {"message": "Test Prompt API Server"}
+async def root():
+    print("Root endpoint called")
+    return {"message": "Server is running"}
 
-# 모든 라우트 조회 엔드포인트
-@app.get("/all-routes")
-def all_routes():
+@app.get("/api/local-llm/status")
+async def local_llm_status():
+    print("Local LLM status endpoint called")
     return {
-        "routes": [
-            {
-                "path": str(route.path), 
-                "methods": list(route.methods) if hasattr(route, "methods") else [],
-                "name": route.name if hasattr(route, "name") else None
-            }
-            for route in app.routes
-            if hasattr(route, "path")
-        ]
+        "enabled": True,
+        "connected": True,
+        "base_url": "http://127.0.0.1:1234",
+        "model_id": "deepseek-r1-distill-qwen-7b"
     }
 
-# 서버 시작 시 경로 출력
-@app.on_event("startup")
-async def print_routes():
-    print("\n=== 등록된 모든 경로 ===")
-    print(f"총 경로 수: {len(app.routes)}")
-    
-    # 경로별로 정렬
-    sorted_routes = sorted(app.routes, key=lambda x: getattr(x, "path", ""))
-    
-    for route in sorted_routes:
-        if hasattr(route, "path"):
-            methods = ", ".join(route.methods) if hasattr(route, "methods") and route.methods else "N/A"
-            print(f"경로: {route.path}")
-            print(f"  메서드: {methods}")
-            print("-" * 50)
+@app.get("/api/local-llm/ping")
+async def local_llm_ping():
+    print("Local LLM ping endpoint called")
+    return {"status": "ok", "message": "LLM API server is responding"}
+
+@app.post("/api/local-llm/chat")
+async def local_llm_chat(request_data: dict):
+    print(f"Local LLM chat endpoint called with: {request_data}")
+    return {
+        "content": "This is a test response from the LLM API.",
+        "model_id": "deepseek-r1-distill-qwen-7b"
+    }
 
 if __name__ == "__main__":
-    uvicorn.run("test_server:app", host="0.0.0.0", port=8000, reload=True)
+    print("Starting test server...")
+    uvicorn.run(app, host="0.0.0.0", port=9999)

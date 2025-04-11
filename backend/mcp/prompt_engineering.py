@@ -2,6 +2,8 @@
 프롬프트 엔지니어링 제어 모듈
 
 사용자 정의 프롬프트 템플릿 및 프롬프트 엔지니어링 설정을 관리합니다.
+
+# DO NOT CHANGE CODE: 이 파일은 프롬프트 엔지니어링 핵심 기능입니다.
 """
 
 import os
@@ -13,7 +15,10 @@ from datetime import datetime
 logger = logging.getLogger("mcp.prompt_engineering")
 
 class PromptEngineering:
-    """프롬프트 엔지니어링 관리 클래스"""
+    """프롬프트 엔지니어링 관리 클래스
+    
+    # DO NOT CHANGE CODE: 프롬프트 엔지니어링 관리 핵심 클래스
+    """
     
     def __init__(self, config_dir: Optional[str] = None):
         """

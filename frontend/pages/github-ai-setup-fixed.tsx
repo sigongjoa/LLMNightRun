@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
-// TEMP: 임시 구현 코드입니다. 정상 작동하지만 추후 리팩토링 예정입니다. 수정하지 마세요.
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -30,39 +29,31 @@ import GitHubIcon from '@mui/icons-material/GitHub';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import IntegrationInstructionsIcon from '@mui/icons-material/IntegrationInstructions';
 import Layout from '../components/Layout';
-import Head from 'next/head';
+import { useApi } from '../src/hooks/useApi';
 
 // GitHub AI 환경 설정 페이지
 const GitHubAISetupPage = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [repoUrl, setRepoUrl] = useState('');
-  const [repoAnalysis, setRepoAnalysis] = useState<any>(null);
+  const [repoAnalysis, setRepoAnalysis] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [setupComplete, setSetupComplete] = useState(false);
-  const [installationLog, setInstallationLog] = useState<string[]>([]);
-  
-  // 페이지가 마운트되었는지 추적
-  const mounted = useRef(false);
+  const [installationLog, setInstallationLog] = useState([]);
+  const api = useApi();
 
-  // TEMP: 임시 API 처리 코드입니다. 추후 서버 연결이 정상화되면 제거 예정입니다. 수정하지 마세요.
+  // 단계 정의
+  const steps = ['저장소 입력', '저장소 분석', '환경 설정', '설치 및 완료'];
 
   // 저장소 URL 입력 핸들러
-  const handleRepoUrlChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleRepoUrlChange = (event) => {
     setRepoUrl(event.target.value);
   };
 
-  // 컴포넌트 마운트 시 초기화
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
-
   // 저장소 분석 실행
-  // TEMP: 임시 모의 구현입니다. 서버 API가 정상 작동하면 이 코드를 제거하고 원래 API 호출 코드로 변경해야 합니다. 수정하지 마세요.
   const analyzeRepository = async () => {
+    console.log("분석 버튼 클릭됨, repoUrl:", repoUrl);
+    
     if (!repoUrl) {
       setSnackbar({
         open: true,
@@ -73,50 +64,36 @@ const GitHubAISetupPage = () => {
     }
 
     setIsLoading(true);
-    
-    // 저장소 이름 추출
-    const repoName = repoUrl.split('/').pop() || '';
-    
-    // 분석 시뮬레이션 (API 호출 대신)
-    setTimeout(() => {
-      if (!mounted.current) return;
+    try {
+      console.log("API 요청 시작: /model-installer/analyze", { url: repoUrl });
+      const response = await api.post('/model-installer/analyze', { url: repoUrl });
+      console.log("API 응답:", response);
       
-      // 모의 분석 결과
-      const mockAnalysisResult = {
-        status: "success",
-        repo_name: repoName,
-        repo_url: repoUrl,
-        model_type: {
-          primary: "llama",
-          confidence: 0.85
-        },
-        launch_scripts: [
-          "run.py",
-          "app.py",
-          "serve.py"
-        ],
-        requirements: {
-          "requirements.txt": {
-            content: "torch\ntransformers\nfastapi\nuvicorn"
-          }
-        },
-        config_files: {
-          "model_config.json": {
-            content: "{\"model_size\": \"7B\", \"parameters\": {\"temperature\": 0.7}}"
-          }
-        }
-      };
-      
-      // 상태 업데이트
-      setRepoAnalysis(mockAnalysisResult);
-      setActiveStep(1);
+      if (response) {
+        setRepoAnalysis(response);
+        setActiveStep(1); // 다음 단계로 이동
+        setSnackbar({
+          open: true,
+          message: '저장소 분석이 완료되었습니다.',
+          severity: 'success'
+        });
+      }
+    } catch (error) {
+      console.error('저장소 분석 오류:', error);
       setSnackbar({
         open: true,
-        message: '저장소 분석이 완료되었습니다.',
-        severity: 'success'
+        message: '저장소 분석 중 오류가 발생했습니다: ' + (error.message || '알 수 없는 오류'),
+        severity: 'error'
       });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
+  };
+
+  // 폼 제출 핸들러 (Enter 키 지원)
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    analyzeRepository();
   };
 
   // 다음 단계로 이동
@@ -130,69 +107,107 @@ const GitHubAISetupPage = () => {
   };
 
   // 환경 설정 적용
-  // TEMP: 임시 모의 구현입니다. 서버 API가 정상 작동하면 이 코드를 제거하고 원래 API 호출 코드로 변경해야 합니다. 수정하지 마세요.
   const applyEnvironmentSetup = async () => {
     setIsLoading(true);
-    
-    // 설정 시뮬레이션
-    setTimeout(() => {
-      if (!mounted.current) return;
-      
-      handleNext();
-      setSnackbar({
-        open: true,
-        message: '환경 설정이 완료되었습니다.',
-        severity: 'success'
+    try {
+      const response = await api.post('/model-installer/setup', { 
+        url: repoUrl,
+        analysis: repoAnalysis 
       });
-      setIsLoading(false);
-    }, 2000);
-  };
-
-  // 모델 설치 실행
-  // TEMP: 임시 모의 구현입니다. 서버 API가 정상 작동하면 이 코드를 제거하고 원래 API 호출 코드로 변경해야 합니다. 수정하지 마세요.
-  const installModel = async () => {
-    setIsLoading(true);
-    setInstallationLog([]);
-    
-    // 로그 컨테이너 표시
-    const logContainer = document.getElementById('log-container');
-    if (logContainer) {
-      logContainer.style.display = 'block';
-    }
-    
-    // 설치 로그 시뮬레이션
-    const installationLogs = [
-      '모델 설치 시작...',
-      '의존성 패키지 설치 중...',
-      'pip install -r requirements.txt',
-      'torch 설치 중...',
-      'transformers 설치 중...',
-      'fastapi 설치 중...',
-      '모델 파일 다운로드 중...',
-      '모델 가중치 다운로드 중 (2.3GB)...',
-      '환경 구성 완료...',
-      '모델 설치 완료!'
-    ];
-    
-    // 로그 표시 함수
-    const addLogWithDelay = (index: number) => {
-      if (index < installationLogs.length) {
-        setInstallationLog(prev => [...prev, installationLogs[index]]);
-        setTimeout(() => addLogWithDelay(index + 1), 800);
-      } else {
-        if (!mounted.current) return;
-        setIsLoading(false);
-        setSetupComplete(true);
+      
+      if (response) {
+        handleNext(); // 다음 단계로 이동
         setSnackbar({
           open: true,
-          message: '모델 설치가 완료되었습니다.',
+          message: '환경 설정이 완료되었습니다.',
           severity: 'success'
         });
       }
-    };
-    
-    // 첫 번째 로그 시작
-    addLogWithDelay(0);
+    } catch (error) {
+      console.error('환경 설정 오류:', error);
+      setSnackbar({
+        open: true,
+        message: '환경 설정 중 오류가 발생했습니다.',
+        severity: 'error'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 모델 설치 실행
+  const installModel = async () => {
+    setIsLoading(true);
+    setInstallationLog([]);
+    try {
+      // 비동기 설치 요청
+      const response = await api.post('/model-installer/install', { 
+        url: repoUrl
+      });
+      
+      if (response) {
+        // 설치 ID 받기
+        const installationId = response.installation_id || "inst-12345";
+        
+        // 로그 폴링 시작
+        pollInstallationStatus(installationId);
+      }
+    } catch (error) {
+      console.error('모델 설치 오류:', error);
+      setSnackbar({
+        open: true,
+        message: '모델 설치 중 오류가 발생했습니다.',
+        severity: 'error'
+      });
+      setIsLoading(false);
+    }
+  };
+  
+  // 설치 상태 폴링
+  const pollInstallationStatus = async (installationId) => {
+    try {
+      const checkStatus = async () => {
+        const statusResponse = await api.get(`/model-installer/status/${installationId}`);
+        
+        // 로그 업데이트
+        if (statusResponse.logs) {
+          setInstallationLog(statusResponse.logs);
+        }
+        
+        if (statusResponse.status === 'completed') {
+          setIsLoading(false);
+          setSetupComplete(true);
+          setSnackbar({
+            open: true,
+            message: '모델 설치가 완료되었습니다.',
+            severity: 'success'
+          });
+          return;
+        } else if (statusResponse.status === 'failed') {
+          setIsLoading(false);
+          setSnackbar({
+            open: true,
+            message: '모델 설치에 실패했습니다.',
+            severity: 'error'
+          });
+          return;
+        }
+        
+        // 계속 폴링
+        setTimeout(checkStatus, 3000);
+      };
+      
+      // 첫 번째 폴링 시작
+      checkStatus();
+    } catch (error) {
+      console.error('설치 상태 확인 오류:', error);
+      setIsLoading(false);
+      setSnackbar({
+        open: true,
+        message: '설치 상태 확인 중 오류가 발생했습니다.',
+        severity: 'error'
+      });
+    }
   };
 
   // 스낵바 닫기
@@ -201,7 +216,7 @@ const GitHubAISetupPage = () => {
   };
 
   // 분석 결과 표시 컴포넌트
-  const AnalysisResult = ({ analysis }: { analysis: any }) => {
+  const AnalysisResult = ({ analysis }) => {
     if (!analysis) return null;
     
     return (
@@ -231,7 +246,7 @@ const GitHubAISetupPage = () => {
             발견된 실행 스크립트:
           </Typography>
           <List dense>
-            {analysis.launch_scripts && analysis.launch_scripts.map((script: string, index: number) => (
+            {analysis.launch_scripts && analysis.launch_scripts.map((script, index) => (
               <ListItem key={index}>
                 <ListItemIcon>
                   <IntegrationInstructionsIcon />
@@ -252,7 +267,7 @@ const GitHubAISetupPage = () => {
             요구사항 파일:
           </Typography>
           <List dense>
-            {analysis.requirements && Object.keys(analysis.requirements).map((reqFile: string, index: number) => (
+            {analysis.requirements && Object.keys(analysis.requirements).map((reqFile, index) => (
               <ListItem key={index}>
                 <ListItemIcon>
                   <SettingsIcon />
@@ -272,11 +287,11 @@ const GitHubAISetupPage = () => {
   };
 
   // 스텝별 컨텐츠 렌더링
-  const getStepContent = (step: number) => {
+  const getStepContent = (step) => {
     switch (step) {
       case 0:
         return (
-          <Box component="form" onSubmit={(e) => { e.preventDefault(); analyzeRepository(); }}>
+          <Box component="form" onSubmit={handleSubmit} noValidate>
             <Typography variant="body1" paragraph>
               분석하고 설정할 GitHub 저장소 URL을 입력하세요.
             </Typography>
@@ -366,7 +381,6 @@ const GitHubAISetupPage = () => {
                 {installationLog.length > 0 && (
                   <Paper 
                     variant="outlined" 
-                    id="log-container"
                     sx={{ 
                       p: 2, 
                       mb: 3, 
@@ -425,16 +439,6 @@ const GitHubAISetupPage = () => {
 
   return (
     <Layout>
-      <Head>
-        {/* TEMP: 임시 해결책으로 외부 스크립트를 사용합니다. 서버 연결이 정상화되면 제거 예정입니다. 수정하지 마세요. */}
-        {/* 연결 문제를 해결하기 위한 외부 스크립트 */}
-        <script src="/fix-api.js" />
-        {/* 버튼 클릭 문제를 해결하기 위한 스크립트 - 수정된 버전 */}
-        <script src="/fix-button-fixed.js" />
-        {/* 디버그 헬퍼 스크립트 */}
-        <script src="/debug-helper.js" />
-      </Head>
-      
       <Container maxWidth="md">
         <Box sx={{ my: 4 }}>
           <Typography variant="h4" gutterBottom component="h1">
@@ -446,7 +450,7 @@ const GitHubAISetupPage = () => {
 
           <Paper sx={{ p: 3, mb: 4 }}>
             <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-              {['저장소 입력', '저장소 분석', '환경 설정', '설치 및 완료'].map((label) => (
+              {steps.map((label) => (
                 <Step key={label}>
                   <StepLabel>{label}</StepLabel>
                 </Step>
@@ -463,7 +467,7 @@ const GitHubAISetupPage = () => {
           autoHideDuration={6000}
           onClose={handleCloseSnackbar}
         >
-          <Alert onClose={handleCloseSnackbar} severity={snackbar.severity as any} sx={{ width: '100%' }}>
+          <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
             {snackbar.message}
           </Alert>
         </Snackbar>

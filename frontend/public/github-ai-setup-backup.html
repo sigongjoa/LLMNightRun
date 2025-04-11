@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<!-- 
+  TEMP: 임시 백업 페이지입니다. React 기반 페이지에 문제가 있을 경우 사용되는 대체 구현입니다.
+  정상 작동하지만 원본 페이지가 수정되면 중복으로 이 파일도 업데이트되어야 합니다.
+  수정하지 마세요.
+-->
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub AI 환경 자동 설정 - 백업 페이지</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap">
+  <style>
+    body {
+      font-family: 'Roboto', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+    }
+    
+    .app-bar {
+      background-color: #1976d2;
+      color: white;
+      padding: 12px 24px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .app-title {
+      font-size: 20px;
+      font-weight: 500;
+      margin: 0;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+    
+    .paper {
+      background-color: white;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    
+    h1 {
+      font-size: 24px;
+      font-weight: 500;
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+    
+    p.subtitle {
+      color: rgba(0,0,0,0.6);
+      margin-bottom: 24px;
+    }
+    
+    .stepper {
+      display: flex;
+      margin-bottom: 32px;
+    }
+    
+    .step {
+      flex: 1;
+      text-align: center;
+      position: relative;
+    }
+    
+    .step-label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .step-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background-color: #bdbdbd;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+    
+    .step-icon.active {
+      background-color: #1976d2;
+    }
+    
+    .step-icon.completed {
+      background-color: #4caf50;
+    }
+    
+    .step-text {
+      font-size: 14px;
+      color: rgba(0,0,0,0.6);
+    }
+    
+    .step-text.active {
+      color: #1976d2;
+      font-weight: 500;
+    }
+    
+    .step-connector {
+      position: absolute;
+      top: 12px;
+      left: calc(50% + 12px);
+      right: calc(-50% + 12px);
+      height: 1px;
+      background-color: #bdbdbd;
+    }
+    
+    .step:last-child .step-connector {
+      display: none;
+    }
+    
+    .step-content {
+      margin-bottom: 24px;
+    }
+    
+    .input-field {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      box-sizing: border-box;
+    }
+    
+    .button {
+      padding: 8px 16px;
+      background-color: #1976d2;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+    }
+    
+    .button:hover {
+      background-color: #1565c0;
+    }
+    
+    .button:disabled {
+      background-color: #bdbdbd;
+      cursor: not-allowed;
+    }
+    
+    .button .icon {
+      margin-right: 8px;
+    }
+    
+    .button-container {
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+      margin-left: 8px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .card {
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      margin-bottom: 16px;
+    }
+    
+    .card-content {
+      padding: 16px;
+    }
+    
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      background-color: #e0e0e0;
+      border-radius: 16px;
+      padding: 4px 12px;
+      font-size: 14px;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+    
+    .chip.primary {
+      background-color: #bbdefb;
+      color: #0d47a1;
+    }
+    
+    .divider {
+      height: 1px;
+      background-color: #e0e0e0;
+      margin: 16px 0;
+    }
+    
+    .list {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .list-item {
+      padding: 8px 0;
+      display: flex;
+      align-items: center;
+    }
+    
+    .list-item-icon {
+      margin-right: 16px;
+      color: #757575;
+    }
+    
+    .alert {
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+    }
+    
+    .alert.info {
+      background-color: #e3f2fd;
+      color: #0d47a1;
+    }
+    
+    .alert.success {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+    }
+    
+    .log-container {
+      background-color: #000;
+      color: #fff;
+      font-family: monospace;
+      padding: 12px;
+      border-radius: 4px;
+      height: 200px;
+      overflow: auto;
+      margin-bottom: 16px;
+    }
+    
+    .log-line {
+      margin-bottom: 4px;
+    }
+    
+    .snackbar {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      min-width: 300px;
+      padding: 14px 16px;
+      background-color: #323232;
+      color: white;
+      border-radius: 4px;
+      box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+      z-index: 1000;
+      display: none;
+    }
+    
+    #debug-panel {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background-color: rgba(0, 150, 0, 0.8);
+      color: white;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      z-index: 9999;
+    }
+  </style>
+</head>
+<body>
+  <div id="debug-panel">백업 페이지 모드</div>
+  
+  <div class="app-bar">
+    <h1 class="app-title">LLMNightRun</h1>
+  </div>
+  
+  <div class="container">
+    <h1>GitHub AI 환경 자동 설정</h1>
+    <p class="subtitle">GitHub 저장소를 분석하여 모델 유형을 식별하고 필요한 환경을 자동으로 설정합니다.</p>
+    
+    <div class="paper">
+      <div class="stepper">
+        <div class="step">
+          <div class="step-label">
+            <div class="step-icon active">1</div>
+            <div class="step-text active">저장소 입력</div>
+          </div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step">
+          <div class="step-label">
+            <div class="step-icon">2</div>
+            <div class="step-text">저장소 분석</div>
+          </div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step">
+          <div class="step-label">
+            <div class="step-icon">3</div>
+            <div class="step-text">환경 설정</div>
+          </div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step">
+          <div class="step-label">
+            <div class="step-icon">4</div>
+            <div class="step-text">설치 및 완료</div>
+          </div>
+        </div>
+      </div>
+      
+      <div id="step-content-container">
+        <!-- Step 1: Repository Input -->
+        <div id="step-1-content" class="step-content">
+          <p>분석하고 설정할 GitHub 저장소 URL을 입력하세요.</p>
+          <input type="text" id="repo-url-input" class="input-field" placeholder="https://github.com/username/repository" value="https://github.com/suksham11/MLTradingbot">
+          <button id="analyze-button" class="button">
+            <span class="icon">📊</span>
+            저장소 분석
+            <span id="analyze-spinner" class="loading-spinner" style="display: none;"></span>
+          </button>
+        </div>
+        
+        <!-- Step 2: Analysis Result -->
+        <div id="step-2-content" class="step-content" style="display: none;">
+          <p>저장소 분석이 완료되었습니다. 분석 결과를 확인하세요.</p>
+          
+          <div class="card">
+            <div class="card-content">
+              <h3>분석 결과</h3>
+              
+              <div>
+                <h4>식별된 모델 유형:</h4>
+                <div class="chip primary">llama</div>
+              </div>
+              
+              <div class="divider"></div>
+              
+              <h4>발견된 실행 스크립트:</h4>
+              <ul class="list" id="scripts-list">
+                <li class="list-item">
+                  <span class="list-item-icon">📄</span>
+                  run.py
+                </li>
+                <li class="list-item">
+                  <span class="list-item-icon">📄</span>
+                  app.py
+                </li>
+                <li class="list-item">
+                  <span class="list-item-icon">📄</span>
+                  serve.py
+                </li>
+              </ul>
+              
+              <div class="divider"></div>
+              
+              <h4>요구사항 파일:</h4>
+              <ul class="list" id="requirements-list">
+                <li class="list-item">
+                  <span class="list-item-icon">📋</span>
+                  requirements.txt
+                </li>
+              </ul>
+            </div>
+          </div>
+          
+          <div class="button-container">
+            <button id="back-to-step-1" class="button" style="background-color: #9e9e9e;">
+              이전
+            </button>
+            <button id="next-to-step-3" class="button">
+              다음
+            </button>
+          </div>
+        </div>
+        
+        <!-- Step 3: Environment Setup -->
+        <div id="step-3-content" class="step-content" style="display: none;">
+          <p>분석된 결과를 바탕으로 AI 환경을 자동으로 설정합니다.</p>
+          
+          <div class="alert info">
+            필요한 패키지와 종속성이 자동으로 설치됩니다. 환경 설정 파일이 생성됩니다.
+          </div>
+          
+          <div class="button-container">
+            <button id="back-to-step-2" class="button" style="background-color: #9e9e9e;">
+              이전
+            </button>
+            <button id="setup-button" class="button">
+              <span class="icon">⚙️</span>
+              환경 설정 적용
+              <span id="setup-spinner" class="loading-spinner" style="display: none;"></span>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Step 4: Installation -->
+        <div id="step-4-content" class="step-content" style="display: none;">
+          <p>환경 설정이 완료되었습니다. 모델을 설치합니다.</p>
+          
+          <div class="alert info">
+            모델 설치는 시간이 소요될 수 있습니다. 설치가 완료될 때까지 기다려주세요.
+          </div>
+          
+          <div id="log-container" class="log-container" style="display: none;"></div>
+          
+          <div id="installation-buttons" class="button-container">
+            <button id="back-to-step-3" class="button" style="background-color: #9e9e9e;">
+              이전
+            </button>
+            <button id="install-button" class="button">
+              <span class="icon">📥</span>
+              모델 설치
+              <span id="install-spinner" class="loading-spinner" style="display: none;"></span>
+            </button>
+          </div>
+          
+          <div id="completion-content" style="display: none;">
+            <div class="alert success">
+              모델 설치가 완료되었습니다. 이제 모델을 사용할 수 있습니다.
+            </div>
+            
+            <div style="display: flex; justify-content: center;">
+              <button id="models-button" class="button" style="background-color: #4caf50;">
+                모델 관리로 이동
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div id="snackbar" class="snackbar"></div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // DOM Elements
+      const repoUrlInput = document.getElementById('repo-url-input');
+      const analyzeButton = document.getElementById('analyze-button');
+      const analyzeSpinner = document.getElementById('analyze-spinner');
+      const setupButton = document.getElementById('setup-button');
+      const setupSpinner = document.getElementById('setup-spinner');
+      const installButton = document.getElementById('install-button');
+      const installSpinner = document.getElementById('install-spinner');
+      const logContainer = document.getElementById('log-container');
+      const snackbar = document.getElementById('snackbar');
+      const modelsButton = document.getElementById('models-button');
+      
+      // Step navigation buttons
+      const backToStep1Button = document.getElementById('back-to-step-1');
+      const nextToStep3Button = document.getElementById('next-to-step-3');
+      const backToStep2Button = document.getElementById('back-to-step-2');
+      const backToStep3Button = document.getElementById('back-to-step-3');
+      
+      // Step content elements
+      const step1Content = document.getElementById('step-1-content');
+      const step2Content = document.getElementById('step-2-content');
+      const step3Content = document.getElementById('step-3-content');
+      const step4Content = document.getElementById('step-4-content');
+      const completionContent = document.getElementById('completion-content');
+      const installationButtons = document.getElementById('installation-buttons');
+      
+      // Stepper elements
+      const stepIcons = document.querySelectorAll('.step-icon');
+      const stepTexts = document.querySelectorAll('.step-text');
+      
+      // State variables
+      let currentStep = 1;
+      let repoAnalysisResult = null;
+      
+      // Helper functions
+      function showStep(step) {
+        // Hide all step contents
+        step1Content.style.display = 'none';
+        step2Content.style.display = 'none';
+        step3Content.style.display = 'none';
+        step4Content.style.display = 'none';
+        
+        // Reset step icons and texts
+        stepIcons.forEach((icon, index) => {
+          icon.classList.remove('active', 'completed');
+          if (index + 1 < step) {
+            icon.classList.add('completed');
+          } else if (index + 1 === step) {
+            icon.classList.add('active');
+          }
+        });
+        
+        stepTexts.forEach((text, index) => {
+          text.classList.remove('active');
+          if (index + 1 === step) {
+            text.classList.add('active');
+          }
+        });
+        
+        // Show the selected step content
+        switch(step) {
+          case 1:
+            step1Content.style.display = 'block';
+            break;
+          case 2:
+            step2Content.style.display = 'block';
+            break;
+          case 3:
+            step3Content.style.display = 'block';
+            break;
+          case 4:
+            step4Content.style.display = 'block';
+            break;
+        }
+        
+        currentStep = step;
+      }
+      
+      function showSnackbar(message, duration = 3000) {
+        snackbar.textContent = message;
+        snackbar.style.display = 'block';
+        
+        setTimeout(() => {
+          snackbar.style.display = 'none';
+        }, duration);
+      }
+      
+      function addLogLine(text) {
+        const logLine = document.createElement('div');
+        logLine.className = 'log-line';
+        logLine.textContent = text;
+        logContainer.appendChild(logLine);
+        logContainer.scrollTop = logContainer.scrollHeight;
+      }
+      
+      // Button click handlers
+      analyzeButton.addEventListener('click', function() {
+        const repoUrl = repoUrlInput.value.trim();
+        
+        if (!repoUrl) {
+          showSnackbar('GitHub 저장소 URL을 입력해주세요.');
+          return;
+        }
+        
+        // Show loading state
+        analyzeButton.disabled = true;
+        analyzeSpinner.style.display = 'inline-block';
+        
+        // Get repository name
+        const repoName = repoUrl.split('/').pop();
+        
+        // Simulate API call
+        setTimeout(() => {
+          // Mock analysis result
+          repoAnalysisResult = {
+            status: "success",
+            repo_name: repoName,
+            repo_url: repoUrl,
+            model_type: {
+              primary: "llama",
+              confidence: 0.85
+            },
+            launch_scripts: [
+              "run.py",
+              "app.py",
+              "serve.py"
+            ],
+            requirements: {
+              "requirements.txt": {
+                content: "torch\ntransformers\nfastapi\nuvicorn"
+              }
+            },
+            config_files: {
+              "model_config.json": {
+                content: "{\"model_size\": \"7B\", \"parameters\": {\"temperature\": 0.7}}"
+              }
+            }
+          };
+          
+          // Update scripts list
+          const scriptsList = document.getElementById('scripts-list');
+          scriptsList.innerHTML = '';
+          
+          if (repoAnalysisResult.launch_scripts && repoAnalysisResult.launch_scripts.length > 0) {
+            repoAnalysisResult.launch_scripts.forEach(script => {
+              const listItem = document.createElement('li');
+              listItem.className = 'list-item';
+              listItem.innerHTML = `
+                <span class="list-item-icon">📄</span>
+                ${script}
+              `;
+              scriptsList.appendChild(listItem);
+            });
+          } else {
+            const listItem = document.createElement('li');
+            listItem.className = 'list-item';
+            listItem.textContent = '실행 스크립트를 찾을 수 없습니다.';
+            scriptsList.appendChild(listItem);
+          }
+          
+          // Update requirements list
+          const requirementsList = document.getElementById('requirements-list');
+          requirementsList.innerHTML = '';
+          
+          if (repoAnalysisResult.requirements && Object.keys(repoAnalysisResult.requirements).length > 0) {
+            Object.keys(repoAnalysisResult.requirements).forEach(reqFile => {
+              const listItem = document.createElement('li');
+              listItem.className = 'list-item';
+              listItem.innerHTML = `
+                <span class="list-item-icon">📋</span>
+                ${reqFile}
+              `;
+              requirementsList.appendChild(listItem);
+            });
+          } else {
+            const listItem = document.createElement('li');
+            listItem.className = 'list-item';
+            listItem.textContent = '요구사항 파일을 찾을 수 없습니다.';
+            requirementsList.appendChild(listItem);
+          }
+          
+          // Reset loading state
+          analyzeButton.disabled = false;
+          analyzeSpinner.style.display = 'none';
+          
+          // Move to step 2
+          showStep(2);
+          
+          // Show success message
+          showSnackbar('저장소 분석이 완료되었습니다.');
+        }, 1500);
+      });
+      
+      backToStep1Button.addEventListener('click', function() {
+        showStep(1);
+      });
+      
+      nextToStep3Button.addEventListener('click', function() {
+        showStep(3);
+      });
+      
+      backToStep2Button.addEventListener('click', function() {
+        showStep(2);
+      });
+      
+      setupButton.addEventListener('click', function() {
+        // Show loading state
+        setupButton.disabled = true;
+        setupSpinner.style.display = 'inline-block';
+        
+        // Simulate API call
+        setTimeout(() => {
+          // Reset loading state
+          setupButton.disabled = false;
+          setupSpinner.style.display = 'none';
+          
+          // Move to step 4
+          showStep(4);
+          
+          // Show success message
+          showSnackbar('환경 설정이 완료되었습니다.');
+        }, 2000);
+      });
+      
+      backToStep3Button.addEventListener('click', function() {
+        showStep(3);
+      });
+      
+      installButton.addEventListener('click', function() {
+        // Show loading state
+        installButton.disabled = true;
+        installSpinner.style.display = 'inline-block';
+        
+        // Show log container
+        logContainer.style.display = 'block';
+        logContainer.innerHTML = '';
+        
+        // Simulate installation logs
+        const installationLogs = [
+          '모델 설치 시작...',
+          '의존성 패키지 설치 중...',
+          'pip install -r requirements.txt',
+          'torch 설치 중...',
+          'transformers 설치 중...',
+          'fastapi 설치 중...',
+          '모델 파일 다운로드 중...',
+          '모델 가중치 다운로드 중 (2.3GB)...',
+          '환경 구성 완료...',
+          '모델 설치 완료!'
+        ];
+        
+        // Add logs with delays
+        let logIndex = 0;
+        const logInterval = setInterval(() => {
+          if (logIndex < installationLogs.length) {
+            addLogLine(installationLogs[logIndex]);
+            logIndex++;
+          } else {
+            clearInterval(logInterval);
+            
+            // Show completion content
+            installationButtons.style.display = 'none';
+            completionContent.style.display = 'block';
+            
+            // Show success message
+            showSnackbar('모델 설치가 완료되었습니다.');
+          }
+        }, 800);
+      });
+      
+      modelsButton.addEventListener('click', function() {
+        window.location.href = '/models';
+      });
+      
+      // Initialize
+      showStep(1);
+    });
+  </script>
+</body>
+</html>

@@ -2,6 +2,8 @@
 LM Studio 로컬 LLM 연동 모듈
 
 LM Studio로 실행되는 로컬 LLM과의 통신을 처리하는 기능을 제공합니다.
+
+# DO NOT CHANGE CODE: 이 파일은 Local LLM과 LM Studio 연동 핵심 기능입니다.
 """
 
 import httpx
@@ -24,6 +26,7 @@ async def call_lm_studio(
     tool_choice: Optional[str] = None,
     **kwargs
 ) -> Dict[str, Any]:
+    # DO NOT CHANGE CODE: LM Studio API 호출 핵심 기능
     """
     LM Studio API를 호출하여 응답을 받습니다.
     

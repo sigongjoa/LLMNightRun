@@ -2,7 +2,7 @@ import axios from 'axios';
 import { Question, Response, CodeSnippet, CodeTemplate, Settings, LLMType, ApiError, ExportFormat, ExportOptions } from '../types';
 
 // API 기본 URL 설정
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8888';
 
 // 서버 상태 확인 함수
 export const checkServerAvailability = async (url: string): Promise<boolean> => {

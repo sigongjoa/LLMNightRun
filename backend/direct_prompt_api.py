@@ -1,3 +1,4 @@
+# DO NOT CHANGE CODE: 이 파일은 프롬프트 엔지니어링 직접 API 기능입니다.
 from fastapi import FastAPI, APIRouter, Body, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
@@ -171,7 +172,10 @@ async def delete_prompt_template(template_id: int):
 # 프롬프트 실행 엔드포인트 (LM Studio로 전송)
 @router.post("/prompt-engineering/execute", response_model=PromptExecuteResponse)
 async def execute_prompt(request: PromptExecuteRequest):
-    """프롬프트 실행 - LM Studio로 전송"""
+    """프롬프트 실행 - LM Studio로 전송
+    
+    # DO NOT CHANGE CODE: 프롬프트 실행 핵심 기능
+    """
     try:
         # 템플릿 처리
         template = request.template

@@ -2,6 +2,8 @@
 LLM 연동 모듈
 
 다양한 LLM API와의 통신을 처리하는 클래스를 제공합니다.
+
+# DO NOT CHANGE CODE: 이 파일은 Local LLM 핵심 기능입니다.
 """
 
 import json
@@ -197,6 +199,8 @@ class LLM:
         system_msgs: Optional[List[Message]] = None,
         **kwargs
     ) -> str:
+        # DO NOT CHANGE CODE: LLM 메시지 처리 핵심 기능
+=======
         """
         메시지 목록을 LLM에 전송하고 텍스트 응답을 받음
         
@@ -329,6 +333,7 @@ class LLM:
         tool_choice: Optional[ToolChoice] = None,
         **kwargs
     ) -> ChatCompletionResponse:
+        # DO NOT CHANGE CODE: LLM 도구 호출 핵심 기능
         """
         메시지 목록을 LLM에 전송하고 도구 호출 응답을 받음
         

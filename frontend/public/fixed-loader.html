@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLMNightRun Fixed Mode Loader</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    
+    h1 {
+      color: #1976d2;
+      border-bottom: 2px solid #1976d2;
+      padding-bottom: 10px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    
+    button {
+      background-color: #1976d2;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    
+    button:hover {
+      background-color: #1565c0;
+    }
+    
+    .info {
+      background-color: #e3f2fd;
+      border-left: 4px solid #1976d2;
+      padding: 10px 15px;
+      margin: 20px 0;
+    }
+    
+    .options {
+      margin-top: 20px;
+      border-top: 1px solid #eee;
+      padding-top: 20px;
+    }
+    
+    .checkbox-group {
+      margin-bottom: 10px;
+    }
+    
+    #iframe-container {
+      width: 100%;
+      height: 800px;
+      border: 1px solid #ddd;
+      margin-top: 20px;
+      display: none;
+    }
+    
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>LLMNightRun Fixed Mode Loader</h1>
+  
+  <div class="info">
+    이 페이지는 LLMNightRun의 페이지를 수정된 버전으로 로드합니다.<br>
+    GitHub AI 환경 설정 페이지의 버튼 클릭 문제와 서버 연결 실패 문제를 해결합니다.
+  </div>
+  
+  <div class="form-group">
+    <label for="url-input">로드할 URL:</label>
+    <input type="text" id="url-input" value="http://localhost:3000/github-ai-setup" placeholder="예: http://localhost:3000/github-ai-setup">
+  </div>
+  
+  <div class="options">
+    <div class="checkbox-group">
+      <input type="checkbox" id="apply-fix" checked>
+      <label for="apply-fix">수정 스크립트 적용하기</label>
+    </div>
+    
+    <div class="checkbox-group">
+      <input type="checkbox" id="use-iframe">
+      <label for="use-iframe">iframe으로 보기 (보안 제한이 있을 수 있음)</label>
+    </div>
+  </div>
+  
+  <button id="load-button">페이지 로드</button>
+  
+  <div id="iframe-container">
+    <iframe id="preview-iframe" src="about:blank"></iframe>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const urlInput = document.getElementById('url-input');
+      const applyFixCheckbox = document.getElementById('apply-fix');
+      const useIframeCheckbox = document.getElementById('use-iframe');
+      const loadButton = document.getElementById('load-button');
+      const iframeContainer = document.getElementById('iframe-container');
+      const previewIframe = document.getElementById('preview-iframe');
+      
+      // Load button handler
+      loadButton.addEventListener('click', function() {
+        const url = urlInput.value.trim();
+        if (!url) {
+          alert('URL을 입력해주세요.');
+          return;
+        }
+        
+        if (useIframeCheckbox.checked) {
+          // Show iframe container
+          iframeContainer.style.display = 'block';
+          
+          // Load URL in iframe
+          if (applyFixCheckbox.checked) {
+            // Create a proxy HTML with our fix
+            const proxyHtml = `
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <title>Fixed ${url}</title>
+                <script src="/fix-llmnightrun.js"></script>
+              </head>
+              <body>
+                <iframe src="${url}" style="position:fixed;top:0;left:0;width:100%;height:100%;border:none;"></iframe>
+              </body>
+              </html>
+            `;
+            
+            // Convert to data URL
+            const dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(proxyHtml);
+            previewIframe.src = dataUrl;
+          } else {
+            // Load URL directly
+            previewIframe.src = url;
+          }
+        } else {
+          // Navigate directly
+          if (applyFixCheckbox.checked) {
+            // Open in new window with our fix
+            const win = window.open(url, '_blank');
+            
+            // Inject our fix script
+            win.addEventListener('DOMContentLoaded', function() {
+              const script = win.document.createElement('script');
+              script.src = '/fix-llmnightrun.js';
+              win.document.head.appendChild(script);
+            });
+          } else {
+            // Just open the URL
+            window.open(url, '_blank');
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
