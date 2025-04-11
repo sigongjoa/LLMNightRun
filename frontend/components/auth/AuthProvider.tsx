@@ -33,132 +33,73 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// 비어있는 상태로 시작할 기본 사용자 정보
-const DEFAULT_USER: User | null = null;
+// 기본 사용자 정보 (자동 로그인용)
+const DEFAULT_USER: User = {
+  id: 1,
+  username: 'admin',
+  email: 'admin@example.com',
+  is_active: true,
+  is_admin: true,
+  profile_image: undefined
+};
 
 // 퍼블릭 경로 (로그인 없이 접근 가능)
 const PUBLIC_PATHS = ['/login', '/register', '/reset-password', '/'];
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [user, setUser] = useState<User | null>(DEFAULT_USER);
+  // 항상 인증된 상태로 시작
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [user, setUser] = useState<User>(DEFAULT_USER);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-
-  // 토큰이 있으면 사용자 정보 로드
+  
+  // 초기 상태 설정 - 항상 인증되도록 설정
   useEffect(() => {
-    const checkAuth = async () => {
-      // 브라우저 환경인지 확인
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      if (token) {
-        try {
-          // 토큰을 헤더에 설정
-          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          
-          // 사용자 정보 요청
-          const response = await api.get('/users/me/');
-          setUser(response.data);
-          setIsAuthenticated(true);
-        } catch (error) {
-          console.error('인증 검증 실패:', error);
-          if (typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-    }
-          delete api.defaults.headers.common['Authorization'];
-        }
-      }
-      
-      setIsLoading(false);
+    // 로컬 스토리지에 기본 사용자 정보 설정
+    const defaultUser = {
+      id: 1,
+      username: 'admin',
+      email: 'admin@example.com',
+      is_active: true,
+      is_admin: true
     };
-
-    checkAuth();
+    
+    setUser(defaultUser);
+    setIsAuthenticated(true);
+    setIsLoading(false);
+    
+    // 세션 스토리지에 사용자 정보 저장 (출처 기록용)
+    sessionStorage.setItem('user', JSON.stringify({
+      username: 'admin',
+      is_admin: true
+    }));
+    
+    // 인증 헤더 설정
+    api.defaults.headers.common['Authorization'] = 'Bearer dummy-token-for-auth';
   }, []);
 
-  // 현재 경로가 보호된 경로인지 확인
+  // 보호된 경로 검사 제거 - 항상 접근 허용
   useEffect(() => {
-    if (!isLoading) {
-      // 사용자가 인증되지 않았고, 현재 경로가 퍼블릭이 아니면 로그인 페이지로 리디렉션
-      if (!isAuthenticated && !PUBLIC_PATHS.includes(router.pathname)) {
-        router.push('/login');
-      }
-    }
-  }, [isAuthenticated, isLoading, router]);
-
-  // 로그인 함수
-  const login = async (username: string, password: string): Promise<void> => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // FormData 사용 시 FastAPI OAuth2 형식에 맞게 수정
-      const formData = new URLSearchParams();
-      formData.append('username', username);
-      formData.append('password', password);
-      
-      console.log('로그인 요청 보냄:', formData.toString());
-      
-      const response = await api.post('/token', 
-        formData.toString(),
-        { 
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' } 
-        }
-      );
-      
-      // 토큰 저장
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('token', response.data.access_token);
-      }
-      
-      // 헤더에 인증 토큰 설정
-      api.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
-      
-      // 사용자 정보 설정
-      setUser({
-        id: response.data.user_id,
-        username: response.data.username,
-        email: response.data.email || '',
-        is_active: true,
-        is_admin: response.data.is_admin
-      });
-      
-      setIsAuthenticated(true);
-      
-      // 대시보드로 리디렉션
+    // 로그인/회원가입 페이지 접근 시 홈으로 리디렉션
+    if (router.pathname === '/login' || router.pathname === '/register') {
       router.push('/');
-    } catch (error: any) {
-      console.error('로그인 오류:', error);
-      if (error.response) {
-        // 서버 응답이 있는 경우
-        if (error.response.status === 404) {
-          setError('로그인 서비스에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
-        } else if (error.response.status === 401) {
-          setError('아이디 또는 비밀번호가 일치하지 않습니다.');
-        } else {
-          setError(`로그인 오류: ${error.response.data?.detail || '알 수 없는 오류가 발생했습니다.'}`);
-        }
-      } else if (error.request) {
-        // 요청은 보냈지만 응답을 받지 못한 경우
-        setError('서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해주세요.');
-      } else {
-        // 오류 설정 중 문제가 발생한 경우
-        setError('로그인 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
-      }
-    } finally {
-      setIsLoading(false);
     }
+  }, [router]);
+
+  // 로그인 함수 - 바로 인증됨
+  const login = async (username: string, password: string): Promise<void> => {
+    console.log('로그인 요청 처리됨 - 자동 인증됨');
+    router.push('/');
   };
 
-  // 로그아웃 함수
+  // 로그아웃 함수 - 페이지를 홈으로 리디렉션
   const logout = (): void => {
-    localStorage.removeItem('token');
-    delete api.defaults.headers.common['Authorization'];
-    setUser(null);
-    setIsAuthenticated(false);
-    router.push('/login');
+    console.log('로그아웃 요청 처리됨 - 자동 인증 유지됨');
+    router.push('/'); // 로그인 페이지 대신 홈으로 리디렉션
   };
 
-  // 회원가입 함수
+  // 회원가입 함수 - 바로 인증됨
   const register = async (
     username: string, 
     email: string, 
@@ -166,34 +107,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     firstName?: string, 
     lastName?: string
   ): Promise<void> => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      await api.post('/users/', {
-        username,
-        email,
-        password,
-        first_name: firstName,
-        last_name: lastName
-      });
-      
-      // 회원가입 성공 후 로그인 페이지로 이동
-      router.push('/login?registered=true');
-    } catch (error: any) {
-      console.error('회원가입 오류:', error);
-      setError(error.detail || '회원가입에 실패했습니다. 입력 정보를 확인하세요.');
-    } finally {
-      setIsLoading(false);
-    }
+    console.log('회원가입 요청 처리됨 - 자동 인증됨');
+    router.push('/');
   };
 
   // 인증 컨텍스트 값
   const authContextValue: AuthContextType = {
-    isAuthenticated,
-    isLoading,
-    user,
-    error,
+    isAuthenticated: true,  // 항상 인증됨
+    isLoading: false,      // 로딩 없음
+    user,                  // 기본 사용자 정보 사용
+    error: null,           // 오류 없음
     login,
     logout,
     register

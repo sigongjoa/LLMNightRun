@@ -56,17 +56,56 @@ const LocalLLMPage: React.FC = () => {
     
     try {
       console.log('로컬 LLM 상태 요청 중...');
+      
+      // LLM 상태 요청
       const data = await getLocalLLMStatus();
       console.log('로컬 LLM 상태 응답 받음:', data);
+      
+      // 상태 정보 업데이트
       setStatus(data);
       setEnabled(data.enabled);
-      setBaseUrl(data.base_url);
+      setBaseUrl(data.base_url || 'http://127.0.0.1:11434');
+      
+      // 모델 ID가 있는 경우만 업데이트
       if (data.model_id) {
         setModelId(data.model_id);
       }
+      
+      // LM Studio 연결 상태에 따른 온도/최대 토큰 값 업데이트
+      if (data.temperature) {
+        setTemperature(data.temperature);
+      }
+      
+      if (data.max_tokens) {
+        setMaxTokens(data.max_tokens);
+      }
+      
+      // 에러 메시지가 있으면 표시
+      if (data.error) {
+        setError(data.error);
+      }
     } catch (err: any) {
       console.error('LLM 상태 가져오기 오류:', err);
-      setError(typeof err.detail === 'string' ? err.detail : '로컬 LLM 상태를 가져오는 데 실패했습니다.');
+      
+      // 기본 에러 메시지 설정
+      let errorMessage = '로컬 LLM 상태를 가져오는 데 실패했습니다.';
+      
+      // 상세 에러 정보가 있는 경우 표시
+      if (err.detail && typeof err.detail === 'string') {
+        errorMessage = err.detail;
+      } else if (err.message && typeof err.message === 'string') {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+      
+      // 에러 발생해도 기본 상태 설정
+      setStatus({
+        enabled: true,
+        connected: false,
+        base_url: 'http://127.0.0.1:11434',
+        error: errorMessage
+      });
     } finally {
       setLoading(false);
     }

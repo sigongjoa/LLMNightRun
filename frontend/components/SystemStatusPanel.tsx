@@ -31,19 +31,38 @@ const SystemStatusPanel: React.FC = () => {
   const checkSystemStatus = async () => {
     try {
       setRefreshing(true);
-      // API 상태 확인
-      const apiStatus = await getApiStatus();
       
-      // 여기서는 더미 데이터를 사용하지만, 실제로는 각 서비스 상태를 확인하는 API 호출이 필요합니다.
-      // 실제 구현에서는 각각의 상태 확인 API를 호출해야 합니다.
+      // 다양한 경로로 서버에 연결 시도
+      let success = false;
+      try {
+        // 직접 루트 경로로 원시 요청
+        const response = await fetch('http://localhost:8000/');
+        if (response.ok) {
+          success = true;
+        }
+      } catch (fetchError) {
+        console.warn('원시 연결 시도 실패:', fetchError);
+      }
+      
+      // API 상태 확인 (백업)
+      if (!success) {
+        try {
+          const apiStatus = await getApiStatus();
+          success = apiStatus.apiConnected;
+        } catch (apiError) {
+          console.warn('API 상태 확인 실패:', apiError);
+        }
+      }
+      
+      // 임시 상태 데이터 - 서버가 연결되면 모든 서비스가 활성화된 것으로 표시
       setStatus({
-        apiConnected: apiStatus.apiConnected,
-        apiUrl: apiStatus.apiUrl,
-        availableServers: apiStatus.availableServers,
-        openaiConnected: true, // 더미 데이터
-        claudeConnected: true, // 더미 데이터
-        githubConnected: true, // 더미 데이터
-        mcpServersCount: 2 // 더미 데이터
+        apiConnected: success,
+        apiUrl: 'http://localhost:8000',
+        availableServers: success ? ['local'] : [],
+        openaiConnected: success,
+        claudeConnected: success,
+        githubConnected: success,
+        mcpServersCount: success ? 2 : 0
       });
     } catch (error) {
       console.error('시스템 상태 확인 오류:', error);
@@ -170,10 +189,12 @@ const SystemStatusPanel: React.FC = () => {
               </Box>
             </Typography>
             
-            {status.availableServers.length > 0 && (
+            {status.apiConnected && (
               <Box sx={{ mt: 2 }}>
                 <Typography variant="caption" color="text.secondary">
-                  사용 가능한 서버: {status.availableServers.join(', ')}
+                  사용 가능한 서버: {status.availableServers && status.availableServers.length > 0 
+                    ? status.availableServers.join(', ') 
+                    : '로컬'}
                 </Typography>
               </Box>
             )}

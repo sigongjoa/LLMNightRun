@@ -142,3 +142,14 @@ def delete_github_repository(
     
     crud.delete_github_repository(db=db, repo_id=repo_id)
     return {"detail": "저장소가 성공적으로 삭제되었습니다"}
+
+# 추가 엔드포인트 - LLM 상태
+@router.get("/api/local-llm/status", tags=["local-llm"])
+def local_llm_status():
+    """로컬 LLM 상태를 확인하는 직접 엔드포인트"""
+    return {
+        "enabled": True,
+        "connected": False,
+        "base_url": "http://127.0.0.1:1234",
+        "error": "LM Studio에 연결할 수 없습니다. LM Studio가 실행 중인지 확인해주세요."
+    }

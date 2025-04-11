@@ -21,7 +21,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import BuildIcon from '@mui/icons-material/Build';
 import CodeIcon from '@mui/icons-material/Code';
 import axios from 'axios';
-import { v4 as uuidv4 } from 'uuid';
+// Removed uuid dependency
 import ToolsPanel from './ToolsPanel';
 import { WebSocketManager } from './CustomWebSocketManager';
 import { ExportToMemoryButton } from '../Memory';
@@ -49,6 +49,11 @@ interface MCPChatInterfaceProps {
   initialMessages?: ChatMessage[];
   onReset?: () => void;
 }
+
+// Function to generate a simple ID without uuid
+const generateId = () => {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2);
+};
 
 const MCPChatInterface: React.FC<MCPChatInterfaceProps> = ({ 
   initialMessages = [], 
@@ -396,9 +401,9 @@ const MCPChatInterface: React.FC<MCPChatInterfaceProps> = ({
       setIsLoading(true);
       setError(null);
       
-      // 사용자 메시지 생성
+      // 사용자 메시지 생성 (uuid 대신 generateId 사용)
       const userMessage: ChatMessage = {
-        id: uuidv4(),
+        id: generateId(),
         role: 'user',
         content: input,
         timestamp: new Date()

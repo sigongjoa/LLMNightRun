@@ -1,11 +1,8 @@
-import { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { AppProps } from 'next/app';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Snackbar, Alert } from '@mui/material';
-import { useState } from 'react';
 import { useRouter } from 'next/router';
-import { updateApiBaseURLIfNeeded } from '../utils/api';
 import { AuthProvider } from '../components/auth/AuthProvider';
 import '../styles/globals.css';
 
@@ -30,100 +27,53 @@ const theme = createTheme({
   },
 });
 
+// 간단한 래퍼 컴포넌트 
+const SimpleLayout = ({ children }) => <>{children}</>;
+
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  const [serverError, setServerError] = useState<boolean>(false);
-  const [snackbar, setSnackbar] = useState<{open: boolean, message: string, severity: 'info' | 'success' | 'warning' | 'error'}>({
-    open: false,
-    message: '',
-    severity: 'info'
-  });
-
-  // 앱 초기화 시 서버 연결 상태 확인
+  const [mounted, setMounted] = useState(false);
+  
+  // 클라이언트 사이드에서 컴포넌트가 마운트된 후 상태 업데이트
   useEffect(() => {
-    const checkServerConnection = async () => {
-      try {
-        // 서버 상태 확인 및 필요시 URL 업데이트
-        await updateApiBaseURLIfNeeded();
-        
-        // 로컬 스토리지의 인증 토큰이 있는지 확인
-        if (typeof window !== 'undefined') {
-          const token = localStorage.getItem('token');
-          
-          // 로그인 페이지나 회원가입 페이지가 아니고 토큰이 없으면 로그인 페이지로 리디렉트
-          if (!token && router.pathname !== '/login' && router.pathname !== '/register') {
-            router.push('/login');
-          }
-        }
-      } catch (error) {
-        console.error('서버 연결 오류:', error);
-        setServerError(true);
-      }
-    };
+    setMounted(true);
+  }, []);
 
-    checkServerConnection();
-    
-    // 주기적으로 서버 상태 확인 (60초마다)
-    const intervalId = setInterval(async () => {
-      try {
-        await updateApiBaseURLIfNeeded();
-        
-        // 이전에 서버 오류가 있었다면 해결된 것으로 표시
-        if (serverError) {
-          setServerError(false);
-          setSnackbar({
-            open: true,
-            message: '서버 연결이 복구되었습니다.',
-            severity: 'success'
-          });
-        }
-      } catch (error) {
-        console.error('서버 연결 확인 오류:', error);
-        
-        // 이전에 오류가 없었다면 알림 표시
-        if (!serverError) {
-          setServerError(true);
-        }
-      }
-    }, 60000); // 60초
-    
-    return () => clearInterval(intervalId);
-  }, [router, serverError]);
+  // 서버 사이드 렌더링 동안에는 SimpleLayout 사용
+  // 클라이언트 사이드에서만 실제 Layout 로드
+  if (!mounted) {
+    // 첫 번째 렌더링에서는 간단한 레이아웃만 사용
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <AuthProvider>
+          <SimpleLayout>
+            <Component {...pageProps} />
+          </SimpleLayout>
+        </AuthProvider>
+      </ThemeProvider>
+    );
+  }
 
-  // 스낵바 닫기 핸들러
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
-  };
-
-  // 서버 오류 대화 상자 닫기 핸들러
-  const handleCloseErrorDialog = () => {
-    setServerError(false);
-  };
-
-  // 서버 다시 연결 시도
-  const handleRetryConnection = async () => {
-    setServerError(false);
-    try {
-      await updateApiBaseURLIfNeeded();
-      setSnackbar({
-        open: true,
-        message: '서버 연결 시도 중...',
-        severity: 'info'
-      });
-    } catch (error) {
-      console.error('서버 재연결 시도 실패:', error);
-      setServerError(true);
-    }
-  };
-
+  // 클라이언트 사이드에서만 실행
+  let Layout = SimpleLayout;
+  
   // 로그인, 회원가입 등 인증 페이지에서는 Layout을 적용하지 않습니다
   const authPages = ['/login', '/register', '/reset-password'];
   const withoutLayout = authPages.includes(router.pathname);
-
-  // Layout 컴포넌트 동적 임포트
-  const Layout = (withoutLayout) ? 
-    ({ children }) => <>{children}</> :  // 인증 페이지일 경우 단순 렌더링
-    require('../components/Layout').default;  // 그 외의 경우 Layout 적용
+  
+  try {
+    // 마운트된 후에만 Layout 로드 시도
+    const LayoutComponent = require('../components/Layout').default;
+    
+    // Layout 할당 (인증 페이지가 아닐 경우에만)
+    if (!withoutLayout) {
+      Layout = LayoutComponent;
+    }
+  } catch (e) {
+    console.error('Layout 컴포넌트 로딩 오류:', e);
+    // 오류 발생 시 기본 래퍼 사용
+  }
 
   return (
     <ThemeProvider theme={theme}>
@@ -133,44 +83,6 @@ export default function App({ Component, pageProps }: AppProps) {
           <Component {...pageProps} />
         </Layout>
       </AuthProvider>
-      
-      {/* 서버 오류 대화 상자 */}
-      <Dialog
-        open={serverError}
-        onClose={handleCloseErrorDialog}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title">
-          {"서버 연결 오류"}
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요.
-            <br /><br />
-            다음 단계를 시도해 보세요:
-            <br />
-            1. 백엔드 서버가 실행 중인지 확인
-            <br />
-            2. 네트워크 연결 확인
-            <br />
-            3. 브라우저 새로고침
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseErrorDialog}>무시</Button>
-          <Button onClick={handleRetryConnection} autoFocus color="primary">
-            다시 연결
-          </Button>
-        </DialogActions>
-      </Dialog>
-      
-      {/* 알림 스낵바 */}
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </ThemeProvider>
   );
 }

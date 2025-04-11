@@ -26,7 +26,6 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import {
   Dashboard as DashboardIcon,
   QuestionAnswer as QuestionIcon,
-  Code as CodeIcon,
   Settings as SettingsIcon,
   Menu as MenuIcon,
   SmartToy as SmartToyIcon,
@@ -78,13 +77,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     setDrawerOpen(open);
   };
 
-  // 메뉴 데이터 정의
+  // 메뉴 데이터 정의 - 코드 스니펫 관련 메뉴 제거됨
   const menuGroups = useMemo(() => [
     {
       groupName: '개발 및 관리',
       items: [
         { text: '대시보드', icon: <DashboardIcon />, href: '/' },
-        { text: '코드 관리', icon: <CodeIcon />, href: '/code-manager' },
         { text: 'GitHub 연동', icon: <GitHubIcon />, href: '/github-upload' },
         { text: '문서 관리', icon: <DescriptionIcon />, href: '/docs-manager' },
       ]

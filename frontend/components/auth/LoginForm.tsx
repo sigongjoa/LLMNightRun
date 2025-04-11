@@ -69,14 +69,160 @@ const LoginForm: React.FC = () => {
       
       {/* 인증 오류 정보 양식 안내 */}
       {error && error.includes('아이디 또는 비밀번호가 일치하지 않습니다') && (
-        <Alert severity="info" sx={{ mb: 2 }}>
-          입력하신 사용자 이름과 비밀번호를 확인해주세요. 이 기능을 처음 사용하는 경우 회원가입을 먼저 해주세요.
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          입력하신 사용자 이름과 비밀번호를 확인해주세요. 
+          <br /><br />
+          <Button 
+            variant="outlined" 
+            color="primary" 
+            size="small"
+            onClick={async () => {
+              try {
+                const response = await fetch('http://localhost:8000/initialize-db', {
+                  method: 'POST',
+                });
+                const responseData = await response.json();
+                alert(responseData.message);
+              } catch (err) {
+                alert('데이터베이스 초기화 중 오류가 발생했습니다.');
+                console.error(err);
+              }
+            }}
+          >
+            데이터베이스 초기화
+          </Button>
+          <Typography variant="caption" display="block" mt={1}>
+            위 버튼을 클릭하면 데이터베이스가 초기화되고 테스트 계정(admin/admin123)이 생성됩니다.
+          </Typography>
         </Alert>
       )}
       
       {/* 사용자 안내 메시지 - 테스트 계정 정보 */}
       <Alert severity="info" sx={{ mb: 2 }}>
         테스트 계정: <strong>user / user123</strong> 또는 <strong>admin / admin123</strong>
+        <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
+          <Button 
+            variant="contained" 
+            color="primary"
+            size="small"
+            onClick={async () => {
+              try {
+                // JSON 데이터로 보내기
+                const data = {
+                  username: 'admin',
+                  password: 'admin123'
+                };
+                
+                // 단순 로그인 API 호출
+                const response = await fetch('http://localhost:8000/simple-login', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(data)
+                });
+                
+                const responseData = await response.json();
+                
+                if (responseData.access_token) {
+                  // 토큰 저장
+                  localStorage.setItem('token', responseData.access_token);
+                  
+                  // 성공 메시지 표시
+                  alert(`관리자 계정으로 로그인 성공!`);
+                  
+                  // 페이지 새로고침
+                  window.location.href = '/';
+                } else {
+                  alert(`로그인 실패: ${data.detail || '알 수 없는 오류'}`);
+                }
+              } catch (err) {
+                alert('로그인 중 오류가 발생했습니다.');
+                console.error(err);
+              }
+            }}
+          >
+            관리자로 로그인
+          </Button>
+          <Button 
+            variant="outlined" 
+            color="primary"
+            size="small"
+            sx={{ ml: 2 }}
+            onClick={async () => {
+              try {
+                // JSON 데이터로 보내기
+                const data = {
+                  username: 'user',
+                  password: 'user123'
+                };
+                
+                // 단순 로그인 API 호출
+                const response = await fetch('http://localhost:8000/simple-login', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(data)
+                });
+                
+                const responseData = await response.json();
+                
+                if (responseData.access_token) {
+                  // 토큰 저장
+                  localStorage.setItem('token', responseData.access_token);
+                  
+                  // 성공 메시지 표시
+                  alert(`일반 사용자 계정으로 로그인 성공!`);
+                  
+                  // 페이지 새로고침
+                  window.location.href = '/';
+                } else {
+                  alert(`로그인 실패: ${data.detail || '알 수 없는 오류'}`);
+                }
+              } catch (err) {
+                alert('로그인 중 오류가 발생했습니다.');
+                console.error(err);
+              }
+            }}
+          >
+            일반 사용자로 로그인
+          </Button>
+        </Box>
+      </Alert>
+
+      {/* 대체 로그인 방법 */}
+      <Alert severity="warning" sx={{ mb: 2 }}>
+        <Typography variant="subtitle2" gutterBottom>
+          기존 로그인이 작동하지 않을 경우 아래 방법을 시도해 보세요:
+        </Typography>
+        <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
+          <Button 
+            variant="contained" 
+            color="warning"
+            size="small"
+            onClick={() => {
+              try {
+                // 백엔드 의존 없이 세션 스토리지에 직접 저장
+                sessionStorage.setItem('user', JSON.stringify({
+                  username: 'admin',
+                  is_admin: true
+                }));
+                
+                // 비상 로그인 플래그 설정
+                sessionStorage.setItem('emergency_login', 'true');
+                
+                alert('비상 로그인 성공! 관리자로 로그인되었습니다. (오프라인 모드)');
+                window.location.href = '/';
+              } catch (err) {
+                console.error('비상 로그인 오류:', err);
+                alert('비상 로그인 처리 중 오류가 발생했습니다.');
+              }
+            }}
+          >
+            비상 로그인 (관리자)
+          </Button>
+        </Box>
       </Alert>
       
       <Box component="form" onSubmit={handleSubmit} noValidate>

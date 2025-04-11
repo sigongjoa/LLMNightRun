@@ -21,7 +21,7 @@ from .models import TokenData
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # OAuth2 토큰 설정
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 # 비밀번호 해싱 함수
 def get_password_hash(password: str) -> str:
@@ -34,7 +34,19 @@ def get_password_hash(password: str) -> str:
     Returns:
         해싱된 비밀번호
     """
-    return pwd_context.hash(password)
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # 입력값 로깅
+    logger.info(f"비밀번호 해싱 중: 길이={len(password)}")
+    
+    # 해싱 수행
+    hashed = pwd_context.hash(password)
+    
+    # 결과 로깅
+    logger.info(f"해싱 결과: {hashed[:20]}...")
+    
+    return hashed
 
 # 비밀번호 검증 함수
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -48,7 +60,20 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Returns:
         검증 결과 (True/False)
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # 입력값 로깅
+    logger.info(f"비밀번호 검증 중: 입력={plain_password}, 해시={hashed_password[:20]}...")
+    
+    # 비교 수행
+    try:
+        result = pwd_context.verify(plain_password, hashed_password)
+        logger.info(f"비밀번호 검증 결과: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"비밀번호 검증 중 오류: {str(e)}")
+        return False
 
 # 액세스 토큰 생성 함수
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

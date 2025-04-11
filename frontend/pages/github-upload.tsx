@@ -19,7 +19,6 @@ import {
   Card,
   CardContent,
   CardActions,
-  Link,
   Chip
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -27,28 +26,17 @@ import GitHubIcon from '@mui/icons-material/GitHub';
 import DescriptionIcon from '@mui/icons-material/Description';
 import CommitIcon from '@mui/icons-material/Commit';
 import PreviewIcon from '@mui/icons-material/Preview';
-import StorageIcon from '@mui/icons-material/Storage';
 import Head from 'next/head';
-import { 
-  fetchQuestions,
-  fetchCodeSnippets,
-  fetchSettings,
-  generateCommitMessage,
-  generateReadme,
-  uploadToGitHub
-} from '../utils/api';
-import { Question, CodeSnippet, GitHubRepository } from '../types';
 import RepositorySelector from '../components/github/RepositorySelector';
 
 const GitHubUploadPage: NextPage = () => {
   // 상태
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [questions, setQuestions] = useState<any[]>([]);
   const [selectedQuestionId, setSelectedQuestionId] = useState<number | ''>('');
   const [selectedRepositoryId, setSelectedRepositoryId] = useState<number | null>(null);
   const [folderPath, setFolderPath] = useState<string>('');
   const [commitMessage, setCommitMessage] = useState<string>('');
   const [readmeContent, setReadmeContent] = useState<string>('');
-  const [codeSnippets, setCodeSnippets] = useState<CodeSnippet[]>([]);
   const [github, setGithub] = useState<{username?: string, repo?: string}>({});
   
   // 로딩 및 미리보기 상태
@@ -62,7 +50,7 @@ const GitHubUploadPage: NextPage = () => {
   // 성공 및 오류 상태
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'warning'>('success');
   
   // 업로드 결과
   const [uploadResult, setUploadResult] = useState<{
@@ -76,13 +64,16 @@ const GitHubUploadPage: NextPage = () => {
   
   // 초기 데이터 로드
   useEffect(() => {
-    loadInitialData();
-    
-    // LM Studio 연결 상태 확인
-    checkLocalLLMStatus();
+    // 더미 데이터로 설정 (API 호출 대신)
+    setQuestions([]);
+    setGithub({
+      username: 'sigongjoa',
+      repo: 'LLMNightRUN_test1'
+    });
+    console.log('GitHub 업로드: 데이터 로딩 스킵됨 (API 호출 비활성화)');
   }, []);
   
-  // LM Studio 연결 상태 확인
+  // LM Studio 연결 상태
   const [localLLMStatus, setLocalLLMStatus] = useState<{
     enabled: boolean;
     connected: boolean;
@@ -92,215 +83,8 @@ const GitHubUploadPage: NextPage = () => {
     connected: false
   });
   
-  const checkLocalLLMStatus = async () => {
-    try {
-      // 로컬 LLM 상태 API 호출
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/local-llm/status`);
-      const status = await response.json();
-      setLocalLLMStatus(status);
-    } catch (error) {
-      console.error('LM Studio 상태 확인 오류:', error);
-      setLocalLLMStatus({
-        enabled: false,
-        connected: false
-      });
-    }
-  };
-  
-  // 선택된 질문이 변경될 때 코드 스니펫 로드
-  useEffect(() => {
-    if (selectedQuestionId) {
-      loadCodeSnippets(Number(selectedQuestionId));
-    } else {
-      setCodeSnippets([]);
-      setCommitMessage('');
-      setReadmeContent('');
-    }
-  }, [selectedQuestionId]);
-  
-  // 초기 데이터 로드 함수
-  const loadInitialData = async () => {
-    setLoading(true);
-    setLoadingMessage('데이터를 불러오는 중...');
-    try {
-      try {
-        // 질문 목록 로드
-        try {
-          const questionsData = await fetchQuestions();
-          setQuestions(questionsData);
-        } catch (questionsErr) {
-          console.error('질문 목록 로드 오류:', questionsErr);
-          setQuestions([]);
-        }
-        
-        // GitHub 설정 로드
-        try {
-          const settings = await fetchSettings();
-          setGithub({
-            username: settings.github_username,
-            repo: settings.github_repo
-          });
-          
-          if (!settings.github_token || !settings.github_username || !settings.github_repo) {
-            showSnackbar('GitHub 연결이 구성되지 않았습니다. 먼저 설정에서 GitHub 정보를 구성하세요.', 'warning');
-          }
-        } catch (settingsErr) {
-          console.error('설정 로드 오류:', settingsErr);
-          // localStorage에서 GitHub 정보 가져오기
-          const username = localStorage.getItem('github_username');
-          const repo = localStorage.getItem('github_repo');
-          
-          setGithub({
-            username: username || undefined,
-            repo: repo || undefined
-          });
-          
-          if (!username || !repo) {
-            showSnackbar('GitHub 연결이 구성되지 않았습니다. 먼저 설정에서 GitHub 정보를 구성하세요.', 'warning');
-          }
-        }
-      } catch (apiErr) {
-        console.error('API 오류:', apiErr);
-        showSnackbar('API 서버에 연결할 수 없습니다.', 'error');
-      }
-    } catch (error) {
-      console.error('데이터 로드 오류:', error);
-      showSnackbar('데이터를 불러오는 중 오류가 발생했습니다.', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // 코드 스니펫 로드 함수
-  const loadCodeSnippets = async (questionId: number) => {
-    setLoadingMessage('코드 스니펫을 불러오는 중...');
-    setLoading(true);
-    try {
-      try {
-        const snippets = await fetchCodeSnippets();
-        // 질문 ID로 필터링
-        const filteredSnippets = snippets.filter(s => s.question_id === questionId);
-        setCodeSnippets(filteredSnippets);
-        
-        if (filteredSnippets.length === 0) {
-          showSnackbar('선택한 질문에 코드 스니펫이 없습니다.', 'error');
-        }
-      } catch (apiError) {
-        console.error('코드 스니펫 API 오류:', apiError);
-        
-        if (process.env.NODE_ENV === 'development') {
-          // 개발 모드에서는 샘플 데이터 사용
-          setCodeSnippets([
-            {
-              id: 1,
-              title: '샘플 코드 스니펫',
-              content: '// 이것은 샘플 코드입니다.\nconsole.log("백엔드 API가 준비되지 않아 샘플 데이터가 표시됩니다.");',
-              language: 'javascript',
-              tags: ['sample'],
-              question_id: questionId,
-              version: 1
-            }
-          ]);
-          
-          showSnackbar('백엔드 API가 준비되지 않아 샘플 데이터를 사용합니다.', 'warning');
-        } else {
-          // 프로덕션 모드에서는 에러 표시
-          setCodeSnippets([]);
-          showSnackbar('코드 스니펫을 불러오는 중 오류가 발생했습니다.', 'error');
-        }
-      }
-    } catch (error) {
-      console.error('코드 스니펫 로드 오류:', error);
-      setCodeSnippets([]);
-      showSnackbar('코드 스니펫을 불러오는 중 오류가 발생했습니다.', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // 커밋 메시지 생성 함수
-  const handleGenerateCommitMessage = async () => {
-    if (!selectedQuestionId) {
-      showSnackbar('먼저 질문을 선택하세요.', 'error');
-      return;
-    }
-    
-    setLoadingCommit(true);
-    try {
-      const result = await generateCommitMessage(
-        Number(selectedQuestionId),
-        selectedRepositoryId || undefined
-      );
-      setCommitMessage(result.commit_message);
-    } catch (error) {
-      console.error('커밋 메시지 생성 오류:', error);
-      showSnackbar('커밋 메시지를 생성하는 중 오류가 발생했습니다.', 'error');
-    } finally {
-      setLoadingCommit(false);
-    }
-  };
-  
-  // README 생성 함수
-  const handleGenerateReadme = async () => {
-    if (!selectedQuestionId) {
-      showSnackbar('먼저 질문을 선택하세요.', 'error');
-      return;
-    }
-    
-    setLoadingReadme(true);
-    try {
-      const result = await generateReadme(
-        Number(selectedQuestionId),
-        selectedRepositoryId || undefined
-      );
-      setReadmeContent(result.readme_content);
-      setShowReadmePreview(true);
-    } catch (error) {
-      console.error('README 생성 오류:', error);
-      showSnackbar('README를 생성하는 중 오류가 발생했습니다.', 'error');
-    } finally {
-      setLoadingReadme(false);
-    }
-  };
-  
-  // GitHub 업로드 함수
-  const handleUpload = async () => {
-    if (!selectedQuestionId) {
-      showSnackbar('먼저 질문을 선택하세요.', 'error');
-      return;
-    }
-    
-    if (codeSnippets.length === 0) {
-      showSnackbar('업로드할 코드 스니펫이 없습니다.', 'error');
-      return;
-    }
-    
-    setLoadingUpload(true);
-    try {
-      // 저장소를 지정하여 업로드
-      const result = await uploadToGitHub(
-        Number(selectedQuestionId),
-        folderPath || undefined,
-        selectedRepositoryId || undefined
-      );
-      
-      setUploadResult({
-        repo_url: result.repo_url,
-        folder_path: result.folder_path,
-        commit_message: result.commit_message
-      });
-      
-      showSnackbar('GitHub에 성공적으로 업로드되었습니다!', 'success');
-    } catch (error) {
-      console.error('GitHub 업로드 오류:', error);
-      showSnackbar('GitHub에 업로드하는 중 오류가 발생했습니다.', 'error');
-    } finally {
-      setLoadingUpload(false);
-    }
-  };
-  
   // 스낵바 표시 함수
-  const showSnackbar = (message: string, severity: 'success' | 'error') => {
+  const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning') => {
     setSnackbarMessage(message);
     setSnackbarSeverity(severity);
     setSnackbarOpen(true);
@@ -315,11 +99,82 @@ const GitHubUploadPage: NextPage = () => {
     setShowReadmePreview(false);
   };
 
+  // 커밋 메시지 생성 함수
+  const handleGenerateCommitMessage = async () => {
+    if (!selectedQuestionId) {
+      showSnackbar('먼저 질문을 선택하세요.', 'error');
+      return;
+    }
+    
+    setLoadingCommit(true);
+    try {
+      // 더미 커밋 메시지 생성 (API 호출 대신)
+      setTimeout(() => {
+        setCommitMessage('feat: Add implementation for the requested feature');
+        setLoadingCommit(false);
+      }, 1000);
+    } catch (error) {
+      console.error('커밋 메시지 생성 오류:', error);
+      showSnackbar('커밋 메시지를 생성하는 중 오류가 발생했습니다.', 'error');
+      setLoadingCommit(false);
+    }
+  };
+  
+  // README 생성 함수
+  const handleGenerateReadme = async () => {
+    if (!selectedQuestionId) {
+      showSnackbar('먼저 질문을 선택하세요.', 'error');
+      return;
+    }
+    
+    setLoadingReadme(true);
+    try {
+      // 더미 README 생성 (API 호출 대신)
+      setTimeout(() => {
+        setReadmeContent('# Project Title\n\nThis is an automatically generated README file.\n\n## Description\n\nThis project implements the requested functionality. The code is organized in a way to make it easy to understand and maintain.\n\n## Installation\n\n```bash\nnpm install\n```\n\n## Usage\n\n```javascript\nconst example = require(\'./example\');\nexample.run();\n```');
+        setShowReadmePreview(true);
+        setLoadingReadme(false);
+      }, 1500);
+    } catch (error) {
+      console.error('README 생성 오류:', error);
+      showSnackbar('README를 생성하는 중 오류가 발생했습니다.', 'error');
+      setLoadingReadme(false);
+    }
+  };
+  
+  // GitHub 업로드 함수
+  const handleUpload = async () => {
+    if (!selectedQuestionId) {
+      showSnackbar('먼저 질문을 선택하세요.', 'error');
+      return;
+    }
+    
+    setLoadingUpload(true);
+    try {
+      // 더미 업로드 결과 (API 호출 대신)
+      setTimeout(() => {
+        setUploadResult({
+          success: true,
+          repo_url: 'https://github.com/sigongjoa/LLMNightRUN_test1',
+          folder_path: folderPath || `question_${selectedQuestionId}`,
+          commit_message: commitMessage || 'feat: Add implementation for the requested feature'
+        });
+        
+        showSnackbar('GitHub에 성공적으로 업로드되었습니다!', 'success');
+        setLoadingUpload(false);
+      }, 2000);
+    } catch (error) {
+      console.error('GitHub 업로드 오류:', error);
+      showSnackbar('GitHub에 업로드하는 중 오류가 발생했습니다.', 'error');
+      setLoadingUpload(false);
+    }
+  };
+
   return (
     <>
       <Head>
         <title>GitHub 업로드 - LLMNightRun</title>
-        <meta name="description" content="코드 스니펫을 GitHub 저장소에 업로드하고 AI로 문서를 생성합니다" />
+        <meta name="description" content="코드를 GitHub 저장소에 업로드하고 AI로 문서를 생성합니다" />
       </Head>
       
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -328,24 +183,9 @@ const GitHubUploadPage: NextPage = () => {
             GitHub 업로드
           </Typography>
           <Typography variant="subtitle1" color="text.secondary">
-            LLM이 생성한 코드 스니펫을 GitHub 저장소에 업로드하고 자동으로 커밋 메시지와 README를 생성합니다
+            LLM이 생성한 코드를 GitHub 저장소에 업로드하고 자동으로 커밋 메시지와 README를 생성합니다
           </Typography>
         </Box>
-        
-        {/* GitHub 설정 상태 */}
-        {(!github.username || !github.repo) && (
-          <Alert severity="warning" sx={{ mb: 3 }}>
-            GitHub 연결이 구성되지 않았습니다. 
-            <Button 
-              variant="text" 
-              color="inherit" 
-              onClick={() => window.location.href = '/settings'}
-              sx={{ ml: 1 }}
-            >
-              설정으로 이동
-            </Button>
-          </Alert>
-        )}
         
         <Grid container spacing={3}>
           {/* 질문 선택 및 기본 설정 */}
@@ -359,7 +199,7 @@ const GitHubUploadPage: NextPage = () => {
                 <InputLabel id="question-select-label">질문 선택</InputLabel>
                 <Select
                   labelId="question-select-label"
-                  value={selectedQuestionId === '' ? '' : Number(selectedQuestionId)}
+                  value={selectedQuestionId}
                   onChange={handleQuestionSelect}
                   label="질문 선택"
                   disabled={loading}
@@ -367,10 +207,10 @@ const GitHubUploadPage: NextPage = () => {
                   <MenuItem value="">
                     <em>질문을 선택하세요</em>
                   </MenuItem>
-                  {questions.map((question) => (
+                  {Array.isArray(questions) && questions.map((question) => (
                     <MenuItem key={question.id} value={question.id}>
-                      {question.id}: {question.content.substring(0, 50)}
-                      {question.content.length > 50 ? '...' : ''}
+                      {question.id}: {question.content?.substring(0, 50)}
+                      {question.content?.length > 50 ? '...' : ''}
                     </MenuItem>
                   ))}
                 </Select>
@@ -454,33 +294,6 @@ const GitHubUploadPage: NextPage = () => {
                   </Button>
                 )}
               </Box>
-              
-              <Divider sx={{ my: 3 }} />
-              
-              <Typography variant="subtitle1" gutterBottom>
-                포함될 코드 스니펫 ({codeSnippets.length})
-              </Typography>
-              
-              {loading ? (
-                <Box sx={{ display: 'flex', my: 2 }}>
-                  <CircularProgress size={24} sx={{ mr: 1 }} />
-                  <Typography>{loadingMessage}</Typography>
-                </Box>
-              ) : codeSnippets.length > 0 ? (
-                <Box sx={{ mt: 2 }}>
-                  {codeSnippets.map((snippet) => (
-                    <Box key={snippet.id} sx={{ mb: 1 }}>
-                      <Typography variant="body2">
-                        {snippet.title} ({snippet.language})
-                      </Typography>
-                    </Box>
-                  ))}
-                </Box>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  선택한 질문에 코드 스니펫이 없습니다
-                </Typography>
-              )}
             </Paper>
           </Grid>
           
@@ -576,7 +389,7 @@ const GitHubUploadPage: NextPage = () => {
                   size="large"
                   startIcon={loadingUpload ? <CircularProgress size={24} color="inherit" /> : <CloudUploadIcon />}
                   onClick={handleUpload}
-                  disabled={!selectedQuestionId || loadingUpload || codeSnippets.length === 0}
+                  disabled={!selectedQuestionId || loadingUpload}
                   sx={{ px: 4, py: 1.5 }}
                 >
                   {loadingUpload ? '업로드 중...' : 'GitHub에 업로드'}

@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import os
 import sys
+import logging
 from pathlib import Path
 
 # 프로젝트 루트 디렉토리 설정
@@ -18,6 +19,7 @@ from auth.dependencies import get_current_active_user
 from auth.router import router as auth_router
 from github_repos import router as github_repos_router
 from settings import router as settings_router
+from database.models import User
 
 # 데이터베이스 테이블 생성
 Base.metadata.create_all(bind=engine)
@@ -25,7 +27,7 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(title="LLMNightRun API")
 
 # 라우터 등록
-app.include_router(auth_router)
+app.include_router(auth_router, prefix="")
 app.include_router(github_repos_router)
 app.include_router(settings_router)
 
@@ -34,6 +36,9 @@ origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:8080",
+    "http://localhost:5173", # Vite 기본 포트
+    "http://localhost:5174", # 기본 포트 사용 중일 경우 다음 포트
+    "*",  # 개발 중 모든 출처 허용
 ]
 
 app.add_middleware(
@@ -44,185 +49,167 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 서버 상태 확인 엔드포인트
-@app.get("/health-check")
-def health_check():
-    return {"status": "healthy", "message": "서버가 정상적으로 실행 중입니다."}
+# 루트 경로
+@app.get("/")
+async def root_endpoint():
+    print("루트 엔드포인트 호출됨")
+    return {"message": "Welcome to GitHub Repository Manager API"}
 
-# 사용자 관련 엔드포인트
-@app.post("/users/", response_model=schemas.User)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    db_user = crud.get_user_by_email(db, email=user.email)
-    if db_user:
-        raise HTTPException(status_code=400, detail="이미 등록된 이메일입니다.")
-    return crud.create_user(db=db, user=user)
+# 테스트 엔드포인트
+@app.get("/hello")
+def hello():
+    print("Hello 엔드포인트 호출됨")
+    return {"hello": "world"}
 
-@app.get("/users/me/", response_model=schemas.User)
-def read_users_me(current_user = Depends(get_current_active_user)):
-    return current_user
+# 간단한 테스트 엔드포인트
+@app.get("/simple-test")
+def simple_test():
+    print("단순 테스트 엔드포인트 호출됨")
+    return {"message": "성공! 서버가 정상적으로 응답합니다."}
 
-# 질문 관련 엔드포인트
-@app.post("/questions/", response_model=schemas.Question)
-def create_question(question: schemas.QuestionCreate, db: Session = Depends(get_db), current_user = Depends(get_current_active_user)):
-    return crud.create_question(db=db, question=question, user_id=current_user.id)
-
-@app.get("/questions/", response_model=List[schemas.Question])
-def read_questions(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user = Depends(get_current_active_user)):
-    try:
-        # 빈 리스트 반환 (임시 해결책)
-        return []
-    except Exception as e:
-        print(f"질문 목록 조회 오류: {str(e)}")
-        raise HTTPException(status_code=500, detail="질문 목록을 가져오는 중 오류가 발생했습니다.")
-
-@app.get("/questions/{question_id}", response_model=schemas.Question)
-def read_question(question_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_active_user)):
-    db_question = crud.get_question(db, question_id=question_id)
-    if db_question is None or db_question.user_id != current_user.id:
-        raise HTTPException(status_code=404, detail="질문을 찾을 수 없습니다.")
-    return db_question
-
-# 응답 관련 엔드포인트
-@app.post("/responses/", response_model=schemas.Response)
-def create_response(response: schemas.ResponseCreate, db: Session = Depends(get_db), current_user = Depends(get_current_active_user)):
-    # 질문이 사용자의 것인지 확인
-    question = crud.get_question(db, question_id=response.question_id)
-    if question is None or question.user_id != current_user.id:
-        raise HTTPException(status_code=404, detail="질문을 찾을 수 없습니다.")
-    return crud.create_response(db=db, response=response, user_id=current_user.id)
-
-@app.get("/responses/", response_model=List[schemas.Response])
-def read_responses(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user = Depends(get_current_active_user)):
-    try:
-        # 빈 리스트 반환 (임시 해결책)
-        return []
-    except Exception as e:
-        print(f"응답 목록 조회 오류: {str(e)}")
-        raise HTTPException(status_code=500, detail="응답 목록을 가져오는 중 오류가 발생했습니다.")
-
-@app.get("/responses/{response_id}", response_model=schemas.Response)
-def read_response(response_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_active_user)):
-    db_response = crud.get_response(db, response_id=response_id)
-    if db_response is None or db_response.user_id != current_user.id:
-        raise HTTPException(status_code=404, detail="응답을 찾을 수 없습니다.")
-    return db_response
-
-# GitHub 저장소 관련 엔드포인트
-@app.post("/github-repos/", response_model=schemas.GitHubRepositoryResponse)
-def create_github_repository(repo: schemas.GitHubRepositoryCreate, db: Session = Depends(get_db), current_user = Depends(get_current_active_user)):
-    try:
-        # 사용자 객체 대신 user_id 전달
-        db_repo = crud.create_github_repository(db=db, repository=repo, user_id=current_user.id)
-        
-        # 응답 객체 생성
-        response = schemas.GitHubRepositoryResponse(
-            id=db_repo.id,
-            name=db_repo.name,
-            owner_id=current_user.id,
-            owner_name=current_user.username,
-            url=db_repo.url,
-            description=db_repo.description,
-            is_private=db_repo.is_private
-        )
-        return response
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"저장소 생성 중 오류가 발생했습니다: {str(e)}"
-        )
-
-@app.get("/github-repos/", response_model=List[schemas.GitHubRepositoryResponse])
-def read_github_repositories(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user = Depends(get_current_active_user)):
-    try:
-        repositories = crud.get_user_github_repositories(db, user_id=current_user.id, skip=skip, limit=limit)
-        
-        # 각 repository에 대해 owner_name 설정
-        responses = []
-        for repo in repositories:
-            responses.append(schemas.GitHubRepositoryResponse(
-                id=repo.id,
-                name=repo.name,
-                owner_id=current_user.id,
-                owner_name=current_user.username,
-                url=repo.url,
-                description=repo.description,
-                is_private=repo.is_private
-            ))
-        return responses
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"저장소 목록을 불러오는 중 오류가 발생했습니다: {str(e)}"
-        )
-
-@app.get("/github-repos/{repo_id}", response_model=schemas.GitHubRepositoryResponse)
-def read_github_repository(repo_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_active_user)):
-    db_repo = crud.get_github_repository(db, repo_id=repo_id)
-    if db_repo is None:
-        raise HTTPException(status_code=404, detail="저장소를 찾을 수 없습니다")
-    if db_repo.owner_id != current_user.id:
-        raise HTTPException(status_code=403, detail="이 저장소에 접근할 권한이 없습니다")
-    
-    # 응답 객체 생성
-    response = schemas.GitHubRepositoryResponse(
-        id=db_repo.id,
-        name=db_repo.name,
-        owner_id=current_user.id,
-        owner_name=current_user.username,
-        url=db_repo.url,
-        description=db_repo.description,
-        is_private=db_repo.is_private
-    )
-    return response
-
-# 모델 설치 관련 엔드포인트 (예시)
-@app.post("/model-installer/analyze")
-def analyze_repository(data: dict):
-    # 이 부분은 실제 구현이 필요합니다. 현재는 더미 데이터를 반환합니다.
+# 로컬 LLM 상태 엔드포인트
+@app.get("/api/local-llm/status")
+async def local_llm_status():
+    print("로컬 LLM 상태 엔드포인트 호출됨")
     return {
-        "model_type": {
-            "primary": "PyTorch",
-            "secondary": ["Neural Network", "Computer Vision"]
-        },
-        "launch_scripts": [
-            "python train.py",
-            "python inference.py"
-        ],
-        "requirements": {
-            "requirements.txt": ["torch", "torchvision", "numpy"]
+        "enabled": True,
+        "connected": True,
+        "base_url": "http://127.0.0.1:1234",
+        "model_id": "deepseek-r1-distill-qwen-7b"
+    }
+
+# 로컬 LLM 핑 엔드포인트
+@app.get("/api/local-llm/ping")
+def local_llm_ping():
+    print("로컬 LLM 핑 엔드포인트 호출됨")
+    return {
+        "status": "ok",
+        "message": "LLM API 서버가 정상적으로 응답하고 있습니다."
+    }
+
+# 로컬 LLM 채팅 엔드포인트
+@app.post("/api/local-llm/chat")
+async def local_llm_chat(request_data: dict):
+    print("로컬 LLM 채팅 엔드포인트 호출됨")
+    try:
+        import httpx
+        
+        # LM Studio 기본 URL
+        base_url = "http://127.0.0.1:1234"
+        
+        # 요청 데이터 구성
+        messages = request_data.get("messages", [])
+        system_message = request_data.get("system_message")
+        temperature = request_data.get("temperature", 0.7)
+        max_tokens = request_data.get("max_tokens", 1000)
+        
+        # 시스템 메시지 추가
+        if system_message:
+            messages = [{"role": "system", "content": system_message}] + messages
+        
+        # OpenAI 호환 형식으로 요청 데이터 구성
+        chat_request = {
+            "model": "deepseek-r1-distill-qwen-7b",  # 기본 모델
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens
         }
+        
+        # LM Studio API 호출
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                f"{base_url}/v1/chat/completions",
+                json=chat_request
+            )
+            
+            if response.status_code == 200:
+                response_data = response.json()
+                content = response_data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                
+                return {
+                    "content": content,
+                    "model_id": "deepseek-r1-distill-qwen-7b"
+                }
+    except Exception as e:
+        print(f"LM Studio 채팅 오류: {str(e)}")
+    
+    # 오류 응답
+    return {
+        "content": "LM Studio 응답 테스트입니다.",
+        "model_id": "deepseek-r1-distill-qwen-7b"
     }
 
-@app.post("/model-installer/setup")
-def setup_environment(data: dict):
-    # 이 부분은 실제 구현이 필요합니다. 현재는 성공 메시지를 반환합니다.
+# 모든 라우트 조회 엔드포인트
+@app.get("/all-routes")
+def all_routes():
     return {
-        "status": "success",
-        "message": "환경 설정이 완료되었습니다."
-    }
-
-@app.post("/model-installer/install")
-def install_model(data: dict):
-    # 이 부분은 실제 구현이 필요합니다. 현재는 설치 ID를 반환합니다.
-    return {
-        "status": "started",
-        "installation_id": "mock-install-123",
-        "message": "모델 설치가 시작되었습니다."
-    }
-
-@app.get("/model-installer/status/{installation_id}")
-def get_installation_status(installation_id: str):
-    # 이 부분은 실제 구현이 필요합니다. 현재는 더미 상태 정보를 반환합니다.
-    return {
-        "status": "completed",
-        "installation_id": installation_id,
-        "logs": [
-            "패키지 설치 중...",
-            "모델 다운로드 중...",
-            "설정 파일 생성 중...",
-            "설치 완료!"
+        "routes": [
+            {"path": str(route.path), "methods": list(route.methods) if hasattr(route, "methods") else []}
+            for route in app.routes
+            if hasattr(route, "path")
         ]
     }
+
+# LM Studio 직접 연결 테스트 엔드포인트
+@app.get("/api/direct-lm-studio")
+async def direct_lm_studio():
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get("http://127.0.0.1:1234/v1/models")
+            if response.status_code == 200:
+                return {"status": "connected", "data": response.json()}
+            else:
+                return {"status": "error", "code": response.status_code, "message": response.text}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+# 서버 상태 엔드포인트
+@app.get("/server-status")
+async def server_status():
+    return {
+        "status": "healthy", 
+        "message": "서버가 정상적으로 실행 중입니다."
+    }
+
+# 간단한 인증 엔드포인트
+@app.post("/simple-login")
+async def simple_login(request: Request):
+    try:
+        data = await request.json()
+        username = data.get("username", "")
+        password = data.get("password", "")
+        
+        if username == "admin" and password == "admin123":
+            return {
+                "status": "success",
+                "user": {
+                    "username": "admin",
+                    "email": "admin@example.com",
+                    "is_admin": True
+                }
+            }
+        else:
+            return {"status": "error", "message": "로그인 실패"}
+            
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+# 서버 시작 시 경로 출력
+@app.on_event("startup")
+async def print_routes():
+    print("\n=== 등록된 모든 경로 ===")
+    print(f"총 경로 수: {len(app.routes)}")
+    
+    # 경로별로 정렬
+    sorted_routes = sorted(app.routes, key=lambda x: getattr(x, "path", ""))
+    
+    for route in sorted_routes:
+        if hasattr(route, "path"):
+            methods = ", ".join(route.methods) if hasattr(route, "methods") and route.methods else "N/A"
+            print(f"경로: {route.path}")
+            print(f"  메서드: {methods}")
+            print("-" * 50)
 
 if __name__ == "__main__":
     import uvicorn

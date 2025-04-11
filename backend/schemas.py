@@ -18,7 +18,7 @@ class User(UserBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # 질문 관련 스키마
@@ -39,7 +39,7 @@ class Question(QuestionBase):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # 응답 관련 스키마
@@ -60,7 +60,7 @@ class Response(ResponseBase):
     created_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # GitHub 저장소 관련 스키마
@@ -82,7 +82,7 @@ class GitHubRepositoryResponse(GitHubRepositoryBase):
     owner_name: str  # User.username
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # 코드 스니펫 관련 스키마
@@ -107,7 +107,7 @@ class CodeSnippet(CodeSnippetBase):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # 코드 템플릿 관련 스키마
@@ -130,7 +130,7 @@ class CodeTemplate(CodeTemplateBase):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # 설정 관련 스키마
@@ -146,7 +146,7 @@ class Settings(BaseModel):
     user_id: Optional[int] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # 내보내기 관련 스키마
@@ -178,7 +178,7 @@ class PromptTemplate(PromptTemplateBase):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # 에이전트 관련 스키마
@@ -199,7 +199,7 @@ class AgentSession(AgentSessionBase):
     status: str  # "active", "completed", "failed"
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class AgentLogEntry(BaseModel):
@@ -210,4 +210,4 @@ class AgentLogEntry(BaseModel):
     metadata: Optional[dict] = {}
 
     class Config:
-        orm_mode = True
+        from_attributes = True

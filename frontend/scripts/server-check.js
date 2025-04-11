@@ -19,7 +19,9 @@ if (fs.existsSync(envPath)) {
 
 // 서버 URL 설정
 const PRIMARY_SERVER = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const BACKUP_SERVER = process.env.NEXT_PUBLIC_BACKUP_API_URL || 'http://localhost:8001';
+// 백업 서버는 이제 사용하지 않음
+// const BACKUP_SERVER = process.env.NEXT_PUBLIC_BACKUP_API_URL || 'http://localhost:8001';
+const BACKUP_SERVER = null;
 
 // 로그 파일 경로
 const LOG_FILE = path.resolve(process.cwd(), 'server-status.log');
@@ -29,13 +31,25 @@ const LOG_FILE = path.resolve(process.cwd(), 'server-status.log');
  */
 async function checkServer(url) {
   return new Promise((resolve) => {
+    if (!url) {
+      resolve({ url, status: 'disabled', statusCode: null, message: '서버 URL이 설정되지 않음' });
+      return;
+    }
+    
+    // 루트 경로만 확인 (다른 엔드포인트는 사용하지 않음)
     const client = url.startsWith('https') ? https : http;
+    let req;
     const timeoutId = setTimeout(() => {
-      req.abort();
+      if (req && typeof req.abort === 'function') {
+        req.abort();
+      } else if (req && typeof req.destroy === 'function') {
+        req.destroy();
+      }
       resolve({ url, status: 'timeout', statusCode: null, message: '연결 시간 초과' });
     }, 5000);
 
-    const req = client.get(`${url}/health-check`, (res) => {
+    // 루트 경로 시도
+    req = client.get(`${url}/`, (res) => {
       clearTimeout(timeoutId);
       let data = '';
       
@@ -45,19 +59,40 @@ async function checkServer(url) {
       
       res.on('end', () => {
         try {
-          const response = JSON.parse(data);
-          resolve({ 
-            url, 
-            status: res.statusCode === 200 ? 'online' : 'error',
-            statusCode: res.statusCode,
-            message: response.message || response.status || '알 수 없는 응답'
-          });
+          // 200 응답이면 서버가 동작 중인 것으로 간주
+          if (res.statusCode === 200) {
+            try {
+              const response = JSON.parse(data);
+              resolve({ 
+                url, 
+                status: 'online',
+                statusCode: res.statusCode,
+                message: response.message || response.status || '서버 온라인'
+              });
+            } catch (e) {
+              resolve({ 
+                url, 
+                status: 'online', 
+                statusCode: res.statusCode,
+                message: '서버 온라인 (루트 경로)'
+              });
+            }
+          } else {
+            // 다른 상태 코드는 오류로 간주하지만 서버는 작동 중
+            resolve({
+              url,
+              status: 'error',
+              statusCode: res.statusCode,
+              message: `서버 응답 오류: ${res.statusCode}`
+            });
+          }
         } catch (e) {
+          // 파싱 실패해도 서버가 응답했으므로 온라인으로 간주
           resolve({ 
             url, 
-            status: 'error', 
+            status: 'online', 
             statusCode: res.statusCode,
-            message: '잘못된 응답 형식'
+            message: '서버 응답 확인됨'
           });
         }
       });
@@ -69,7 +104,7 @@ async function checkServer(url) {
         url, 
         status: 'offline', 
         statusCode: null,
-        message: error.message
+        message: error.message || '서버 연결 실패'
       });
     });
   });
@@ -93,7 +128,12 @@ async function main() {
   console.log('백엔드 서버 상태 확인 중...');
   
   const primaryStatus = await checkServer(PRIMARY_SERVER);
-  const backupStatus = await checkServer(BACKUP_SERVER);
+  let backupStatus = { status: 'disabled', message: '백업 서버 비활성화됨' };
+  
+  // 백업 서버가 설정된 경우에만 확인
+  if (BACKUP_SERVER) {
+    backupStatus = await checkServer(BACKUP_SERVER);
+  }
   
   const timestamp = new Date().toISOString();
   let summaryMessage = `[${timestamp}] 서버 상태 요약:\n`;
@@ -105,17 +145,21 @@ async function main() {
   }
   summaryMessage += `\n    ${primaryStatus.message}\n`;
   
-  // 백업 서버 상태
-  summaryMessage += `  백업 서버 (${BACKUP_SERVER}): ${backupStatus.status.toUpperCase()}`;
-  if (backupStatus.statusCode) {
-    summaryMessage += ` (${backupStatus.statusCode})`;
+  // 백업 서버 상태 (활성화된 경우에만)
+  if (BACKUP_SERVER) {
+    summaryMessage += `  백업 서버 (${BACKUP_SERVER}): ${backupStatus.status.toUpperCase()}`;
+    if (backupStatus.statusCode) {
+      summaryMessage += ` (${backupStatus.statusCode})`;
+    }
+    summaryMessage += `\n    ${backupStatus.message}\n`;
+  } else {
+    summaryMessage += `  백업 서버: 비활성화됨\n`;
   }
-  summaryMessage += `\n    ${backupStatus.message}\n`;
   
   // 권장 서버
   if (primaryStatus.status === 'online') {
     summaryMessage += '  권장 서버: 기본 서버\n';
-  } else if (backupStatus.status === 'online') {
+  } else if (BACKUP_SERVER && backupStatus.status === 'online') {
     summaryMessage += '  권장 서버: 백업 서버\n';
   } else {
     summaryMessage += '  권장 서버: 사용 가능한 서버 없음\n';
@@ -127,9 +171,9 @@ async function main() {
   return {
     timestamp,
     primary: primaryStatus,
-    backup: backupStatus,
+    backup: BACKUP_SERVER ? backupStatus : null,
     recommended: primaryStatus.status === 'online' ? 'primary' : 
-                 backupStatus.status === 'online' ? 'backup' : null
+                 (BACKUP_SERVER && backupStatus.status === 'online') ? 'backup' : null
   };
 }
 

@@ -13,7 +13,7 @@ from backend.models.enums import LLMType
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_LM_STUDIO_URL = "http://127.0.0.1:1234"
+DEFAULT_LM_STUDIO_URL = "http://127.0.0.1:1234"  # LM Studio 기본 포트
 
 
 async def call_lm_studio(

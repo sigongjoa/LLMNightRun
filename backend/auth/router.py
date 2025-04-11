@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 # 라우터 설정
 router = APIRouter(
-    prefix="/auth",
+    prefix="",  # prefix 제거
     tags=["auth"],
     responses={401: {"description": "Unauthorized"}},
 )
@@ -40,6 +40,31 @@ async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
+    # 디버깅: 데이터베이스 정보 확인
+    from sqlalchemy import inspect, text
+    try:
+        # 연결 확인
+        conn = db.connection()
+        logger.info("데이터베이스 연결 성공")
+        
+        # 테이블 목록 확인
+        inspector = inspect(db.get_bind())
+        tables = inspector.get_table_names()
+        logger.info(f"데이터베이스 테이블 목록: {tables}")
+        
+        # 사용자 테이블 확인
+        if 'users' in tables:
+            # 사용자 수 확인
+            result = db.execute(text("SELECT COUNT(*) FROM users"))
+            count = result.scalar()
+            logger.info(f"사용자 테이블의 레코드 수: {count}")
+            
+            # 모든 사용자 확인
+            users = db.query(User).all()
+            for user in users:
+                logger.info(f"사용자 정보: ID={user.id}, 이름={user.username}, 이메일={user.email}")
+    except Exception as e:
+        logger.error(f"데이터베이스 디버깅 중 오류: {str(e)}")
     """
     사용자 인증 및 JWT 토큰 발급
     
@@ -47,12 +72,17 @@ async def login_for_access_token(
     - **password**: 비밀번호
     """
     # 사용자 조회
+    logger.info(f"로그인 시도: 사용자명={form_data.username}")
     user = db.query(User).filter(User.username == form_data.username).first()
     
     # 사용자가 존재하지 않는 경우
     if not user:
         # 로그 추가
         logger.warning(f"사용자 이름 불일치: {form_data.username}")
+        # 디버깅 정보 출력
+        all_users = db.query(User).all()
+        logger.info(f"데이터베이스의 모든 사용자: {[u.username for u in all_users]}")
+        
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="아이디 또는 비밀번호가 일치하지 않습니다",
@@ -60,7 +90,14 @@ async def login_for_access_token(
         )
     
     # 비밀번호 검증
-    if not verify_password(form_data.password, user.hashed_password):
+    logger.info(f"비밀번호 검증: 사용자={form_data.username}, 입력된 비밀번호 길이={len(form_data.password)}")
+    logger.info(f"저장된 해시 비밀번호: {user.hashed_password[:10]}...")
+    
+    # 디버깅을 위해 직접 비교
+    is_password_valid = verify_password(form_data.password, user.hashed_password)
+    logger.info(f"비밀번호 검증 결과: {is_password_valid}")
+    
+    if not is_password_valid:
         # 로그 추가
         logger.warning(f"비밀번호 불일치: {form_data.username}")
         raise HTTPException(

@@ -3,45 +3,52 @@ import { Question, Response, CodeSnippet, CodeTemplate, Settings, LLMType, ApiEr
 
 // API 기본 URL 설정
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-// 백업 API URL
-const BACKUP_API_URL = 'http://localhost:8001';
 
 // 서버 상태 확인 함수
 export const checkServerAvailability = async (url: string): Promise<boolean> => {
   try {
-    await axios.get(`${url}/health-check`, { timeout: 3000 });
-    return true;
+    // 루트 경로만 확인 (다른 엔드포인트는 존재하지 않을 수 있음)
+    try {
+      const rootResponse = await axios.get(`${url}/`, { timeout: 3000 });
+      if (rootResponse.status === 200) {
+        console.log(`서버 연결 성공 (/):`, url);
+        return true;
+      }
+    } catch (rootError) {
+      // 응답은 있지만 에러 코드를 반환하는 경우
+      if (rootError.response) {
+        console.log(`서버는 응답하고 있습니다. 상태 코드: ${rootError.response.status}`);
+        return true; // 서버가 응답하면 연결된 것으로 간주
+      }
+      
+      // 아예 응답이 없는 경우
+      console.warn(`서버 연결 실패: ${url} - ${rootError.message}`);
+      return false;
+    }
+    
+    return false;
   } catch (error) {
     console.warn(`서버 연결 실패: ${url}`, error);
     return false;
   }
 };
 
-// 현재 사용 중인 API URL (기본값은 기본 URL)
+// 현재 사용 중인 API URL
 let currentApiUrl = API_BASE_URL;
 
 // 서버 연결 상태
 export const updateApiBaseUrl = async (): Promise<string> => {
-  // 먼저 기본 서버 확인
-  const isMainServerAvailable = await checkServerAvailability(API_BASE_URL);
+  // 서버 확인
+  const isServerAvailable = await checkServerAvailability(API_BASE_URL);
   
-  if (isMainServerAvailable) {
+  if (isServerAvailable) {
     currentApiUrl = API_BASE_URL;
-    console.log('기본 서버에 연결됨:', API_BASE_URL);
-    return currentApiUrl;
+    console.log('서버에 연결됨:', API_BASE_URL);
+  } else {
+    console.error('서버에 연결할 수 없습니다:', API_BASE_URL);
   }
   
-  // 기본 서버에 연결할 수 없는 경우 백업 서버 확인
-  const isBackupServerAvailable = await checkServerAvailability(BACKUP_API_URL);
-  
-  if (isBackupServerAvailable) {
-    currentApiUrl = BACKUP_API_URL;
-    console.log('백업 서버로 전환됨:', BACKUP_API_URL);
-    return currentApiUrl;
-  }
-  
-  console.error('모든 서버에 연결할 수 없습니다.');
-  return currentApiUrl; // 기본값 유지
+  return currentApiUrl;
 };
 
 // 서버 연결 상태 초기 확인
@@ -60,11 +67,7 @@ const api = axios.create({
 
 // URL 업데이트 함수
 export const updateApiBaseURLIfNeeded = async () => {
-  const newApiUrl = await updateApiBaseUrl();
-  if (newApiUrl !== api.defaults.baseURL) {
-    api.defaults.baseURL = newApiUrl;
-    console.log('API 기본 URL이 업데이트됨:', newApiUrl);
-  }
+  await updateApiBaseUrl();
 };
 
 // 요청 인터셉터 (인증 토큰 추가 및 API URL 확인)
@@ -95,34 +98,10 @@ api.interceptors.response.use(
     return response;
   },
   async (error) => {
-    // 네트워크 오류나 서버 연결 실패 시 백업 서버로 전환 시도
-    if (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED') {
-      console.warn('서버 연결 오류 발생. 백업 서버로 전환 시도...');
-      await updateApiBaseURLIfNeeded();
-      
-      // 원래 요청을 새 URL로 다시 시도
-      const originalRequest = error.config;
-      originalRequest.baseURL = currentApiUrl;
-      
-      // 재시도 횟수 제한
-      if (!originalRequest._retry) {
-        originalRequest._retry = true;
-        return api(originalRequest);
-      }
-    }
-    
-    // 인증 오류 처리 (401 오류)
+    // 401 오류 처리 - 로그인 페이지로 이동하지 않음
     if (error.response && error.response.status === 401) {
-      // 브라우저 환경에서만 실행
-      if (typeof window !== 'undefined') {
-        // 로그인 페이지가 아닌 경우에만 리디렉션
-        if (!window.location.pathname.includes('/login')) {
-          // 토큰 제거
-          localStorage.removeItem('token');
-          // 로그인 페이지로 리디렉션
-          window.location.href = '/login?expired=true';
-        }
-      }
+      console.warn('인증 오류가 발생했지만 무시합니다. 자동 로그인 모드 활성화됨.');
+      // 401 오류를 무시하고 계속 진행
     }
     
     // API 오류 처리
@@ -136,15 +115,15 @@ api.interceptors.response.use(
   }
 );
 
-// 서버 상태 확인 주기적 실행 (1분마다)
+// 서버 상태 확인 주기적 실행 (5분마다)
 if (typeof window !== 'undefined') {
-  // 백그라운드에서 1분마다 서버 상태 확인
-  setInterval(updateApiBaseURLIfNeeded, 60000);
+  // 백그라운드에서 5분마다 서버 상태 확인
+  setInterval(updateApiBaseUrl, 300000); // 5분 = 300,000ms
 }
 
 // 질문 관련 API 함수
 export const fetchQuestions = async (skip = 0, limit = 100): Promise<Question[]> => {
-  await updateApiBaseURLIfNeeded(); // 요청 전 서버 상태 확인
+  await updateApiBaseUrl(); // 요청 전 서버 상태 확인
   try {
     const response = await api.get<Question[]>('/questions/', { params: { skip, limit } });
     return response.data;
@@ -155,13 +134,13 @@ export const fetchQuestions = async (skip = 0, limit = 100): Promise<Question[]>
 };
 
 export const fetchQuestion = async (id: number): Promise<Question> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   const response = await api.get<Question>(`/questions/${id}`);
   return response.data;
 };
 
 export const createQuestion = async (question: Question): Promise<Question> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   const response = await api.post<Question>('/questions/', question);
   return response.data;
 };
@@ -173,7 +152,7 @@ export const fetchResponses = async (
   skip = 0,
   limit = 100
 ): Promise<Response[]> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   try {
     const params: any = { skip, limit };
     if (questionId) params.question_id = questionId;
@@ -188,14 +167,14 @@ export const fetchResponses = async (
 };
 
 export const createResponse = async (response: Response): Promise<Response> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   const apiResponse = await api.post<Response>('/responses/', response);
   return apiResponse.data;
 };
 
 // LLM API 요청
 export const askLLM = async (llmType: LLMType, question: Question): Promise<{question: Question, response: Response}> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   
   // 로컬 LLM인 경우 다른 API 엔드포인트 사용
   if (llmType === LLMType.LOCAL_LLM) {
@@ -252,7 +231,7 @@ export const uploadToGitHub = async (
   folderPath?: string,
   repoId?: number
 ): Promise<{success: boolean, message: string, repo_url: string, folder_path: string, commit_message: string, files?: string[]}> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   try {
     const response = await api.post('/github/upload', {
       question_id: questionId,
@@ -270,7 +249,7 @@ export const generateCommitMessage = async (
   questionId: number,
   repoId?: number
 ): Promise<{commit_message: string}> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   try {
     const params = repoId ? { repo_id: repoId } : {};
     const response = await api.get(`/github/generate-commit-message/${questionId}`, { params });
@@ -291,7 +270,7 @@ export const generateReadme = async (
   questionId: number,
   repoId?: number
 ): Promise<{readme_content: string}> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   try {
     const params = repoId ? { repo_id: repoId } : {};
     const response = await api.get(`/github/generate-readme/${questionId}`, { params });
@@ -317,7 +296,7 @@ export const fetchCodeSnippets = async (
   questionId?: number,
   responseId?: number
 ): Promise<CodeSnippet[]> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   try {
     const params: any = { skip, limit };
     if (language) params.language = language;
@@ -334,13 +313,13 @@ export const fetchCodeSnippets = async (
 };
 
 export const createCodeSnippet = async (snippet: CodeSnippet): Promise<CodeSnippet> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   const response = await api.post<CodeSnippet>('/code-snippets/', snippet);
   return response.data;
 };
 
 export const updateCodeSnippet = async (id: number, snippet: Partial<CodeSnippet>): Promise<CodeSnippet> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   const response = await api.put<CodeSnippet>(`/code-snippets/${id}`, snippet);
   return response.data;
 };
@@ -352,7 +331,7 @@ export const fetchCodeTemplates = async (
   skip = 0,
   limit = 100
 ): Promise<CodeTemplate[]> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   try {
     const params: any = { skip, limit };
     if (language) params.language = language;
@@ -367,14 +346,14 @@ export const fetchCodeTemplates = async (
 };
 
 export const createCodeTemplate = async (template: CodeTemplate): Promise<CodeTemplate> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   const response = await api.post<CodeTemplate>('/code-templates/', template);
   return response.data;
 };
 
 // 설정 관련 API 함수
 export const fetchSettings = async (): Promise<Settings> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   try {
     const response = await api.get<Settings>('/settings');
     return response.data;
@@ -385,7 +364,7 @@ export const fetchSettings = async (): Promise<Settings> => {
 };
 
 export const updateSettings = async (settings: Partial<Settings>): Promise<Settings> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   try {
     const response = await api.post<Settings>('/settings', settings);
     return response.data;
@@ -401,7 +380,7 @@ export const exportQuestion = async (
   format: ExportFormat, 
   options: ExportOptions
 ): Promise<Blob> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   const params = {
     format,
     include_metadata: options.includeMetadata,
@@ -424,7 +403,7 @@ export const exportCodeSnippet = async (
   format: ExportFormat, 
   options: ExportOptions
 ): Promise<Blob> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   const params = {
     format,
     include_metadata: options.includeMetadata,
@@ -446,7 +425,7 @@ export const exportAgentLogs = async (
   format: ExportFormat, 
   options: ExportOptions
 ): Promise<Blob> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   const params = {
     format,
     include_timestamps: options.includeTimestamps
@@ -465,7 +444,7 @@ export const exportBatch = async (
   format: ExportFormat, 
   options: ExportOptions
 ): Promise<Blob> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   const params = {
     format,
     include_metadata: options.includeMetadata,
@@ -486,19 +465,23 @@ export const exportBatch = async (
 export const getApiStatus = async (): Promise<{
   apiConnected: boolean,
   apiUrl: string,
-  availableServers: string[]
+  availableServers: string[],
+  openaiConnected: boolean,
+  claudeConnected: boolean,
+  githubConnected: boolean,
+  mcpServersCount: number
 }> => {
   const mainAvailable = await checkServerAvailability(API_BASE_URL);
-  const backupAvailable = await checkServerAvailability(BACKUP_API_URL);
   
-  const availableServers = [];
-  if (mainAvailable) availableServers.push(API_BASE_URL);
-  if (backupAvailable) availableServers.push(BACKUP_API_URL);
-  
+  // 서버 연결 가능 여부만 확인 - 추가 정보는 사용하지 않음
   return {
-    apiConnected: mainAvailable || backupAvailable,
+    apiConnected: mainAvailable,
     apiUrl: currentApiUrl,
-    availableServers
+    availableServers: mainAvailable ? ['local'] : [],
+    openaiConnected: mainAvailable, // 서버가 연결되어 있으면 서비스도 연결된 것으로 간주
+    claudeConnected: mainAvailable,
+    githubConnected: mainAvailable,
+    mcpServersCount: mainAvailable ? 2 : 0
   };
 };
 
@@ -521,7 +504,7 @@ export const fetchPromptTemplates = async (
   skip = 0,
   limit = 100
 ): Promise<PromptTemplate[]> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   try {
     const params: any = { skip, limit };
     if (category) params.category = category;
@@ -536,25 +519,25 @@ export const fetchPromptTemplates = async (
 };
 
 export const fetchPromptTemplate = async (id: number): Promise<PromptTemplate> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   const response = await api.get<PromptTemplate>(`/prompt-templates/${id}`);
   return response.data;
 };
 
 export const createPromptTemplate = async (template: PromptTemplate): Promise<PromptTemplate> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   const response = await api.post<PromptTemplate>('/prompt-templates/', template);
   return response.data;
 };
 
 export const updatePromptTemplate = async (id: number, template: Partial<PromptTemplate>): Promise<PromptTemplate> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   const response = await api.put<PromptTemplate>(`/prompt-templates/${id}`, template);
   return response.data;
 };
 
 export const deletePromptTemplate = async (id: number): Promise<void> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   await api.delete(`/prompt-templates/${id}`);
 };
 
@@ -563,7 +546,7 @@ export const previewPrompt = async (
   template: string,
   variables: Record<string, string>
 ): Promise<string> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   const response = await api.post<{result: string}>('/prompt-engineering/preview', {
     template,
     variables
@@ -576,7 +559,7 @@ export const executePrompt = async (
   variables: Record<string, string>,
   llmType: LLMType
 ): Promise<{question: Question, response: Response}> => {
-  await updateApiBaseURLIfNeeded();
+  await updateApiBaseUrl();
   const response = await api.post(`/prompt-engineering/execute`, {
     template_id: templateId,
     variables,

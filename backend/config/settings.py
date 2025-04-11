@@ -45,8 +45,10 @@ class LLMSettings(BaseSettings):
     """LLM 관련 설정"""
     openai_api_key: Optional[str] = Field(None, env="OPENAI_API_KEY")
     claude_api_key: Optional[str] = Field(None, env="ANTHROPIC_API_KEY")
-    local_llm_url: Optional[str] = Field("http://127.0.0.1:1234", env="LOCAL_LLM_URL")
+    local_llm_base_url: Optional[str] = Field("http://127.0.0.1:1234", env="LOCAL_LLM_URL")
     local_llm_model_id: Optional[str] = Field("deepseek-r1-distill-qwen-7b", env="LOCAL_LLM_MODEL_ID")
+    local_llm_temperature: float = 0.7
+    local_llm_max_tokens: int = 1500
     model_name: str = "gpt-4"
     temperature: float = 0.7
     max_tokens: int = 1500
