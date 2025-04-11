@@ -6,6 +6,7 @@ import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, B
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { updateApiBaseURLIfNeeded } from '../utils/api';
+import { AuthProvider } from '../components/auth/AuthProvider';
 import '../styles/globals.css';
 
 // 테마 설정
@@ -115,10 +116,23 @@ export default function App({ Component, pageProps }: AppProps) {
     }
   };
 
+  // 로그인, 회원가입 등 인증 페이지에서는 Layout을 적용하지 않습니다
+  const authPages = ['/login', '/register', '/reset-password'];
+  const withoutLayout = authPages.includes(router.pathname);
+
+  // Layout 컴포넌트 동적 임포트
+  const Layout = (withoutLayout) ? 
+    ({ children }) => <>{children}</> :  // 인증 페이지일 경우 단순 렌더링
+    require('../components/Layout').default;  // 그 외의 경우 Layout 적용
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Component {...pageProps} />
+      <AuthProvider>
+        <Layout>
+          <Component {...pageProps} />
+        </Layout>
+      </AuthProvider>
       
       {/* 서버 오류 대화 상자 */}
       <Dialog

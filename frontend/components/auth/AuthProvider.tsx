@@ -57,7 +57,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           
           // 사용자 정보 요청
-          const response = await api.get('/auth/me');
+          const response = await api.get('/users/me/');
           setUser(response.data);
           setIsAuthenticated(true);
         } catch (error) {
@@ -98,7 +98,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       console.log('로그인 요청 보냄:', formData.toString());
       
-      const response = await api.post('/auth/token', 
+      const response = await api.post('/token', 
         formData.toString(),
         { 
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' } 
@@ -170,7 +170,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
     
     try {
-      await api.post('/auth/register', {
+      await api.post('/users/', {
         username,
         email,
         password,

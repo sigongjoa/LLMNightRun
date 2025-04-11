@@ -99,7 +99,7 @@ const GitHubRepositoriesList: React.FC = () => {
     
     try {
       try {
-        const response = await axios.get(`${API_BASE_URL}/github-repos`);
+        const response = await axios.get(`${API_BASE_URL}/github-repos/`);
         setRepositories(response.data.repositories || []);
       } catch (err) {
         console.error('저장소 목록 로드 오류:', err);
@@ -192,7 +192,7 @@ const GitHubRepositoriesList: React.FC = () => {
           await axios.put(`${API_BASE_URL}/github-repos/${editingRepo.id}`, updateData);
         } else {
           // 새 저장소 추가
-          await axios.post(`${API_BASE_URL}/github-repos`, newRepo);
+          await axios.post(`${API_BASE_URL}/github-repos/`, newRepo);
         }
         
         // API 호출이 성공하면 저장소 목록 새로고침
