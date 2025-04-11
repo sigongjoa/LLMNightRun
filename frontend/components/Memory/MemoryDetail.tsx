@@ -279,10 +279,17 @@ const MemoryDetail: React.FC<MemoryDetailProps> = ({ memory, onRefresh }) => {
                 sx={{ mb: 1 }}
               />
               
-              <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              {/* 
+                타임스탬프 표시 영역 
+                - Box component="div"와 Typography component="span"을 사용하여 DOM 중첩 경고 방지
+                - MUI에서 Typography는 기본적으로 p 태그로 렌더링되는데, 이 내부에 div가 들어가면 경고 발생
+              */}
+              <Box component="div" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <TimeIcon fontSize="small" sx={{ mr: 0.5 }} />
-                {formatDate(memory.timestamp)}
-              </Typography>
+                <Typography variant="body2" component="span" color="text.secondary">
+                  {formatDate(memory.timestamp)}
+                </Typography>
+              </Box>
               
               {memory.id && (
                 <Typography variant="caption" color="text.secondary">
@@ -362,10 +369,15 @@ const MemoryDetail: React.FC<MemoryDetailProps> = ({ memory, onRefresh }) => {
         )}
         
         {/* 태그 */}
+        {/* 
+          태그 표시 영역 
+          - 중첩된 Box 컴포넌트에 모두 component="div"를 명시하여 DOM 중첩 경고 방지
+          - Chip 컴포넌트는 내부적으로 div를 사용하므로 Box에서 div로 명시적 선언 필요
+        */}
         {memory.metadata && memory.metadata.tags && memory.metadata.tags.length > 0 && (
-          <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
+          <Box component="div" sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
             <TagIcon fontSize="small" sx={{ mr: 1 }} color="action" />
-            <Box>
+            <Box component="div">
               {memory.metadata.tags.map((tag: string) => (
                 <Chip
                   key={tag}

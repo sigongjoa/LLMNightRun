@@ -236,9 +236,10 @@ const MemoryList: React.FC<MemoryListProps> = ({ onSelectMemory, selectedMemoryI
                 <MemoryIcon fontSize="large" color="primary" />
               </Badge>
             </Grid>
+            {/* 메모리 통계 텍스트 (component="div" 사용하여 DOM 중첩 경고 방지) */}
             <Grid item xs>
-              <Typography variant="h6">LLM 메모리</Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="h6" component="div">LLM 메모리</Typography>
+              <Typography variant="body2" component="div" color="text.secondary">
                 벡터 데이터베이스에 저장된 총 {totalCount}개의 메모리
               </Typography>
             </Grid>
@@ -337,16 +338,25 @@ const MemoryList: React.FC<MemoryListProps> = ({ onSelectMemory, selectedMemoryI
                     </IconButton>
                   }
                 >
+                  {/* 
+                    메모리 목록 아이템 헤더 (component="div" 사용으로 DOM 중첩 경고 방지)
+                    - React 경고: div cannot appear as a descendant of <p>
+                    - MUI Typography는 기본적으로 p 태그를 사용하므로 span으로 변경 
+                  */}
                   <ListItemText
                     primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                      <Box component="div" sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                         <Chip
                           label={memory.type}
                           size="small"
                           color={getColorByType(memory.type) as any}
                           sx={{ mr: 1 }}
                         />
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography 
+                          variant="body2" 
+                          color="text.secondary"
+                          component="span" // span 사용하여 DOM 중첩 경고 방지
+                        >
                           {formatDate(memory.timestamp)}
                         </Typography>
                         {memory.score !== undefined && (
@@ -376,8 +386,12 @@ const MemoryList: React.FC<MemoryListProps> = ({ onSelectMemory, selectedMemoryI
                         >
                           {memory.content}
                         </Typography>
+                        {/* 메모리 태그 목록 (DOM 중첩 경고 방지를 위해 component="div" 사용) */}
                         {memory.metadata && memory.metadata.tags && memory.metadata.tags.length > 0 && (
-                          <Box sx={{ mt: 1 }}>
+                          <Box 
+                            component="div" 
+                            sx={{ display: 'block', mt: 1 }}
+                          >
                             {memory.metadata.tags.map((tag: string) => (
                               <Chip
                                 key={tag}
@@ -398,7 +412,7 @@ const MemoryList: React.FC<MemoryListProps> = ({ onSelectMemory, selectedMemoryI
           </List>
         ) : (
           <Box sx={{ p: 4, textAlign: 'center' }}>
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant="body1" component="div" color="text.secondary">
               {searchQuery ? '검색 결과가 없습니다.' : '저장된 메모리가 없습니다.'}
             </Typography>
           </Box>

@@ -184,9 +184,14 @@ const CreateMemoryForm: React.FC<CreateMemoryFormProps> = ({ onMemoryCreated }) 
           />
         </Grid>
         
+        {/* 
+          태그 목록 표시 영역 
+          - Box에 component="div"를 명시적으로 지정하여 DOM 중첩 경고 방지
+          - Chip 컴포넌트는 내부적으로 div 요소를 사용하므로, 상위 요소가 span이면 경고 발생
+        */}
         {tags.length > 0 && (
           <Grid item xs={12}>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            <Box component="div" sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
               {tags.map((tag) => (
                 <Chip
                   key={tag}
