@@ -114,10 +114,7 @@ async def list_repositories(
                 is_private=repo.is_private,
                 url=repo.url,
                 branch=repo.branch,
-                project_id=repo.project_id,
-                metadata={},  # repo_info 대신 비어있는 metadata 사용
-                created_at=repo.created_at,
-                updated_at=repo.updated_at
+                project_id=repo.project_id
             ))
         return response_repositories
     except Exception as e:
@@ -157,10 +154,7 @@ async def create_repository(
                 is_private=repository.is_private,
                 url=repository.url,
                 branch=repository.branch,
-                project_id=repository.project_id,
-                metadata={},  # repo_info 대신 비어있는 metadata 사용
-                created_at=repository.created_at,
-                updated_at=repository.updated_at
+                project_id=repository.project_id
             )
             return response
         except Exception as inner_e:

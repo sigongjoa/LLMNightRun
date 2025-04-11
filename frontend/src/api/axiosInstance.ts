@@ -21,11 +21,11 @@ const axiosInstance: AxiosInstance = axios.create({
  */
 axiosInstance.interceptors.request.use(
   (config: AxiosRequestConfig) => {
-    // 필요한 경우 여기에서 토큰을 추가
-    // const token = sessionStorage.getItem('token');
-    // if (token) {
-    //   config.headers['Authorization'] = `Bearer ${token}`;
-    // }
+    // 토큰이 있는 경우 인증 헤더 추가
+    const token = localStorage.getItem('token');
+    if (token && config.headers) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
     
     return config;
   },
@@ -52,11 +52,20 @@ axiosInstance.interceptors.response.use(
     
     console.error('API 응답 오류:', apiError);
     
-    // 오류가 특정 유형인 경우 특별히 처리
+    // 인증 오류(401) 처리
     if (error.response?.status === 401) {
-      // 인증 오류 처리
       console.error('인증 오류: 로그인이 필요합니다');
-      // 로그인 페이지로 리디렉션 등의 처리
+      
+      // 브라우저 환경에서만 실행
+      if (typeof window !== 'undefined') {
+        // 현재 페이지가 로그인 페이지가 아닌 경우에만 리디렉션
+        if (!window.location.pathname.includes('/login')) {
+          // 토큰 제거
+          localStorage.removeItem('token');
+          // 로그인 페이지로 리디렉션
+          window.location.href = '/login?expired=true';
+        }
+      }
     }
     
     return Promise.reject(apiError);

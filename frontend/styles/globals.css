@@ -58,8 +58,10 @@ main .MuiAppBar-root {
 }
 
 /* 메인 컨텐츠가 헤더 아래에 표시되도록 수정 */
-.MuiContainer-root.MuiContainer-maxWidthLg {
-  margin-top: 16px;
+.main-container {
+  margin-top: 0 !important;
+  padding-top: 16px !important;
+  margin-bottom: 16px !important;
   flex-grow: 1;
 }
 

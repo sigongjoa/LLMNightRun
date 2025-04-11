@@ -4,7 +4,6 @@ import {
   Container, 
   Typography, 
   Box, 
-  Paper, 
   TextField, 
   Button, 
   Grid, 
@@ -42,7 +41,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 
 import api from '../utils/api';
 import axios from 'axios';
-import { API_BASE_URL, GITHUB_API_URL } from '../utils/constants';
+import { API_BASE_URL } from '../utils/constants';
 
 // GitHub 저장소 타입 정의
 interface Repository {
@@ -84,96 +83,15 @@ const GitHubSettingsPage: NextPage = () => {
     branch: 'main'
   });
 
-  // 비상용 백업 데이터 - 모든 API 접근이 실패할 경우
-  const FALLBACK_REPOSITORIES = [
-    {
-      id: 1,
-      name: "emergency-fallback-repo",
-      owner: "user",
-      description: "모든 API 시도가 실패하여 표시되는 비상 데이터입니다. 서버를 확인해주세요.",
-      is_default: true,
-      is_private: false,
-      url: "https://github.com/user/emergency-fallback-repo",
-      token: "ghp_sample12345",
-      branch: "main",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-  ];
-
   // 저장소 목록 가져오기
   const fetchRepositories = async () => {
     setLoadingRepos(true);
     setError(null);
     
     try {
-      // 개발 환경에서는 여러 엔드포인트를 시도하고, 프로덕션에서는 메인 API만 사용
-      const isDevelopment = process.env.NODE_ENV === 'development';
-      
-      if (isDevelopment) {
-        // 개발 환경에서는 여러 API 시도
-        let lastError;
-        
-        // 여러 API를 순차적으로 시도
-        try {
-          // 1. CORS 패치된 백엔드 시도
-          try {
-            const response = await axios.get(`${CORS_FIXED_API_URL}/github-repos/`);
-            setRepositories(response.data);
-            return;
-          } catch (corsFixedErr) {
-            console.warn('CORS 패치된 백엔드 로드 실패:', corsFixedErr);
-            throw corsFixedErr; // 다음 시도로 넘어가기 위해 오류 전파
-          }
-        } catch (err1) {
-          // 2. 메인 API 시도
-          try {
-            const response = await api.get('/github-repos/');
-            setRepositories(response.data);
-            return;
-          } catch (mainErr) {
-            console.warn('메인 API GitHub 저장소 로드 실패:', mainErr);
-            lastError = mainErr;
-            // 다음 시도로 넘어가기
-          }
-          
-          // 3. 디버그 엔드포인트 시도
-          try {
-            const response = await axios.get(`${API_BASE_URL}/debug/github-repos`);
-            console.log('디버그 GitHub 응답:', response.data);
-            setRepositories(response.data);
-            return;
-          } catch (debugErr) {
-            console.warn('디버그 엔드포인트 GitHub 저장소 로드 실패:', debugErr);
-            // 다음 시도로 넘어가기
-          }
-          
-          // 4. GitHub 프록시 서버 시도
-          try {
-            const response = await axios.get(`${GITHUB_API_URL}/github-repos/`);
-            setRepositories(response.data);
-            return;
-          } catch (proxyErr) {
-            console.error('모든 GitHub API 접근 실패:', proxyErr);
-            lastError = proxyErr;
-            
-            // 마지막 보안 조치: 모든 API가 실패해도 앱이 작동하도록 비상용 데이터 사용
-            console.warn('비상용 백업 데이터로 대체합니다 - 개발 모드 전용');
-            setRepositories(FALLBACK_REPOSITORIES);
-            setError('모든 API 시도 실패. 비상용 데이터를 표시합니다. (백엔드 서버 연결 필요)');
-            return;
-          }
-        }
-        
-        // 모든 시도 실패 시 마지막 오류로 처리
-        if (lastError) {
-          throw lastError;
-        }
-      } else {
-        // 프로덕션 환경에서는 메인 API만 사용
-        const response = await api.get('/github-repos/');
-        setRepositories(response.data);
-      }
+      // 실제 API 호출로 데이터 가져오기
+      const response = await api.get('/github-repos/');
+      setRepositories(response.data);
     } catch (err: any) {
       console.error('저장소 목록 로드 오류:', err);
       
@@ -182,31 +100,22 @@ const GitHubSettingsPage: NextPage = () => {
       
       if (err.response) {
         // 서버에서 응답이 왔지만 에러인 경우
-        errorMessage += ` (${err.response.status}: ${err.response.statusText})`;
+        errorMessage += ` (${err.response.status})`;
         if (err.response.data && err.response.data.detail) {
-          errorMessage += ` - ${err.response.data.detail}`;
+          errorMessage += `: ${err.response.data.detail}`;
         }
       } else if (err.request) {
         // 요청은 보냈지만 응답이 없는 경우
-        if (err.code === 'ECONNABORTED') {
-          errorMessage = '서버 응답 시간이 초과되었습니다. 나중에 다시 시도해주세요.';
-        } else {
-          errorMessage = '서버에 연결할 수 없습니다. 네트워크 연결을 확인하세요.';
-        }
+        errorMessage = '서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요.';
       } else {
         // 요청 설정 중 오류 발생
-        errorMessage += ` - ${err.message || '알 수 없는 오류'}`;
+        errorMessage += `: ${err.message || '알 수 없는 오류'}`;
       }
       
       setError(errorMessage);
       
-      // 개발 모드에서만 마지막 보안 조치로 비상용 데이터 사용
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('비상용 백업 데이터로 대체합니다 - 개발 모드 전용');
-        setRepositories(FALLBACK_REPOSITORIES);
-      } else {
-        setRepositories([]); // 프로덕션에서는 빈 배열 사용
-      }
+      // 오류 발생 시 빈 배열 사용
+      setRepositories([]);
     } finally {
       setLoadingRepos(false);
     }
@@ -233,67 +142,20 @@ const GitHubSettingsPage: NextPage = () => {
     setError(null);
     
     try {
-      // 개발 환경에서는 여러 API 시도, 프로덕션에서는 메인 API만 사용
-      const isDevelopment = process.env.NODE_ENV === 'development';
-      const GITHUB_API_URL = process.env.NEXT_PUBLIC_GITHUB_API_URL || 'http://localhost:8001';
-      
-      if (isDevelopment) {
-        // 개발 환경에서 여러 API 시도
-        let success = false;
-        
-        try {
-          if (editMode && selectedRepo) {
-            // 메인 API로 저장소 수정 시도
-            await api.put(`/github-repos/${selectedRepo.id}`, formData);
-            success = true;
-          } else {
-            // 메인 API로 저장소 추가 시도
-            await api.post('/github-repos/', formData);
-            success = true;
-          }
-        } catch (mainApiErr) {
-          console.warn('메인 API 저장소 저장 실패, 프록시 시도:', mainApiErr);
-          
-          // 프록시 서버 시도
-          try {
-            if (editMode && selectedRepo) {
-              await axios.put(`${GITHUB_API_URL}/github-repos/${selectedRepo.id}`, formData);
-            } else {
-              await axios.post(`${GITHUB_API_URL}/github-repos/`, formData);
-            }
-            success = true;
-          } catch (proxyErr) {
-            console.error('모든 저장소 저장 시도 실패:', proxyErr);
-            throw proxyErr; // 오류 전파
-          }
-        }
-        
-        if (success) {
-          setSuccess(editMode 
-            ? '저장소 정보가 성공적으로 업데이트되었습니다.' 
-            : '새 GitHub 저장소가 성공적으로 추가되었습니다.'
-          );
-          
-          // 폼 초기화 및 저장소 목록 새로고침
-          resetForm();
-          fetchRepositories();
-        }
+      // 실제 API 호출
+      if (editMode && selectedRepo) {
+        // 저장소 수정
+        await api.put(`/github-repos/${selectedRepo.id}`, formData);
+        setSuccess('저장소 정보가 성공적으로 업데이트되었습니다.');
       } else {
-        // 프로덕션 환경에서는 메인 API 사용
-        if (editMode && selectedRepo) {
-          // 저장소 수정
-          await api.put(`/github-repos/${selectedRepo.id}`, formData);
-          setSuccess('저장소 정보가 성공적으로 업데이트되었습니다.');
-        } else {
-          // 새 저장소 추가
-          await api.post('/github-repos/', formData);
-          setSuccess('새 GitHub 저장소가 성공적으로 추가되었습니다.');
-        }
-        
-        // 폼 초기화 및 저장소 목록 새로고침
-        resetForm();
-        fetchRepositories();
+        // 새 저장소 추가
+        await api.post('/github-repos/', formData);
+        setSuccess('새 GitHub 저장소가 성공적으로 추가되었습니다.');
       }
+      
+      // 폼 초기화 및 저장소 목록 새로고침
+      resetForm();
+      fetchRepositories();
     } catch (err: any) {
       console.error('저장소 저장 오류:', err);
       
@@ -302,16 +164,16 @@ const GitHubSettingsPage: NextPage = () => {
       
       if (err.response) {
         // 서버에서 응답이 왔지만 에러인 경우
-        errorMessage += ` (${err.response.status}: ${err.response.statusText})`;
+        errorMessage += ` (${err.response.status})`;
         if (err.response.data && err.response.data.detail) {
-          errorMessage += ` - ${err.response.data.detail}`;
+          errorMessage += `: ${err.response.data.detail}`;
         }
       } else if (err.request) {
         // 요청은 보냈지만 응답이 없는 경우
-        errorMessage = '서버에 연결할 수 없습니다. 네트워크 연결을 확인하세요.';
+        errorMessage = '서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요.';
       } else {
         // 요청 설정 중 오류 발생
-        errorMessage += ` - ${err.message || '알 수 없는 오류'}`;
+        errorMessage += `: ${err.message || '알 수 없는 오류'}`;
       }
       
       setError(errorMessage);
@@ -343,7 +205,7 @@ const GitHubSettingsPage: NextPage = () => {
       name: repo.name,
       description: repo.description || '',
       owner: repo.owner,
-      token: repo.token,
+      token: '', // 토큰은 보안상의 이유로 다시 입력해야 함
       is_default: repo.is_default,
       is_private: repo.is_private,
       branch: repo.branch || 'main'
@@ -364,41 +226,10 @@ const GitHubSettingsPage: NextPage = () => {
     setError(null);
     
     try {
-      // 개발 환경에서는 여러 API 시도, 프로덕션에서는 메인 API만 사용
-      const isDevelopment = process.env.NODE_ENV === 'development';
-      const GITHUB_API_URL = process.env.NEXT_PUBLIC_GITHUB_API_URL || 'http://localhost:8001';
-      
-      if (isDevelopment) {
-        // 개발 환경에서 여러 API 시도
-        let success = false;
-        
-        try {
-          // 메인 API 시도
-          await api.delete(`/github-repos/${repoId}`);
-          success = true;
-        } catch (mainApiErr) {
-          console.warn('메인 API 저장소 삭제 실패, 프록시 시도:', mainApiErr);
-          
-          // 프록시 서버 시도
-          try {
-            await axios.delete(`${GITHUB_API_URL}/github-repos/${repoId}`);
-            success = true;
-          } catch (proxyErr) {
-            console.error('모든 저장소 삭제 시도 실패:', proxyErr);
-            throw proxyErr; // 오류 전파
-          }
-        }
-        
-        if (success) {
-          setSuccess('저장소가 성공적으로 삭제되었습니다.');
-          fetchRepositories();
-        }
-      } else {
-        // 프로덕션 환경에서는 메인 API 사용
-        await api.delete(`/github-repos/${repoId}`);
-        setSuccess('저장소가 성공적으로 삭제되었습니다.');
-        fetchRepositories();
-      }
+      // 실제 API 호출
+      await api.delete(`/github-repos/${repoId}`);
+      setSuccess('저장소가 성공적으로 삭제되었습니다.');
+      fetchRepositories();
     } catch (err: any) {
       console.error('저장소 삭제 오류:', err);
       
@@ -407,16 +238,16 @@ const GitHubSettingsPage: NextPage = () => {
       
       if (err.response) {
         // 서버에서 응답이 왔지만 에러인 경우
-        errorMessage += ` (${err.response.status}: ${err.response.statusText})`;
+        errorMessage += ` (${err.response.status})`;
         if (err.response.data && err.response.data.detail) {
-          errorMessage += ` - ${err.response.data.detail}`;
+          errorMessage += `: ${err.response.data.detail}`;
         }
       } else if (err.request) {
         // 요청은 보냈지만 응답이 없는 경우
-        errorMessage = '서버에 연결할 수 없습니다. 네트워크 연결을 확인하세요.';
+        errorMessage = '서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요.';
       } else {
         // 요청 설정 중 오류 발생
-        errorMessage += ` - ${err.message || '알 수 없는 오류'}`;
+        errorMessage += `: ${err.message || '알 수 없는 오류'}`;
       }
       
       setError(errorMessage);
@@ -441,41 +272,10 @@ const GitHubSettingsPage: NextPage = () => {
     setError(null);
     
     try {
-      // 개발 환경에서는 여러 API 시도, 프로덕션에서는 메인 API만 사용
-      const isDevelopment = process.env.NODE_ENV === 'development';
-      const GITHUB_API_URL = process.env.NEXT_PUBLIC_GITHUB_API_URL || 'http://localhost:8001';
-      
-      if (isDevelopment) {
-        // 개발 환경에서 여러 API 시도
-        let success = false;
-        
-        try {
-          // 메인 API 시도
-          await api.put(`/github-repos/${repoId}`, { is_default: isDefault });
-          success = true;
-        } catch (mainApiErr) {
-          console.warn('메인 API 기본 저장소 설정 실패, 프록시 시도:', mainApiErr);
-          
-          // 프록시 서버 시도
-          try {
-            await axios.put(`${GITHUB_API_URL}/github-repos/${repoId}`, { is_default: isDefault });
-            success = true;
-          } catch (proxyErr) {
-            console.error('모든 기본 저장소 설정 시도 실패:', proxyErr);
-            throw proxyErr; // 오류 전파
-          }
-        }
-        
-        if (success) {
-          setSuccess('기본 저장소가 성공적으로 변경되었습니다.');
-          fetchRepositories();
-        }
-      } else {
-        // 프로덕션 환경에서는 메인 API 사용
-        await api.put(`/github-repos/${repoId}`, { is_default: isDefault });
-        setSuccess('기본 저장소가 성공적으로 변경되었습니다.');
-        fetchRepositories();
-      }
+      // 실제 API 호출
+      await api.put(`/github-repos/${repoId}`, { is_default: isDefault });
+      setSuccess('기본 저장소가 성공적으로 변경되었습니다.');
+      fetchRepositories();
     } catch (err: any) {
       console.error('저장소 업데이트 오류:', err);
       
@@ -484,16 +284,16 @@ const GitHubSettingsPage: NextPage = () => {
       
       if (err.response) {
         // 서버에서 응답이 왔지만 에러인 경우
-        errorMessage += ` (${err.response.status}: ${err.response.statusText})`;
+        errorMessage += ` (${err.response.status})`;
         if (err.response.data && err.response.data.detail) {
-          errorMessage += ` - ${err.response.data.detail}`;
+          errorMessage += `: ${err.response.data.detail}`;
         }
       } else if (err.request) {
         // 요청은 보냈지만 응답이 없는 경우
-        errorMessage = '서버에 연결할 수 없습니다. 네트워크 연결을 확인하세요.';
+        errorMessage = '서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요.';
       } else {
         // 요청 설정 중 오류 발생
-        errorMessage += ` - ${err.message || '알 수 없는 오류'}`;
+        errorMessage += `: ${err.message || '알 수 없는 오류'}`;
       }
       
       setError(errorMessage);

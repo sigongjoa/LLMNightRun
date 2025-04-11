@@ -1,94 +1,162 @@
-import React, { useEffect, ReactElement, ReactNode } from 'react';
+import { useEffect } from 'react';
 import type { AppProps } from 'next/app';
-import type { NextComponentType } from 'next';
-import { CacheProvider, EmotionCache } from '@emotion/react';
-import { ThemeProvider, CssBaseline } from '@mui/material';
-import Head from 'next/head';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import theme from '../styles/theme';
-import createEmotionCache from '../utils/createEmotionCache';
-import Layout from '../components/Layout';
-import { AuthProvider } from '../components/auth/AuthProvider';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Snackbar, Alert } from '@mui/material';
+import { useState } from 'react';
+import { useRouter } from 'next/router';
+import { updateApiBaseURLIfNeeded } from '../utils/api';
 import '../styles/globals.css';
 
-// Create a client
-const queryClient = new QueryClient();
+// 테마 설정
+const theme = createTheme({
+  palette: {
+    mode: 'light',
+    primary: {
+      main: '#1976d2',
+    },
+    secondary: {
+      main: '#f50057',
+    },
+  },
+  typography: {
+    fontFamily: [
+      'Noto Sans KR',
+      'Roboto',
+      'Arial',
+      'sans-serif',
+    ].join(','),
+  },
+});
 
-// Client-side cache, shared for the whole session of the user in the browser.
-const clientSideEmotionCache = createEmotionCache();
+export default function App({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+  const [serverError, setServerError] = useState<boolean>(false);
+  const [snackbar, setSnackbar] = useState<{open: boolean, message: string, severity: 'info' | 'success' | 'warning' | 'error'}>({
+    open: false,
+    message: '',
+    severity: 'info'
+  });
 
-interface MyAppProps extends AppProps {
-  emotionCache?: EmotionCache;
-  Component: NextComponentType & {
-    getLayout?: (page: ReactElement) => ReactNode;
-  };
-}
-
-export default function MyApp({
-  Component,
-  emotionCache = clientSideEmotionCache,
-  pageProps,
-}: MyAppProps) {
-  // 중복 레이아웃 문제를 방지하기 위한 cleanup
+  // 앱 초기화 시 서버 연결 상태 확인
   useEffect(() => {
-    // 클라이언트 측에서만 실행
-    if (typeof window !== 'undefined') {
-      // 기존 중복 요소를 정리하기 위한 코드
-      const cleanup = () => {
-        // 중복된 요소 제거
-        const headers = document.querySelectorAll('header');
-        if (headers.length > 1) {
-          // 첫 번째를 제외한 중복된 헤더 제거
-          for (let i = 1; i < headers.length; i++) {
-            headers[i].classList.add('dup-hidden');
+    const checkServerConnection = async () => {
+      try {
+        // 서버 상태 확인 및 필요시 URL 업데이트
+        await updateApiBaseURLIfNeeded();
+        
+        // 로컬 스토리지의 인증 토큰이 있는지 확인
+        if (typeof window !== 'undefined') {
+          const token = localStorage.getItem('token');
+          
+          // 로그인 페이지나 회원가입 페이지가 아니고 토큰이 없으면 로그인 페이지로 리디렉트
+          if (!token && router.pathname !== '/login' && router.pathname !== '/register') {
+            router.push('/login');
           }
         }
+      } catch (error) {
+        console.error('서버 연결 오류:', error);
+        setServerError(true);
+      }
+    };
+
+    checkServerConnection();
+    
+    // 주기적으로 서버 상태 확인 (60초마다)
+    const intervalId = setInterval(async () => {
+      try {
+        await updateApiBaseURLIfNeeded();
         
-        // 네비게이션 메뉴 캐시 새로 고침
-        const navButtons = document.querySelectorAll('.MuiToolbar-root .MuiButton-root');
-        navButtons.forEach(button => {
-          const href = button.getAttribute('data-href');
-          if (href && window.location.pathname === href) {
-            button.classList.add('Mui-active');
-          }
-        });
-      };
-      
-      // 페이지 로드 후 cleanup 실행
-      cleanup();
-      
-      // DOM 변경 반영을 위해 짧은 지연 후 다시 실행
-      const timeoutId = setTimeout(cleanup, 100);
-      
-      return () => clearTimeout(timeoutId);
+        // 이전에 서버 오류가 있었다면 해결된 것으로 표시
+        if (serverError) {
+          setServerError(false);
+          setSnackbar({
+            open: true,
+            message: '서버 연결이 복구되었습니다.',
+            severity: 'success'
+          });
+        }
+      } catch (error) {
+        console.error('서버 연결 확인 오류:', error);
+        
+        // 이전에 오류가 없었다면 알림 표시
+        if (!serverError) {
+          setServerError(true);
+        }
+      }
+    }, 60000); // 60초
+    
+    return () => clearInterval(intervalId);
+  }, [router, serverError]);
+
+  // 스낵바 닫기 핸들러
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
+  // 서버 오류 대화 상자 닫기 핸들러
+  const handleCloseErrorDialog = () => {
+    setServerError(false);
+  };
+
+  // 서버 다시 연결 시도
+  const handleRetryConnection = async () => {
+    setServerError(false);
+    try {
+      await updateApiBaseURLIfNeeded();
+      setSnackbar({
+        open: true,
+        message: '서버 연결 시도 중...',
+        severity: 'info'
+      });
+    } catch (error) {
+      console.error('서버 재연결 시도 실패:', error);
+      setServerError(true);
     }
-  }, []);
-  
-  // GetLayout 패턴: 페이지별 레이아웃 지원
-  const getLayout = Component.getLayout || ((page) => <Layout>{page}</Layout>);
-  
-  // 로그인/회원가입 페이지는 Layout을 사용하지 않음
-  const authPages = ['/login', '/register', '/reset-password'];
-  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-  const isAuthPage = authPages.includes(pathname);
+  };
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <CacheProvider value={emotionCache}>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          <Head>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          </Head>
-          <AuthProvider>
-            {isAuthPage ? (
-              <Component {...pageProps} />
-            ) : (
-              getLayout(<Component {...pageProps} />)
-            )}
-          </AuthProvider>
-        </ThemeProvider>
-      </CacheProvider>
-    </QueryClientProvider>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Component {...pageProps} />
+      
+      {/* 서버 오류 대화 상자 */}
+      <Dialog
+        open={serverError}
+        onClose={handleCloseErrorDialog}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {"서버 연결 오류"}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요.
+            <br /><br />
+            다음 단계를 시도해 보세요:
+            <br />
+            1. 백엔드 서버가 실행 중인지 확인
+            <br />
+            2. 네트워크 연결 확인
+            <br />
+            3. 브라우저 새로고침
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseErrorDialog}>무시</Button>
+          <Button onClick={handleRetryConnection} autoFocus color="primary">
+            다시 연결
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* 알림 스낵바 */}
+      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </ThemeProvider>
   );
 }

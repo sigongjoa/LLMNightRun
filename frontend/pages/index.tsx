@@ -1,30 +1,47 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Grid, Typography, Card, CardContent, CardHeader, Box } from '@mui/material';
+import { Container, Grid, Typography, Card, CardContent, CardHeader, Box, Alert } from '@mui/material';
 import { Question, Response } from '../types';
 import StatsCard from '../components/StatsCard';
 import RecentQuestions from '../components/RecentQuestions';
-import { fetchQuestions, fetchResponses } from '../utils/api';
+import SystemStatusPanel from '../components/SystemStatusPanel'; // 새 컴포넌트 추가
+import { fetchQuestions, fetchResponses, getApiStatus } from '../utils/api';
+import Layout from '../components/Layout'; // Layout 컴포넌트 추가
 
 const Dashboard: React.FC = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [responses, setResponses] = useState<Response[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [apiConnected, setApiConnected] = useState<boolean>(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
+        
+        // 먼저 API 상태 확인
+        const apiStatus = await getApiStatus();
+        setApiConnected(apiStatus.apiConnected);
+        
+        if (!apiStatus.apiConnected) {
+          setError('백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요.');
+          setLoading(false);
+          return;
+        }
+        
+        // API가 연결되어 있으면 데이터 로드
         const [questionsData, responsesData] = await Promise.all([
           fetchQuestions(),
           fetchResponses()
         ]);
+        
         setQuestions(questionsData);
         setResponses(responsesData);
         setError(null);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error loading dashboard data:', err);
-        setError('데이터를 불러오는 중 오류가 발생했습니다.');
+        setError(err.detail || '데이터를 불러오는 중 오류가 발생했습니다.');
+        setApiConnected(false);
       } finally {
         setLoading(false);
       }
@@ -49,91 +66,81 @@ const Dashboard: React.FC = () => {
     .slice(0, 5);
 
   return (
-    <Container>
-      <Box sx={{ my: 2 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          LLMNightRun 대시보드
-        </Typography>
-        
-        {error && (
-          <Typography color="error" sx={{ mb: 2 }}>
-            {error}
+    <Layout>
+      <Container>
+        <Box sx={{ my: 2 }}>
+          <Typography variant="h4" component="h1" gutterBottom>
+            LLMNightRun 대시보드
           </Typography>
-        )}
+          
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+          
+          {!apiConnected && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              백엔드 서버 연결이 원활하지 않습니다. 서버 상태를 확인해주세요.
+            </Alert>
+          )}
 
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatsCard 
-              title="총 질문" 
-              value={stats.totalQuestions} 
-              loading={loading} 
-              icon="QuestionAnswer" 
-              color="#3f51b5"
-            />
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid item xs={12} sm={6} md={3}>
+              <StatsCard 
+                title="총 질문" 
+                value={stats.totalQuestions} 
+                loading={loading} 
+                icon="QuestionAnswer" 
+                color="#3f51b5"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <StatsCard 
+                title="총 응답" 
+                value={stats.totalResponses} 
+                loading={loading} 
+                icon="Chat" 
+                color="#4caf50"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <StatsCard 
+                title="사용 중인 LLM" 
+                value={stats.uniqueLLMs} 
+                loading={loading} 
+                icon="Psychology" 
+                color="#ff9800"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <StatsCard 
+                title="질문당 평균 응답" 
+                value={stats.avgResponsesPerQuestion} 
+                loading={loading} 
+                icon="Analytics" 
+                color="#f44336"
+              />
+            </Grid>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatsCard 
-              title="총 응답" 
-              value={stats.totalResponses} 
-              loading={loading} 
-              icon="Chat" 
-              color="#4caf50"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatsCard 
-              title="사용 중인 LLM" 
-              value={stats.uniqueLLMs} 
-              loading={loading} 
-              icon="Psychology" 
-              color="#ff9800"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatsCard 
-              title="질문당 평균 응답" 
-              value={stats.avgResponsesPerQuestion} 
-              loading={loading} 
-              icon="Analytics" 
-              color="#f44336"
-            />
-          </Grid>
-        </Grid>
 
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
-            <Card>
-              <CardHeader title="최근 질문" />
-              <CardContent>
-                <RecentQuestions questions={recentQuestions} loading={loading} />
-              </CardContent>
-            </Card>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={8}>
+              <Card>
+                <CardHeader title="최근 질문" />
+                <CardContent>
+                  <RecentQuestions questions={recentQuestions} loading={loading} />
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              {/* 시스템 상태 패널 컴포넌트 사용 */}
+              <SystemStatusPanel />
+            </Grid>
           </Grid>
-          <Grid item xs={12} md={4}>
-            <Card>
-              <CardHeader title="시스템 상태" />
-              <CardContent>
-                <Typography variant="body1" component="div" color="text.secondary" sx={{ mb: 1 }}>
-                  API 상태: <span style={{ color: '#4caf50', fontWeight: 'bold' }}>정상</span>
-                </Typography>
-                <Typography variant="body1" component="div" color="text.secondary" sx={{ mb: 1 }}>
-                  OpenAI API: <span style={{ color: '#4caf50', fontWeight: 'bold' }}>연결됨</span>
-                </Typography>
-                <Typography variant="body1" component="div" color="text.secondary" sx={{ mb: 1 }}>
-                  Claude API: <span style={{ color: '#4caf50', fontWeight: 'bold' }}>연결됨</span>
-                </Typography>
-                <Typography variant="body1" component="div" color="text.secondary" sx={{ mb: 1 }}>
-                  GitHub 연동: <span style={{ color: '#4caf50', fontWeight: 'bold' }}>활성화</span>
-                </Typography>
-                <Typography variant="body1" component="div" color="text.secondary">
-                  MCP 서버: <span style={{ color: '#4caf50', fontWeight: 'bold' }}>실행 중 (2)</span>
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      </Box>
-    </Container>
+        </Box>
+      </Container>
+    </Layout>
   );
 };
 

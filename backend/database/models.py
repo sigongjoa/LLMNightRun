@@ -377,15 +377,11 @@ class Settings(Base):
     __tablename__ = "settings"
 
     id = Column(Integer, primary_key=True, index=True)
-    site_name = Column(String(100), default="LLMNightRun")
-    site_description = Column(Text, nullable=True)
-    maintenance_mode = Column(Boolean, default=False)
     default_openai_api_key = Column(String(255), nullable=True)
     default_claude_api_key = Column(String(255), nullable=True)
     default_github_token = Column(String(255), nullable=True)
     default_github_repo = Column(String(255), nullable=True)
     default_github_username = Column(String(255), nullable=True)
-    max_file_size_mb = Column(Integer, default=10)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 

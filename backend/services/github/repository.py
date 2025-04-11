@@ -47,9 +47,11 @@ class RepositoryService:
             # 전역 설정에서 임시 저장소 객체 생성
             repo = GitHubRepository(
                 name=self.settings.github_repo or "default",
-                owner=self.settings.github_username or "unknown",
+                github_owner=self.settings.github_username or "unknown",
                 token=self.settings.github_token,
-                is_default=True
+                is_default=True,
+                url="",
+                user_id=1  # 임시 사용자 ID
             )
         
         if not repo:
@@ -100,6 +102,13 @@ class RepositoryService:
             is_private = getattr(repo_data, 'is_private', True)
             branch = getattr(repo_data, 'branch', 'main')
             
+            # Boolean 타입 검증
+            if isinstance(is_private, str):
+                is_private = is_private.lower() == 'true'
+            
+            if isinstance(is_default, str):
+                is_default = is_default.lower() == 'true'
+            
             # 명시적으로 컬럼을 지정하여 repo_info 컬럼 사용하지 않음
             from sqlalchemy import insert
             from backend.database.models import GitHubRepository
@@ -108,12 +117,13 @@ class RepositoryService:
             repo_values = {
                 "name": name,
                 "description": description,
-                "owner": owner,
+                "github_owner": owner,  # owner 대신 github_owner 사용
                 "token": token,
                 "is_default": is_default,
                 "is_private": is_private,
                 "branch": branch,
                 "url": f"https://github.com/{owner}/{name}",
+                "user_id": getattr(repo_data, 'user_id', 1),  # user_id 필드 추가
                 "project_id": project_id,
                 "created_at": datetime.utcnow(),
                 "updated_at": datetime.utcnow()

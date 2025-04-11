@@ -38,7 +38,9 @@ import {
   GitHub as GitHubIcon,
   Book as BookIcon,
   Description as DescriptionIcon,
-  Psychology as PsychologyIcon
+  Psychology as PsychologyIcon,
+  CompareArrows as CompareArrowsIcon,
+  AutoFixHigh as AutoFixHighIcon
 } from '@mui/icons-material';
 import { useRouter } from 'next/router';
 
@@ -94,6 +96,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { text: '로컬 LLM', icon: <MemoryIcon />, href: '/local-llm' },
         { text: '프롬프트 엔지니어링', icon: <EngineeringIcon />, href: '/prompt-engineering' },
         { text: 'AI 환경설정', icon: <SmartToyIcon />, href: '/ai-environment' },
+        { text: 'GitHub AI 환경설정', icon: <AutoFixHighIcon />, href: '/github-ai-setup' },
+        { text: 'A/B 테스트', icon: <CompareArrowsIcon />, href: '/ab-testing' },
         { text: '메모리 관리', icon: <PsychologyIcon />, href: '/memory-manager' },
       ]
     },
@@ -276,7 +280,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </Drawer>
       
       {/* 메인 컨텐츠 */}
-      <Container component="main" sx={{ flexGrow: 1, py: 2, mt: 2 }}>
+      <Container component="main" className="main-container" sx={{ flexGrow: 1, py: 2 }}>
         {children}
       </Container>
       

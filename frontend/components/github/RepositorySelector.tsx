@@ -31,7 +31,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import axios from 'axios';
-import { API_BASE_URL, GITHUB_API_URL, CORS_FIXED_API_URL } from '../../utils/constants';
+import { API_BASE_URL } from '../../utils/constants';
 
 // 저장소 유형 정의
 interface Repository {
@@ -98,20 +98,6 @@ const RepositorySelector: React.FC<RepositorySelectorProps> = ({ value, onChange
   useEffect(() => {
     loadRepositories();
   }, []);
-  
-  // 비상용 백업 데이터 - 모든 API 접근이 실패할 경우
-  const FALLBACK_REPOSITORIES = [
-    {
-      id: 1,
-      name: "emergency-fallback-repo",
-      owner: "user",
-      description: "모든 API 시도가 실패하여 표시되는 비상 데이터입니다. 서버를 확인해주세요.",
-      is_default: true,
-      is_private: false,
-      url: "https://github.com/user/emergency-fallback-repo",
-      branch: "main"
-    }
-  ];
 
   // 저장소 목록 로드 함수
   const loadRepositories = async () => {
@@ -119,87 +105,25 @@ const RepositorySelector: React.FC<RepositorySelectorProps> = ({ value, onChange
     setError(null);
     
     try {
-      // 개발 환경에서는 여러 엔드포인트를 시도하고, 프로덕션에서는 메인 API만 사용
-      const isDevelopment = process.env.NODE_ENV === 'development';
+      // 직접 메인 API만 사용
+      const response = await axios.get(`${API_BASE_URL}/github-repos/`);
       
-      if (isDevelopment) {
-        // 개발 환경에서는 여러 엔드포인트 시도
-        let lastError;
-        
-        // 1. CORS 패치된 백엔드 서버 시도
-        try {
-          const response = await axios.get(`${CORS_FIXED_API_URL}/github-repos/`, { timeout: 5000 });
-          console.log('CORS 패치된 백엔드 GitHub 응답:', response.data);
-          
-          // 응답 처리
-          let repoData = response.data;
-          if (!Array.isArray(repoData)) {
-            if (repoData && Array.isArray(repoData.repositories)) {
-              repoData = repoData.repositories;
-            } else {
-              throw new Error('응답 데이터가 올바른 형식이 아닙니다');
-            }
-          }
-          
-          setRepositories(repoData);
-          return;
-        } catch (mainErr) {
-          console.warn('메인 백엔드 GitHub API 접속 실패:', mainErr);
-          lastError = mainErr;
-          
-          // 2. 디버그 엔드포인트 시도
-          try {
-            const response = await axios.get(`${API_BASE_URL}/debug/github-repos`, { timeout: 3000 });
-            console.log('디버그 GitHub 응답:', response.data);
-            setRepositories(response.data);
-            return;
-          } catch (debugErr) {
-            console.warn('디버그 엔드포인트 접속 실패:', debugErr);
-            
-            // 3. GitHub 프록시 서버 시도 (개발 환경에서만)
-            try {
-              const response = await axios.get(`${GITHUB_API_URL}/github-repos/`, { timeout: 3000 });
-              console.log('GitHub 전용 프록시 서버 응답:', response.data);
-              setRepositories(response.data);
-              return;
-            } catch (proxyErr) {
-              console.error('모든 API 시도 실패:', proxyErr);
-              lastError = proxyErr;
-              
-              // 마지막 보안 조치: 모든 API가 실패해도 앱이 작동하도록 비상용 데이터 사용
-              console.warn('비상용 백업 데이터로 대체합니다 - 개발 모드 전용');
-              setRepositories(FALLBACK_REPOSITORIES);
-              setError('모든 API 시도 실패. 비상용 데이터를 표시합니다. (백엔드 서버 연결 필요)');
-              return;
-            }
-          }
+      // 응답 처리
+      let repoData = response.data;
+      if (!Array.isArray(repoData)) {
+        if (repoData && Array.isArray(repoData.repositories)) {
+          repoData = repoData.repositories;
+        } else {
+          throw new Error('응답 데이터가 올바른 형식이 아닙니다');
         }
-        
-        // 모든 시도 실패 시 마지막 오류로 처리
-        if (lastError) {
-          throw lastError;
-        }
-      } else {
-        // 프로덕션 환경에서는 메인 API만 사용
-        const response = await axios.get(`${API_BASE_URL}/github-repos/`);
-        
-        // 응답 처리
-        let repoData = response.data;
-        if (!Array.isArray(repoData)) {
-          if (repoData && Array.isArray(repoData.repositories)) {
-            repoData = repoData.repositories;
-          } else {
-            throw new Error('응답 데이터가 올바른 형식이 아닙니다');
-          }
-        }
-        
-        setRepositories(repoData);
       }
+      
+      setRepositories(repoData);
     } catch (err: any) {
       console.error('저장소 목록 로드 오류:', err);
       
       // 오류 메시지 구성
-      let errorMessage = '저장소 목록을 불러오는 중 오류가 발생했습니다.';
+      let errorMessage = 'GitHub 저장소 목록을 불러오는 중 오류가 발생했습니다.';
       
       if (err.response) {
         // 서버에서 응답이 왔지만 에러인 경우
@@ -220,14 +144,7 @@ const RepositorySelector: React.FC<RepositorySelectorProps> = ({ value, onChange
       }
       
       setError(errorMessage);
-      
-      // 개발 모드에서만 마지막 보안 조치로 비상용 데이터 사용
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('비상용 백업 데이터로 대체합니다 - 개발 모드 전용');
-        setRepositories(FALLBACK_REPOSITORIES);
-      } else {
-        setRepositories([]); // 프로덕션에서는 빈 배열 설정
-      }
+      setRepositories([]); // 빈 배열 설정
     } finally {
       setLoading(false);
     }

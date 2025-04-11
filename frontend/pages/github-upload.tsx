@@ -130,15 +130,7 @@ const GitHubUploadPage: NextPage = () => {
           setQuestions(questionsData);
         } catch (questionsErr) {
           console.error('질문 목록 로드 오류:', questionsErr);
-          // 개발 모드에서는 샘플 데이터 사용
-          if (process.env.NODE_ENV === 'development') {
-            setQuestions([
-              { id: 1, content: '샘플 질문 1', tags: ['sample'] },
-              { id: 2, content: '샘플 질문 2', tags: ['sample'] }
-            ]);
-          } else {
-            setQuestions([]);
-          }
+          setQuestions([]);
         }
         
         // GitHub 설정 로드

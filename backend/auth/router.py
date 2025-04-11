@@ -48,10 +48,24 @@ async def login_for_access_token(
     """
     # 사용자 조회
     user = db.query(User).filter(User.username == form_data.username).first()
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    
+    # 사용자가 존재하지 않는 경우
+    if not user:
+        # 로그 추가
+        logger.warning(f"사용자 이름 불일치: {form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="아이디 또는 비밀번호가 일치하지 않습니다",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # 비밀번호 검증
+    if not verify_password(form_data.password, user.hashed_password):
+        # 로그 추가
+        logger.warning(f"비밀번호 불일치: {form_data.username}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="아이디 또는 비밀번호가 일치하지 않습니다",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
@@ -83,6 +97,7 @@ async def login_for_access_token(
         "token_type": "bearer",
         "user_id": user.id,
         "username": user.username,
+        "email": user.email,
         "is_admin": user.is_admin
     }
 

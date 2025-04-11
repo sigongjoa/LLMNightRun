@@ -60,12 +60,24 @@ const LoginForm: React.FC = () => {
         </Alert>
       )}
       
-      {/* 404 오류를 식별하고 사용자 치는 안내 메시지 표시 */}
+      {/* 서버 연결 오류 식별 및 안내 메시지 표시 */}
       {error && error.includes('로그인 서비스에 연결할 수 없습니다') && (
         <Alert severity="info" sx={{ mb: 2 }}>
-          서버가 시작되지 않았거나 연결이 안 될 수 있습니다. 터미널에서 <strong>python run_backend_fix.py</strong> 명령어를 실행해보세요.
+          서버가 시작되지 않았거나 연결이 안 될 수 있습니다. 터미널에서 <strong>uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload</strong> 명령어를 실행해보세요.
         </Alert>
       )}
+      
+      {/* 인증 오류 정보 양식 안내 */}
+      {error && error.includes('아이디 또는 비밀번호가 일치하지 않습니다') && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          입력하신 사용자 이름과 비밀번호를 확인해주세요. 이 기능을 처음 사용하는 경우 회원가입을 먼저 해주세요.
+        </Alert>
+      )}
+      
+      {/* 사용자 안내 메시지 - 테스트 계정 정보 */}
+      <Alert severity="info" sx={{ mb: 2 }}>
+        테스트 계정: <strong>user / user123</strong> 또는 <strong>admin / admin123</strong>
+      </Alert>
       
       <Box component="form" onSubmit={handleSubmit} noValidate>
         <TextField

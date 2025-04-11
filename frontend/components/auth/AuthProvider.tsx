@@ -91,10 +91,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
     
     try {
-      // 용도에 후 수정 - axios로 전송하는 방식가 문제가 있을 수 있음
-      // FormData 대신 urlencoded 형식 사용
+      // FormData 사용 시 FastAPI OAuth2 형식에 맞게 수정
+      const formData = new URLSearchParams();
+      formData.append('username', username);
+      formData.append('password', password);
+      
+      console.log('로그인 요청 보냄:', formData.toString());
+      
       const response = await api.post('/auth/token', 
-        `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`,
+        formData.toString(),
         { 
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' } 
         }
@@ -112,14 +117,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser({
         id: response.data.user_id,
         username: response.data.username,
-        email: '', // 로그인 응답에는 이메일이 없으므로 추가 요청 필요
+        email: response.data.email || '',
         is_active: true,
         is_admin: response.data.is_admin
       });
-      
-      // 사용자 세부 정보 가져오기
-      const userResponse = await api.get('/auth/me');
-      setUser(userResponse.data);
       
       setIsAuthenticated(true);
       

@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Any
 class GitHubRepositoryData:
     """GitHub 저장소 데이터 클래스"""
     name: str
-    owner: str
+    owner: str  # 호환성을 위해 owner 유지, 내부적으로 기본 테이블에서 github_owner로 사용
     token: str
     description: Optional[str] = None
     is_default: bool = False
@@ -18,6 +18,7 @@ class GitHubRepositoryData:
     branch: str = "main"
     project_id: Optional[int] = None
     repo_info: Dict[str, Any] = field(default_factory=dict)
+    user_id: int = 1  # 기본 사용자 ID
 
 
 @dataclass

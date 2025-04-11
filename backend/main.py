@@ -1,316 +1,219 @@
-"""
-LLMNightRun API 메인 애플리케이션 모듈
-"""
-
-import uvicorn
-import logging
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from datetime import datetime
+from sqlalchemy.orm import Session
+from typing import List, Optional
+import os
+import sys
+from pathlib import Path
 
-# 내부 모듈 임포트
-from backend.config import settings
-from backend.logger import setup_logging, get_logger, LogContext
-from backend.exceptions import LLMNightRunError, LLMError
-from backend.database.connection import create_tables
-from backend.core.service_locator import setup_services
+# 프로젝트 루트 디렉토리 설정
+ROOT_DIR = Path(__file__).resolve().parent
+sys.path.append(str(ROOT_DIR))
 
-# API 라우터 임포트
-from backend.api import code, github, github_repo
-from backend.api.github import router as github_api_router
-from backend.api import indexing, export, docs_manager
-from backend.api import auto_debug, local_llm, mcp_status, model_installer, ai_environment
-from backend.api.direct_endpoints import router as direct_endpoints_router
-from backend.api.memory.router import router as memory_router
-from backend.ab_testing.routes import router as ab_testing_router
-from backend.auth.router import router as auth_router
+from database import engine, Base, get_db
+import models
+import crud
+import schemas
+from auth import get_current_active_user
 
-# 질문 및 응답 라우터 임포트
-from backend.api.question_fix import router as question_router
-from backend.api.response_fix import router as response_router
+# 데이터베이스 테이블 생성
+Base.metadata.create_all(bind=engine)
 
-# v2 API 라우터 임포트
-from backend.api.v2 import llm as llm_v2
+app = FastAPI(title="LLMNightRun API")
 
-# MCP 관련 라우터 임포트
-from backend.mcp import router as mcp_router
-from backend.mcp import websocket_router as mcp_ws_router
-from backend.mcp import api_router as mcp_api_router
-from backend.mcp.chat_websocket import router as mcp_chat_ws_router
-
-# 에이전트 라우터 임포트
-from backend.api import agent
-
-# 로깅 설정
-logger = get_logger(__name__)
-
-# 애플리케이션 메타데이터
-tags_metadata = [
-    {
-        "name": "core",
-        "description": "질문/응답 및 코드 생성 핵심 기능",
-    },
-    {
-        "name": "agent",
-        "description": "자동화 에이전트 및 도구 관련 기능",
-    },
-    {
-        "name": "data",
-        "description": "데이터 관리 및 인덱싱 기능",
-    },
-    {
-        "name": "system",
-        "description": "시스템 상태 및 디버깅 기능",
-    },
-    {
-        "name": "monitoring",
-        "description": "시스템 모니터링 및 상태 확인 엔드포인트",
-    },
-    {
-        "name": "api_v2",
-        "description": "리팩토링된 API v2 엔드포인트",
-    },
-    {
-        "name": "memory",
-        "description": "LLM 메모리 관리 및 벡터 DB 연동 기능",
-    },
-    {
-        "name": "model-installer",
-        "description": "GitHub 모델 자동 설치 및 관리 기능",
-    },
-    {
-        "name": "ai-environment",
-        "description": "AI 환경설정 및 모델 관리 기능",
-    },
-    {
-        "name": "AB Testing",
-        "description": "LLM 모델과 프롬프트 조합의 A/B 테스트 기능",
-    },
+# CORS 미들웨어 설정
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8080",
 ]
 
-# FastAPI 애플리케이션 생성
-app = FastAPI(
-    title=settings.app_name,
-    description=settings.app_description,
-    version=settings.app_version,
-    docs_url="/docs",
-    redoc_url="/redoc",
-    debug=settings.debug,
-    openapi_tags=tags_metadata,
-    root_path=settings.root_path
-)
-
-# CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors.allow_origins,
-    allow_credentials=settings.cors.allow_credentials,
-    allow_methods=settings.cors.allow_methods,
-    allow_headers=settings.cors.allow_headers,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# 전역 예외 핸들러 등록
-from backend.middleware import (
-    llm_night_run_exception_handler, 
-    validation_exception_handler,
-    general_exception_handler
-)
-from pydantic import ValidationError as PydanticValidationError
+# 서버 상태 확인 엔드포인트
+@app.get("/health-check")
+def health_check():
+    return {"status": "healthy", "message": "서버가 정상적으로 실행 중입니다."}
 
-# 사용자 정의 예외 핸들러 등록
-app.add_exception_handler(LLMNightRunError, llm_night_run_exception_handler)
-app.add_exception_handler(PydanticValidationError, validation_exception_handler)
-app.add_exception_handler(Exception, general_exception_handler)
+# 사용자 관련 엔드포인트
+@app.post("/users/", response_model=schemas.User)
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    db_user = crud.get_user_by_email(db, email=user.email)
+    if db_user:
+        raise HTTPException(status_code=400, detail="이미 등록된 이메일입니다.")
+    return crud.create_user(db=db, user=user)
 
-# 커스텀 OpenAPI 스키마 설정
-from backend.utils.openapi import custom_openapi
-app.openapi = lambda: custom_openapi(app)
+@app.get("/users/me/", response_model=schemas.User)
+def read_users_me(current_user = Depends(get_current_active_user)):
+    return current_user
 
+# 질문 관련 엔드포인트
+@app.post("/questions/", response_model=schemas.Question)
+def create_question(question: schemas.QuestionCreate, db: Session = Depends(get_db), current_user = Depends(get_current_active_user)):
+    return crud.create_question(db=db, question=question, user_id=current_user.id)
 
-# 라우터 등록 - 기능별 그룹화
-def register_routers():
-    """모든 라우터를 등록하는 헬퍼 함수"""
-    # 핵심 기능 (Core) - 수정된 라우터 사용
-    core_routers = [
-        (question_router, "core"),
-        (response_router, "core"),
-        (code.router, "core"),
-    ]
-    
-    # 에이전트 및 도구 (Agent)
-    agent_routers = [
-        (agent.router, "agent"),
-        (github.router, "agent"),
-        (github_repo.router, "agent"),
-        (github_api_router, "agent"),
-    ]
-    
-    # 데이터 관리 (Data)
-    data_routers = [
-        (indexing.router, "data"),
-        (export.router, "data"),
-        (docs_manager.router, "data"),
-    ]
-    
-    # 시스템 및 디버깅 (System)
-    system_routers = [
-        (auto_debug.router, "system"),
-        (local_llm.router, "system"),
-        (mcp_status.router, "system"),
-        (model_installer.router, "model-installer"),
-        (ai_environment.router, "system"),
-    ]
-    
-    # v2 API 라우터
-    v2_routers = [
-        (llm_v2.router, "api_v2"),
-    ]
-    
-    # MCP 관련 라우터
-    mcp_routers = [
-        (mcp_router, None),
-        (mcp_ws_router, None),
-        (mcp_api_router, None),
-        (mcp_chat_ws_router, None),
-    ]
-    
-    # A/B 테스팅 라우터
-    ab_testing_routers = [
-        (ab_testing_router, "AB Testing"),
-    ]
-    
-    # 직접 엔드포인트 (테스트 및 디버깅)
-    direct_routers = [
-        (direct_endpoints_router, None),
-    ]
-    
-    # 인증 관련 라우터
-    auth_routers = [
-        (auth_router, "auth"),
-    ]
-    
-    # 모든 라우터 목록
-    all_routers = core_routers + agent_routers + data_routers + system_routers + v2_routers + mcp_routers + ab_testing_routers + direct_routers + auth_routers
-    
-    # 라우터 등록
-    for router, tag in all_routers:
-        if tag:
-            if not hasattr(router, 'tags'):
-                router.tags = []
-            router.tags.append(tag)
-        app.include_router(router)
-    
-    # 개별 처리가 필요한 메모리 라우터 추가
+@app.get("/questions/", response_model=List[schemas.Question])
+def read_questions(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user = Depends(get_current_active_user)):
     try:
-        # 메모리 라우터 태그 설정 및 추가
-        if not hasattr(memory_router, 'tags'):
-            memory_router.tags = []
-        memory_router.tags.append("memory")
-        app.include_router(memory_router)
-        logger.info("메모리 라우터 등록 완료")
+        questions = crud.get_questions(db, user_id=current_user.id, skip=skip, limit=limit)
+        return questions
     except Exception as e:
-        logger.error(f"메모리 라우터 등록 실패: {str(e)}")
-    
-    logger.info(f"총 {len(all_routers) + 1}개 라우터 등록 완료")
+        raise HTTPException(status_code=500, detail="질문 목록을 가져오는 중 오류가 발생했습니다.")
 
-# 라우터 등록 실행
-register_routers()
+@app.get("/questions/{question_id}", response_model=schemas.Question)
+def read_question(question_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_active_user)):
+    db_question = crud.get_question(db, question_id=question_id)
+    if db_question is None or db_question.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="질문을 찾을 수 없습니다.")
+    return db_question
 
-# 애플리케이션 초기화 및 리소스 설정
-async def initialize_app():
-    """애플리케이션 초기화 및 리소스 설정"""
+# 응답 관련 엔드포인트
+@app.post("/responses/", response_model=schemas.Response)
+def create_response(response: schemas.ResponseCreate, db: Session = Depends(get_db), current_user = Depends(get_current_active_user)):
+    # 질문이 사용자의 것인지 확인
+    question = crud.get_question(db, question_id=response.question_id)
+    if question is None or question.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="질문을 찾을 수 없습니다.")
+    return crud.create_response(db=db, response=response, user_id=current_user.id)
+
+@app.get("/responses/", response_model=List[schemas.Response])
+def read_responses(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user = Depends(get_current_active_user)):
     try:
-        # 로깅 설정
-        setup_logging(settings.get_log_level())
+        responses = crud.get_responses(db, user_id=current_user.id, skip=skip, limit=limit)
+        return responses
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="응답 목록을 가져오는 중 오류가 발생했습니다.")
+
+@app.get("/responses/{response_id}", response_model=schemas.Response)
+def read_response(response_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_active_user)):
+    db_response = crud.get_response(db, response_id=response_id)
+    if db_response is None or db_response.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="응답을 찾을 수 없습니다.")
+    return db_response
+
+# GitHub 저장소 관련 엔드포인트
+@app.post("/github-repos/", response_model=schemas.GitHubRepositoryResponse)
+def create_github_repository(repo: schemas.GitHubRepositoryCreate, db: Session = Depends(get_db), current_user = Depends(get_current_active_user)):
+    try:
+        # 사용자 객체 대신 user_id 전달
+        db_repo = crud.create_github_repository(db=db, repository=repo, user_id=current_user.id)
         
-        # 데이터베이스 테이블 생성
-        create_tables()
-        
-        # 서비스 초기화 및 등록
-        setup_services()
-        logger.info("서비스 초기화 및 등록 완료")
-        
-        # 초기화 완료 로그
-        env_name = settings.env.value.upper()
-        logger.info(
-            f"애플리케이션 초기화 완료 - 환경: {env_name}", 
-            extra={"environment": env_name}
+        # 응답 객체 생성
+        response = schemas.GitHubRepositoryResponse(
+            id=db_repo.id,
+            name=db_repo.name,
+            owner_id=current_user.id,
+            owner_name=current_user.username,
+            url=db_repo.url,
+            description=db_repo.description,
+            is_private=db_repo.is_private
         )
-        
-        return True
+        return response
     except Exception as e:
-        logger.error(f"애플리케이션 초기화 실패: {str(e)}", exc_info=True)
-        raise
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"저장소 생성 중 오류가 발생했습니다: {str(e)}"
+        )
 
-
-# 애플리케이션 시작 이벤트
-@app.on_event("startup")
-async def startup_event():
-    """애플리케이션 시작 시 실행"""
-    with LogContext(event="startup"):
-        logger.info(f"{settings.app_name} API 서버 시작")
+@app.get("/github-repos/", response_model=List[schemas.GitHubRepositoryResponse])
+def read_github_repositories(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user = Depends(get_current_active_user)):
+    try:
+        repositories = crud.get_user_github_repositories(db, user_id=current_user.id, skip=skip, limit=limit)
         
-        # 애플리케이션 초기화
-        await initialize_app()
+        # 각 repository에 대해 owner_name 설정
+        responses = []
+        for repo in repositories:
+            responses.append(schemas.GitHubRepositoryResponse(
+                id=repo.id,
+                name=repo.name,
+                owner_id=current_user.id,
+                owner_name=current_user.username,
+                url=repo.url,
+                description=repo.description,
+                is_private=repo.is_private
+            ))
+        return responses
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"저장소 목록을 불러오는 중 오류가 발생했습니다: {str(e)}"
+        )
 
+@app.get("/github-repos/{repo_id}", response_model=schemas.GitHubRepositoryResponse)
+def read_github_repository(repo_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_active_user)):
+    db_repo = crud.get_github_repository(db, repo_id=repo_id)
+    if db_repo is None:
+        raise HTTPException(status_code=404, detail="저장소를 찾을 수 없습니다")
+    if db_repo.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="이 저장소에 접근할 권한이 없습니다")
+    
+    # 응답 객체 생성
+    response = schemas.GitHubRepositoryResponse(
+        id=db_repo.id,
+        name=db_repo.name,
+        owner_id=current_user.id,
+        owner_name=current_user.username,
+        url=db_repo.url,
+        description=db_repo.description,
+        is_private=db_repo.is_private
+    )
+    return response
 
-# 애플리케이션 종료 이벤트
-@app.on_event("shutdown")
-async def shutdown_event():
-    """애플리케이션 종료 시 실행"""
-    with LogContext(event="shutdown"):
-        logger.info(f"{settings.app_name} API 서버 종료")
-
-
-# 애플리케이션 버전 및 상태 정보
-def get_app_info() -> dict:
-    """애플리케이션 버전 및 상태 정보 반환"""
+# 모델 설치 관련 엔드포인트 (예시)
+@app.post("/model-installer/analyze")
+def analyze_repository(data: dict):
+    # 이 부분은 실제 구현이 필요합니다. 현재는 더미 데이터를 반환합니다.
     return {
-        "name": settings.app_name,
-        "version": settings.app_version,
-        "description": settings.app_description,
-        "environment": settings.env.value
+        "model_type": {
+            "primary": "PyTorch",
+            "secondary": ["Neural Network", "Computer Vision"]
+        },
+        "launch_scripts": [
+            "python train.py",
+            "python inference.py"
+        ],
+        "requirements": {
+            "requirements.txt": ["torch", "torchvision", "numpy"]
+        }
     }
 
-
-
-
-# 메인 엔드포인트
-@app.get("/", tags=["monitoring"])
-async def root():
-    """루트 경로"""
-    app_info = get_app_info()
+@app.post("/model-installer/setup")
+def setup_environment(data: dict):
+    # 이 부분은 실제 구현이 필요합니다. 현재는 성공 메시지를 반환합니다.
     return {
-        "message": f"{app_info['name']} API에 오신 것을 환영합니다!",
-        "app": app_info
+        "status": "success",
+        "message": "환경 설정이 완료되었습니다."
     }
 
-
-# 헬스 체크 엔드포인트
-@app.get("/health", tags=["monitoring"])
-async def health_check():
-    """
-    시스템 헬스 체크 엔드포인트.
-    쿠버네티스, 도커 또는 기타 모니터링 도구에서 사용할 수 있습니다.
-    """
+@app.post("/model-installer/install")
+def install_model(data: dict):
+    # 이 부분은 실제 구현이 필요합니다. 현재는 설치 ID를 반환합니다.
     return {
-        "status": "healthy",
-        "version": settings.app_version,
-        "environment": settings.env.value,
-        "timestamp": datetime.utcnow().isoformat()
+        "status": "started",
+        "installation_id": "mock-install-123",
+        "message": "모델 설치가 시작되었습니다."
     }
 
+@app.get("/model-installer/status/{installation_id}")
+def get_installation_status(installation_id: str):
+    # 이 부분은 실제 구현이 필요합니다. 현재는 더미 상태 정보를 반환합니다.
+    return {
+        "status": "completed",
+        "installation_id": installation_id,
+        "logs": [
+            "패키지 설치 중...",
+            "모델 다운로드 중...",
+            "설정 파일 생성 중...",
+            "설치 완료!"
+        ]
+    }
 
-# 직접 실행 시
 if __name__ == "__main__":
-    with LogContext(mode="standalone"):
-        logger.info(f"{settings.app_name} 서버 실행 준비")
-        
-        uvicorn.run(
-            "backend.main:app",
-            host=settings.host,
-            port=settings.port,
-            reload=settings.debug,
-            log_level=settings.logging.level.lower()
-        )
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

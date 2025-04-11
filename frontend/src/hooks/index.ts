@@ -30,3 +30,6 @@ export * from './useMCP';
 
 // 로컬 LLM 관련 훅
 export * from './useLocalLlm';
+
+// API 관련 훅
+export * from './useApi';
