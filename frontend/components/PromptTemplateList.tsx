@@ -340,15 +340,15 @@ const PromptTemplateList: React.FC<PromptTemplateListProps> = ({
                 <ListItemText
                   primary={template.name}
                   secondary={
-                    <Box>
-                      <Typography variant="body2" color="text.secondary" noWrap>
+                    <React.Fragment>
+                      <Typography variant="body2" color="text.secondary" component="span" noWrap>
                         {template.description || '설명 없음'}
                       </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                      <Box component="span" sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
                         <Tooltip title="카테고리">
-                          <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+                          <Box component="span" sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
                             <CategoryIcon fontSize="small" sx={{ mr: 0.5, color: 'text.secondary' }} />
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" color="text.secondary" component="span">
                               {template.category}
                             </Typography>
                           </Box>
@@ -356,9 +356,9 @@ const PromptTemplateList: React.FC<PromptTemplateListProps> = ({
                         
                         {template.tags.length > 0 && (
                           <Tooltip title="태그">
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
                               <TagIcon fontSize="small" sx={{ mr: 0.5, color: 'text.secondary' }} />
-                              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                              <Box component="span" sx={{ display: 'flex', gap: 0.5 }}>
                                 {template.tags.slice(0, 3).map(tag => (
                                   <Chip
                                     key={tag}
@@ -381,7 +381,7 @@ const PromptTemplateList: React.FC<PromptTemplateListProps> = ({
                           </Tooltip>
                         )}
                       </Box>
-                    </Box>
+                    </React.Fragment>
                   }
                 />
                 <ListItemSecondaryAction>

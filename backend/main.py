@@ -19,6 +19,8 @@ from auth.dependencies import get_current_active_user
 from auth.router import router as auth_router
 from github_repos import router as github_repos_router
 from settings import router as settings_router
+# from routes.prompt_engineering.router import router as prompt_engineering_router
+from direct_prompt_api import router as direct_prompt_router
 from database.models import User
 
 # 데이터베이스 테이블 생성
@@ -30,6 +32,8 @@ app = FastAPI(title="LLMNightRun API")
 app.include_router(auth_router, prefix="")
 app.include_router(github_repos_router)
 app.include_router(settings_router)
+# app.include_router(prompt_engineering_router, prefix="")
+app.include_router(direct_prompt_router, prefix="")
 
 # CORS 미들웨어 설정
 origins = [
@@ -116,7 +120,7 @@ async def local_llm_chat(request_data: dict):
         }
         
         # LM Studio API 호출
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=90.0) as client:  # 타임아웃을 90초로 증가
             response = await client.post(
                 f"{base_url}/v1/chat/completions",
                 json=chat_request

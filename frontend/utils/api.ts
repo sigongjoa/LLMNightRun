@@ -62,7 +62,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 20000,  // 20초 타임아웃 (기존 180초에서 축소)
+  timeout: 90000,  // 90초 타임아웃 (대형 모델의 응답시간 고려)
 });
 
 // URL 업데이트 함수
@@ -488,10 +488,13 @@ export const getApiStatus = async (): Promise<{
 // 타입 정의 - 기본적인 프롬프트 템플릿 타입
 interface PromptTemplate {
   id?: number;
-  title: string;
-  template: string;
+  name: string;
+  content: string;
+  system_prompt?: string;
+  description?: string;
   category?: string;
   tags?: string[];
+  template_variables?: string[];
   created_at?: string;
   updated_at?: string;
   user_id?: number;
@@ -544,11 +547,13 @@ export const deletePromptTemplate = async (id: number): Promise<void> => {
 // 프롬프트 미리보기 및 실행
 export const previewPrompt = async (
   template: string,
+  systemPrompt: string | null = null,
   variables: Record<string, string>
 ): Promise<string> => {
   await updateApiBaseUrl();
   const response = await api.post<{result: string}>('/prompt-engineering/preview', {
     template,
+    system_prompt: systemPrompt,
     variables
   });
   return response.data.result;
@@ -556,12 +561,16 @@ export const previewPrompt = async (
 
 export const executePrompt = async (
   templateId: number,
+  content: string,
+  systemPrompt: string | null = null,
   variables: Record<string, string>,
   llmType: LLMType
 ): Promise<{question: Question, response: Response}> => {
   await updateApiBaseUrl();
   const response = await api.post(`/prompt-engineering/execute`, {
     template_id: templateId,
+    template: content,
+    system_prompt: systemPrompt,
     variables,
     llm_type: llmType
   });

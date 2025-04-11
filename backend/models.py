@@ -20,6 +20,7 @@ class User(Base):
     questions = relationship("Question", back_populates="user")
     responses = relationship("Response", back_populates="user")
     repositories = relationship("GitHubRepository", back_populates="owner")
+    prompt_templates = relationship("PromptTemplate", back_populates="user")
 
 
 # 질문 모델
@@ -71,3 +72,23 @@ class GitHubRepository(Base):
     # 외래 키 및 관계 정의
     owner_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates="repositories")
+
+
+# 프롬프트 템플릿 모델
+class PromptTemplate(Base):
+    __tablename__ = "prompt_templates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    content = Column(Text)
+    system_prompt = Column(Text, nullable=True)  # 시스템 프롬프트 필드 추가
+    description = Column(Text, nullable=True)
+    category = Column(String, default="일반")
+    tags = Column(ARRAY(String), default=list)
+    template_variables = Column(ARRAY(String), default=list)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # 외래 키 및 관계 정의
+    user_id = Column(Integer, ForeignKey("users.id"))
+    user = relationship("User", back_populates="prompt_templates")

@@ -70,6 +70,7 @@ const PromptTemplateEditor: React.FC<PromptTemplateEditorProps> = ({
   const [name, setName] = useState(template?.name || '');
   const [description, setDescription] = useState(template?.description || '');
   const [content, setContent] = useState(template?.content || '');
+  const [systemPrompt, setSystemPrompt] = useState(template?.system_prompt || '');
   const [category, setCategory] = useState(template?.category || '일반');
   const [tags, setTags] = useState<string[]>(template?.tags || []);
   const [tagInput, setTagInput] = useState('');
@@ -108,6 +109,7 @@ const PromptTemplateEditor: React.FC<PromptTemplateEditorProps> = ({
       setName(template.name);
       setDescription(template.description || '');
       setContent(template.content);
+      setSystemPrompt(template.system_prompt || '');
       setCategory(template.category);
       setTags(template.tags);
     }
@@ -152,7 +154,7 @@ const PromptTemplateEditor: React.FC<PromptTemplateEditorProps> = ({
       }, {});
       
       // 미리보기 API 호출
-      const result = await previewPrompt(content, variablesObj);
+      const result = await previewPrompt(content, systemPrompt, variablesObj);
       setPreviewContent(result);
     } catch (error) {
       console.error('미리보기 오류:', error);
@@ -189,6 +191,7 @@ const PromptTemplateEditor: React.FC<PromptTemplateEditorProps> = ({
         name,
         description,
         content,
+        system_prompt: systemPrompt,
         template_variables: variables.map(v => v.name),
         category,
         tags
@@ -245,7 +248,7 @@ const PromptTemplateEditor: React.FC<PromptTemplateEditorProps> = ({
       }, {});
       
       // 실행 API 호출
-      await executePrompt(template!.id!, variablesObj, selectedLlmType);
+      await executePrompt(template!.id!, content, systemPrompt, variablesObj, selectedLlmType);
       
       // 성공 알림
       setSnackbarMessage('프롬프트가 성공적으로 실행되었습니다.');
@@ -348,7 +351,19 @@ const PromptTemplateEditor: React.FC<PromptTemplateEditorProps> = ({
         </Box>
         
         <TextField
-          label="템플릿 내용"
+          label="시스템 프롬프트"
+          value={systemPrompt}
+          onChange={(e) => setSystemPrompt(e.target.value)}
+          fullWidth
+          multiline
+          rows={3}
+          margin="normal"
+          placeholder="LM Studio에 전송할 시스템 프롬프트를 입력하세요. 변수는 {{변수명}} 형식으로 사용할 수 있습니다."
+          helperText="예: 당신은 {{역할}} 전문가입니다. 전문적인 관점에서 답변해주세요."
+        />
+        
+        <TextField
+          label="사용자 프롬프트 템플릿"
           value={content}
           onChange={(e) => setContent(e.target.value)}
           fullWidth

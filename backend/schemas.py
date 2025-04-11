@@ -161,14 +161,27 @@ class ExportOptions(BaseModel):
 
 # 프롬프트 템플릿 관련 스키마
 class PromptTemplateBase(BaseModel):
-    title: str
-    template: str
-    category: Optional[str] = None
+    name: str
+    content: str
+    system_prompt: Optional[str] = None  # 시스템 프롬프트 필드 추가
+    description: Optional[str] = None
+    category: Optional[str] = "일반"
     tags: Optional[List[str]] = []
+    template_variables: Optional[List[str]] = []
 
 
 class PromptTemplateCreate(PromptTemplateBase):
     pass
+
+
+class PromptTemplateUpdate(BaseModel):
+    name: Optional[str] = None
+    content: Optional[str] = None
+    system_prompt: Optional[str] = None  # 시스템 프롬프트 필드 추가
+    description: Optional[str] = None
+    category: Optional[str] = None
+    tags: Optional[List[str]] = None
+    template_variables: Optional[List[str]] = None
 
 
 class PromptTemplate(PromptTemplateBase):
