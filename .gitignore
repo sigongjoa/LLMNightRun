@@ -1,0 +1,9 @@
+# .gitignore 예시 (Python + VSCode)
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.log
+.env
+.vscode/
+.idea/
+*.ipynb_checkpoints/
