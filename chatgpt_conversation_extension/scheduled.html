@@ -6,41 +6,64 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      padding: 20px;
-      max-width: 600px;
+      padding: 25px;
+      max-width: 650px;
       margin: 0 auto;
+      color: #333;
+      background-color: #f9f9f9;
     }
     h1 {
       color: #10a37f;
       text-align: center;
+      margin-bottom: 25px;
+    }
+    .form-container {
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
     }
     .form-group {
-      margin-bottom: 15px;
+      margin-bottom: 20px;
     }
     label {
       display: block;
-      margin-bottom: 5px;
+      margin-bottom: 8px;
       font-weight: bold;
+      color: #555;
     }
     textarea {
       width: 100%;
-      min-height: 100px;
-      padding: 8px;
-      border: 1px solid #ccc;
+      min-height: 120px;
+      padding: 12px;
+      border: 1px solid #ddd;
       border-radius: 4px;
       resize: vertical;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+    textarea:focus {
+      border-color: #10a37f;
+      outline: none;
     }
     input[type="datetime-local"] {
       width: 100%;
-      padding: 8px;
-      border: 1px solid #ccc;
+      padding: 10px;
+      border: 1px solid #ddd;
       border-radius: 4px;
+      transition: border-color 0.3s;
+    }
+    input[type="datetime-local"]:focus {
+      border-color: #10a37f;
+      outline: none;
     }
     .button {
       background-color: #10a37f;
       color: white;
       border: none;
-      padding: 10px 15px;
+      padding: 12px 20px;
       text-align: center;
       text-decoration: none;
       display: inline-block;
@@ -48,6 +71,10 @@
       margin: 4px 2px;
       cursor: pointer;
       border-radius: 4px;
+      transition: background-color 0.3s;
+    }
+    .button:hover {
+      background-color: #0d8c6d;
     }
     .button:disabled {
       background-color: #cccccc;
@@ -56,40 +83,77 @@
     .scheduled-list {
       margin-top: 30px;
     }
+    .scheduled-list h2 {
+      color: #10a37f;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
     .scheduled-item {
-      background-color: #f9f9f9;
-      padding: 10px;
-      border-radius: 4px;
-      margin-bottom: 10px;
+      background-color: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
       position: relative;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      transition: transform 0.2s;
+    }
+    .scheduled-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     .remove-btn {
       background-color: #e74c3c;
       color: white;
       border: none;
-      padding: 3px 8px;
+      padding: 5px 10px;
       border-radius: 4px;
       cursor: pointer;
       position: absolute;
-      right: 10px;
-      top: 10px;
+      right: 15px;
+      top: 15px;
+      transition: background-color 0.3s;
+    }
+    .remove-btn:hover {
+      background-color: #c0392b;
     }
     .scheduled-time {
       font-weight: bold;
       color: #10a37f;
+      margin-bottom: 10px;
     }
     .scheduled-message {
-      margin-top: 5px;
+      margin-top: 10px;
       white-space: pre-wrap;
+      padding: 10px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      border-left: 3px solid #10a37f;
     }
     .status {
       text-align: center;
-      margin: 10px 0;
+      margin: 15px 0;
+      padding: 10px;
       font-style: italic;
       color: #666;
+      background-color: #eee;
+      border-radius: 4px;
     }
     .error {
-      color: #e74c3c;
+      color: white;
+      background-color: #e74c3c;
+    }
+    .success {
+      color: white;
+      background-color: #2ecc71;
+    }
+    .empty-list {
+      text-align: center;
+      padding: 20px;
+      color: #999;
+      font-style: italic;
+      background-color: #f5f5f5;
+      border-radius: 8px;
     }
   </style>
 </head>
@@ -98,17 +162,19 @@
   
   <div class="status" id="status">ChatGPT 페이지에서 사용 가능합니다.</div>
   
-  <div class="form-group">
-    <label for="message">메시지 내용:</label>
-    <textarea id="message" placeholder="예약할 메시지 내용을 입력하세요..."></textarea>
+  <div class="form-container">
+    <div class="form-group">
+      <label for="message">메시지 내용:</label>
+      <textarea id="message" placeholder="예약할 메시지 내용을 입력하세요..."></textarea>
+    </div>
+    
+    <div class="form-group">
+      <label for="schedule-time">예약 시간:</label>
+      <input type="datetime-local" id="schedule-time">
+    </div>
+    
+    <button id="add-schedule-btn" class="button">메시지 예약하기</button>
   </div>
-  
-  <div class="form-group">
-    <label for="schedule-time">예약 시간:</label>
-    <input type="datetime-local" id="schedule-time">
-  </div>
-  
-  <button id="add-schedule-btn" class="button">메시지 예약하기</button>
   
   <div class="scheduled-list">
     <h2>예약된 메시지</h2>
@@ -119,9 +185,14 @@
         <div class="scheduled-time"></div>
         <div class="scheduled-message"></div>
       </div>
+      
+      <!-- 예약된 메시지가 없을 때 표시 -->
+      <div id="empty-list-message" class="empty-list">
+        예약된 메시지가 없습니다.
+      </div>
     </div>
   </div>
   
-  <script src="scheduled.js"></script>
+  <script src="scripts/scheduled.js"></script>
 </body>
 </html>

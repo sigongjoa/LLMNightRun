@@ -2,21 +2,33 @@
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
   if (message.action === "contentScriptLoaded") {
     console.log('Content script loaded in tab:', sender.tab.id, 'URL:', message.url);
-    // You could store this information if needed
+    // Store this information if needed
   }
 });
 
 // Handle installation and update events
 chrome.runtime.onInstalled.addListener(function() {
-  console.log('AI Chat Helper extension installed');
+  console.log('ChatGPT Conversation Helper extension installed');
   
   // Initialize storage with empty scheduled messages if not exists
-  chrome.storage.local.get('scheduledMessages', function(data) {
+  chrome.storage.local.get(['scheduledMessages', 'customStyles'], function(data) {
     if (!data.scheduledMessages) {
       chrome.storage.local.set({'scheduledMessages': []});
     } else {
       // Check for any pending scheduled messages and set alarms
       setupAlarmsForScheduledMessages(data.scheduledMessages);
+    }
+    
+    // Initialize custom styles if not exists
+    if (!data.customStyles) {
+      chrome.storage.local.set({
+        'customStyles': {
+          darkMode: false,
+          compactMode: false,
+          accentColor: '#10a37f',
+          customCSS: ''
+        }
+      });
     }
   });
 });
@@ -30,15 +42,24 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
   if (
     tab.url && (
       tab.url.includes('chat.openai.com') || 
-      tab.url.includes('chatgpt.com') || 
-      tab.url.includes('claude.ai')
+      tab.url.includes('chatgpt.com')
     )
   ) {
     // Inject the content script
     chrome.scripting.executeScript({
       target: {tabId: tabId},
-      files: ['content.js']
+      files: ['scripts/content.js']
     }).catch(err => console.error('Failed to inject content script:', err));
+    
+    // Also apply any saved styles
+    chrome.storage.local.get('customStyles', function(data) {
+      if (data.customStyles) {
+        chrome.tabs.sendMessage(tabId, {
+          action: 'applyStyles',
+          styles: data.customStyles
+        }).catch(err => console.error('Failed to send styles to content script:', err));
+      }
+    });
   }
 });
 
@@ -89,10 +110,10 @@ chrome.alarms.onAlarm.addListener(function(alarm) {
       if (messageToSend.status === 'scheduled') {
         console.log('Found message to send:', messageToSend);
         
-        // Find active ChatGPT or Claude tab
-        findActiveChatTab().then(function(tab) {
+        // Find active ChatGPT tab
+        findActiveGPTTab().then(function(tab) {
           if (tab) {
-            console.log('Found active chat tab:', tab.id);
+            console.log('Found active ChatGPT tab:', tab.id);
             
             // Send message to content script to post the message
             chrome.tabs.sendMessage(tab.id, {
@@ -105,7 +126,7 @@ chrome.alarms.onAlarm.addListener(function(alarm) {
                 // Inject content script and try again
                 chrome.scripting.executeScript({
                   target: { tabId: tab.id },
-                  files: ['content.js']
+                  files: ['scripts/content.js']
                 }).then(() => {
                   console.log('Content script injected, trying again to send message...');
                   setTimeout(() => {
@@ -136,7 +157,9 @@ chrome.alarms.onAlarm.addListener(function(alarm) {
               }
             });
           } else {
-            console.error('No active chat tab found');
+            console.error('No active ChatGPT tab found');
+            // Store this as a pending message that needs to be sent when a tab becomes available
+            updateMessageStatus(messageId, 'pending');
           }
         });
       }
@@ -144,34 +167,32 @@ chrome.alarms.onAlarm.addListener(function(alarm) {
   }
 });
 
-// Function to find an active ChatGPT or Claude tab
-function findActiveChatTab() {
+// Function to find an active ChatGPT tab
+function findActiveGPTTab() {
   return new Promise((resolve) => {
     chrome.tabs.query({}, function(tabs) {
-      // First try to find an active chat tab
+      // First try to find an active ChatGPT tab
       for (const tab of tabs) {
         if (
           (tab.url.includes('chat.openai.com') || 
-           tab.url.includes('chatgpt.com') || 
-           tab.url.includes('claude.ai')) && 
+           tab.url.includes('chatgpt.com')) && 
           tab.active
         ) {
           return resolve(tab);
         }
       }
       
-      // If no active chat tab, find any chat tab
+      // If no active ChatGPT tab, find any ChatGPT tab
       for (const tab of tabs) {
         if (
           tab.url.includes('chat.openai.com') || 
-          tab.url.includes('chatgpt.com') || 
-          tab.url.includes('claude.ai')
+          tab.url.includes('chatgpt.com')
         ) {
           return resolve(tab);
         }
       }
       
-      // No chat tab found
+      // No ChatGPT tab found
       resolve(null);
     });
   });
@@ -213,6 +234,43 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
 // Check active alarms on startup
 chrome.alarms.getAll(function(alarms) {
   console.log('Current alarms on startup:', alarms);
+});
+
+// Check for pending messages that might need to be sent (messages that failed to send earlier)
+chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+  if (changeInfo.status === 'complete' && 
+      (tab.url.includes('chat.openai.com') || tab.url.includes('chatgpt.com'))) {
+    // Check for any pending messages
+    chrome.storage.local.get('scheduledMessages', function(data) {
+      if (!data.scheduledMessages) return;
+      
+      const pendingMessages = data.scheduledMessages.filter(msg => msg.status === 'pending');
+      if (pendingMessages.length > 0) {
+        console.log('Found pending messages to send:', pendingMessages.length);
+        
+        // Wait a moment for the page to fully load
+        setTimeout(() => {
+          // Send each pending message
+          pendingMessages.forEach(message => {
+            chrome.tabs.sendMessage(tabId, {
+              action: 'sendMessage',
+              message: message.message
+            }, function(response) {
+              if (chrome.runtime.lastError) {
+                console.error('Error sending pending message:', chrome.runtime.lastError);
+                return;
+              }
+              
+              if (response && response.success) {
+                console.log('Pending message sent successfully:', message.id);
+                updateMessageStatus(message.id, 'sent');
+              }
+            });
+          });
+        }, 2000);
+      }
+    });
+  }
 });
 
 console.log('Background script initialized');

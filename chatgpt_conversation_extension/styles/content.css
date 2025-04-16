@@ -1,0 +1,77 @@
+/* Custom CSS for the ChatGPT conversation extension */
+
+/* Mark conversation elements for better extraction */
+.chatgpt-helper-conversation-element {
+  border-left: 3px solid rgba(16, 163, 127, 0.2) !important;
+}
+
+/* Mark user message elements */
+.chatgpt-helper-user-message {
+  border-left: 3px solid rgba(16, 163, 127, 0.4) !important;
+}
+
+/* Mark assistant message elements */
+.chatgpt-helper-assistant-message {
+  border-left: 3px solid rgba(16, 163, 127, 0.6) !important;
+}
+
+/* Message styling with custom CSS class */
+.chatgpt-helper-highlighted {
+  border-left: 3px solid #10a37f !important;
+  transition: background-color 0.3s;
+}
+
+.chatgpt-helper-highlighted:hover {
+  background-color: rgba(16, 163, 127, 0.1) !important;
+}
+
+/* Special styling for user messages that would be scheduled */
+.chatgpt-helper-scheduled {
+  position: relative;
+}
+
+.chatgpt-helper-scheduled::after {
+  content: "예약됨";
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background-color: #10a37f;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* Custom styling for code blocks to make them stand out */
+pre code {
+  border-radius: 6px !important;
+  font-family: 'Consolas', 'Monaco', monospace !important;
+}
+
+/* Hover effects for buttons */
+button:hover {
+  transform: translateY(-1px);
+  transition: transform 0.2s;
+}
+
+/* Make buttons more consistent */
+button[data-testid="send-button"] {
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+button[data-testid="send-button"]:hover {
+  transform: scale(1.05);
+}
+
+/* Dark mode styles - these will be controlled by JavaScript */
+.chatgpt-helper-dark-mode {
+  background-color: #1e1e2e !important;
+  color: #cdd6f4 !important;
+}
+
+/* Compact mode styles - these will be controlled by JavaScript */
+.chatgpt-helper-compact-mode {
+  max-width: 900px !important;
+  margin: 0 auto !important;
+}

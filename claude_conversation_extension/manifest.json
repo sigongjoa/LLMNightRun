@@ -1,48 +1,38 @@
 {
   "manifest_version": 3,
-  "name": "Claude Conversation Extractor",
-  "version": "1.1",
-  "description": "Extract and save conversations from Claude chat interface",
-  "background": {
-    "service_worker": "background.js",
-    "type": "module"
-  },
-  "permissions": ["activeTab", "storage", "downloads", "management", "tabs", "scripting"],
+  "name": "AI Chat Helper",
+  "version": "1.0",
+  "description": "Export AI chat conversations to JSON format and schedule messages",
+  "permissions": ["scripting", "activeTab", "downloads", "storage", "alarms", "tabs"],
   "host_permissions": [
-    "https://claude.ai/*",
-    "https://*.claude.ai/*",
-    "https://*.anthropic.com/*"
+    "https://chat.openai.com/*",
+    "https://chatgpt.com/*",
+    "https://claude.ai/*"
   ],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
-      "16": "icon16.png",
-      "48": "icon48.png",
-      "128": "icon128.png"
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
     }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   },
   "content_scripts": [
     {
       "matches": [
-        "*://claude.ai/*", 
-        "https://claude.ai/*",
-        "https://claude.ai/chat/*",
-        "https://claude.ai/chat/*/*",
-        "*://www.claude.ai/*",
-        "https://www.claude.ai/*",
-        "https://www.claude.ai/chat/*",
-        "https://www.claude.ai/chat/*/*",
-        "*://*.anthropic.com/*", 
-        "https://*.anthropic.com/*"
+        "https://chat.openai.com/*", 
+        "https://chatgpt.com/*",
+        "https://claude.ai/*"
       ],
-      "js": ["content.js"],
-      "run_at": "document_end",
-      "all_frames": true
+      "js": ["content.js"]
     }
   ],
-  "icons": {
-    "16": "icon16.png",
-    "48": "icon48.png",
-    "128": "icon128.png"
+  "background": {
+    "service_worker": "background.js"
   }
 }

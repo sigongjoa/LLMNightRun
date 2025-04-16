@@ -1,590 +1,922 @@
-// 자동 저장 변수
-let autoSaveEnabled = false;
-let autoSaveInterval = 5; // 기본값 5분
-let autoSaveTimer = null;
+// Special function for Claude to send message directly with keyboard events
+function sendMessageWithKeyboard(inputElement, message) {
+  console.log('Attempting special Claude keyboard method');
+  
+  // Focus the input
+  inputElement.focus();
+  
+  // Clear existing content if needed
+  if (inputElement.tagName === 'TEXTAREA') {
+    inputElement.value = '';
+  } else if (inputElement.getAttribute('contenteditable') === 'true') {
+    inputElement.innerHTML = '';
+  }
+  
+  // Add the message
+  if (inputElement.tagName === 'TEXTAREA') {
+    inputElement.value = message;
+  } else if (inputElement.getAttribute('contenteditable') === 'true') {
+    inputElement.innerHTML = message;
+  }
+  
+  // Trigger a series of events
+  const events = [
+    new Event('input', { bubbles: true }),
+    new Event('change', { bubbles: true }),
+    new KeyboardEvent('keydown', { bubbles: true, keyCode: 13, key: 'Enter' }),
+    new KeyboardEvent('keypress', { bubbles: true, keyCode: 13, key: 'Enter' }),
+    new KeyboardEvent('keyup', { bubbles: true, keyCode: 13, key: 'Enter' })
+  ];
+  
+  // Fire all events
+  events.forEach(event => {
+    inputElement.dispatchEvent(event);
+  });
+  
+  // Finally simulate Enter key with all possible properties
+  setTimeout(() => {
+    const enterEvent = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key: 'Enter',
+      code: 'Enter',
+      keyCode: 13,
+      which: 13,
+      location: 0,
+      ctrlKey: false,
+      shiftKey: false,
+      altKey: false,
+      metaKey: false
+    });
+    inputElement.dispatchEvent(enterEvent);
+    
+    console.log('Completed keyboard-based sending attempt');
+  }, 100);
+  
+  return true;
+}
 
-// DOM에서 Claude 대화 추출
-function extractClaudeConversation(currentOnly = false) {
-  try {
-    const conversations = [];
+// Log that content script has loaded
+console.log('AI Chat Helper: Content script loaded successfully on ' + window.location.href);
+
+// Notify the background script that content script is loaded
+try {
+  chrome.runtime.sendMessage({ action: "contentScriptLoaded", url: window.location.href });
+} catch (error) {
+  console.error('Error notifying background script:', error);
+}
+
+// Special function for Claude message extraction
+function extractClaudeMessages() {
+  console.log('Using specialized Claude message extraction');
+  
+  // Let's look for specific Claude patterns
+  // First, find the main conversation area
+  const messageContainers = [];
+  
+  // Get all elements that have text content > 20 chars and look like they could be messages
+  const allElements = document.querySelectorAll('div, section, article, p');
+  const contentElements = Array.from(allElements).filter(el => {
+    const text = el.innerText?.trim();
+    if (!text || text.length < 20) return false;
     
-    // 업데이트된 Claude 인터페이스 구조 지원 (개발자 도구 정보 기반)
-    // 다양한 Claude 인터페이스 구조 시도
-    let messageContainers = [];
-    const possibleSelectors = [
-      // 원래 선택자
-      '.claude-conversation-message',
-      '[data-message-id]',
-      '.message-content',
-      '.message',
-      '.message-container',
-      '.conversation-message',
-      '.chat-message',
-      // 새 구조 기반 선택자 (개발자 도구에서 확인)
-      '.font-claude-message',
-      '.whitespace-pre-wrap.break-words',
-      '.data-test-render-count',
-      '.sticky.bottom-0',
-      // 특정 맥락 선택자
-      '[aria-label="Message content"]',
-      '[role="paragraph"]',
-      // 일반 텍스트 컨테이너
-      'p',
-      'div > p',
-      'div > div > p'
-    ];
+    // Skip elements that are likely inputs or UI elements
+    if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') return false;
+    if (el.getAttribute('contenteditable') === 'true') return false;
+    if (el.classList && (el.classList.contains('input') || el.classList.contains('textarea'))) return false;
     
-    // 여러 선택자를 시도하여, 메시지 컨테이너를 찾습니다
-    for (const selector of possibleSelectors) {
-      const elements = document.querySelectorAll(selector);
-      if (elements.length > 0) {
-        messageContainers = elements;
-        console.log(`[Claude Extractor] 찾은 선택자: ${selector}, 요소 개수: ${elements.length}`);
-        break;
+    // Skip elements with too many child elements (likely UI containers)
+    if (el.children.length > 20) return false;
+    
+    return true;
+  });
+  
+  console.log(`Found ${contentElements.length} potential message elements`);
+  
+  // Sort by position in page (top to bottom)
+  contentElements.sort((a, b) => {
+    const rectA = a.getBoundingClientRect();
+    const rectB = b.getBoundingClientRect();
+    return rectA.top - rectB.top;
+  });
+  
+  // Group elements by apparent sections (messages)
+  // We'll use vertical position to determine if elements are part of the same message
+  let lastTop = -1;
+  let currentGroup = [];
+  const messageGroups = [];
+  
+  contentElements.forEach(el => {
+    const rect = el.getBoundingClientRect();
+    
+    // If this element is far from the last one, it's probably a new message
+    if (lastTop === -1 || rect.top - lastTop > 50) {
+      if (currentGroup.length > 0) {
+        messageGroups.push(currentGroup);
+      }
+      currentGroup = [el];
+    } else {
+      currentGroup.push(el);
+    }
+    
+    lastTop = rect.top;
+  });
+  
+  // Add the last group
+  if (currentGroup.length > 0) {
+    messageGroups.push(currentGroup);
+  }
+  
+  console.log(`Grouped into ${messageGroups.length} potential messages`);
+  
+  // Process each group to create message objects
+  const messages = [];
+  let userMessageCount = 0;
+  let assistantMessageCount = 0;
+  
+  messageGroups.forEach((group, index) => {
+    // Determine if this is likely a user or assistant message
+    // For Claude, user messages are usually shorter and might be on the right side
+    // Assistant messages are usually longer and may contain formatting
+    
+    // Get the full text of this group
+    const groupText = group.map(el => el.innerText.trim()).join('\n');
+    
+    // Heuristics for role detection:
+    // 1. Position - usually alternates
+    // 2. Length - user messages typically shorter
+    // 3. Style/class - may have user/assistant indicators
+    
+    let isUserMessage = false;
+    
+    // Check position classes (may indicate right-aligned)
+    const hasRightAlignClasses = group.some(el => {
+      const classList = el.className || '';
+      return classList.includes('right') || 
+             classList.includes('user') || 
+             classList.includes('human') || 
+             getComputedStyle(el).textAlign === 'right';
+    });
+    
+    // Check if contains a user indicator class
+    const hasUserClasses = group.some(el => {
+      const classList = el.className || '';
+      return classList.includes('user') || classList.includes('human');
+    });
+    
+    // Check if contains an assistant indicator class
+    const hasAssistantClasses = group.some(el => {
+      const classList = el.className || '';
+      return classList.includes('assistant') || 
+             classList.includes('ai') || 
+             classList.includes('claude') || 
+             classList.includes('bot');
+    });
+    
+    // Make determination based on collected evidence
+    if (hasUserClasses || hasRightAlignClasses) {
+      isUserMessage = true;
+    } else if (hasAssistantClasses) {
+      isUserMessage = false;
+    } else {
+      // If we can't determine by classes, use length and position
+      if (groupText.length < 200 && (index % 2 === 0)) {
+        isUserMessage = true;
+      } else if (index % 2 === 0) {
+        // First message is typically user
+        isUserMessage = true;
+      } else {
+        isUserMessage = false;
       }
     }
     
-    // 메시지를 찾을 수 없는 경우, 클래스나 속성으로 인식되는 모든 div 요소를 시도합니다
-    if (messageContainers.length === 0) {
-      console.log('[Claude Extractor] 일반 선택자로 메시지를 찾을 수 없어, 대화 내용이 있을 가능성이 높은 모든 div를 검사합니다');
+    if (isUserMessage) {
+      userMessageCount++;
+    } else {
+      assistantMessageCount++;
+    }
+    
+    // Create the message object
+    messages.push({
+      id: `message-${index + 1}`,
+      role: isUserMessage ? 'user' : 'assistant',
+      content: group.map(el => el.innerHTML || el.innerText).join('\n'),
+      text_content: groupText,
+      timestamp: new Date().toISOString()
+    });
+  });
+  
+  console.log(`Created ${messages.length} messages (${userMessageCount} user, ${assistantMessageCount} assistant)`);
+  
+  return messages;
+}
+
+// Listen for messages from the popup
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+  // Simple ping to check if content script is loaded
+  if (request.action === "ping") {
+    console.log('Received ping request');
+    sendResponse({ success: true, message: "Content script is loaded" });
+    return true;
+  }
+  
+  if (request.action === "extract") {
+    try {
+      console.log('Extracting conversation...');
       
-      // 페이지에서 "Human", "Claude", "Assistant" 등의 텍스트가 포함된 요소를 찾습니다
-      const allDivs = document.querySelectorAll('div');
-      const potentialMessages = Array.from(allDivs).filter(div => {
-        const text = div.textContent.toLowerCase();
-        return text.includes('human:') || text.includes('claude:') || text.includes('assistant:') || 
-               (div.textContent.length > 50 && (div.querySelector('p') || div.querySelector('pre')));
-      });
+      // Check if it's a Claude page
+      const isClaudePage = window.location.href.includes('claude.ai');
+      let conversation;
       
-      if (potentialMessages.length > 0) {
-        messageContainers = potentialMessages;
-        console.log(`[Claude Extractor] 대체 방법으로 ${potentialMessages.length}개 메시지 요소를 찾았습니다`);
+      if (isClaudePage) {
+        console.log('Detected Claude page, using specialized extraction');
+        const messages = extractClaudeMessages();
+        
+        // Create conversation object in the expected format
+        conversation = {
+          title: document.title.replace(" - Claude", ""),
+          create_time: new Date().toISOString(),
+          update_time: new Date().toISOString(),
+          mapping: {},
+          messages: []
+        };
+        
+        // Add messages to the mapping
+        messages.forEach(message => {
+          conversation.mapping[message.id] = message;
+          conversation.messages.push(message.id);
+        });
+        
+      } else {
+        // Use the regular extraction for other pages
+        conversation = extractConversation();
       }
-    }
-    
-    if (messageContainers.length === 0) {
-      console.error('지원되는 Claude 인터페이스를 찾을 수 없습니다.');
-      return { success: false, error: '지원되는 Claude 인터페이스를 찾을 수 없습니다. 페이지 구조가 변경되었을 수 있습니다.' };
-    }
-    
-    // 실제 메시지 추출
-    messageContainers.forEach(container => {
-      // 사용자(Human) 또는 Claude 확인 - 더 많은 방법으로 시도
-      let isHuman = false;
       
-      // 요소 텍스트 내용 가져오기
-      const containerText = container.textContent.trim();
+      const format = request.format || 'json';
+      let formattedData;
       
-      // 컨테이너와 모든 상위 요소의 클래스 리스트 수집 (디버깅 목적)
-      let parentClasses = [];
-      let currentElement = container;
-      while (currentElement && currentElement !== document.body) {
-        if (currentElement.className) {
-          parentClasses.push(currentElement.className);
+      switch(format) {
+        case 'json':
+          formattedData = JSON.stringify(conversation, null, 2);
+          break;
+        case 'markdown':
+          formattedData = convertToMarkdown(conversation);
+          break;
+        case 'text':
+          formattedData = convertToText(conversation);
+          break;
+        default:
+          formattedData = JSON.stringify(conversation, null, 2);
+      }
+      
+      sendResponse({ success: true, data: formattedData });
+    } catch (error) {
+      console.error('Error extracting conversation:', error);
+      sendResponse({ success: false, error: error.message });
+    }
+    return true;
+  } else if (request.action === "sendMessage") {
+    try {
+      console.log('Sending message:', request.message);
+      sendMessage(request.message);
+      sendResponse({ success: true });
+    } catch (error) {
+      console.error("Error sending message:", error);
+      sendResponse({ success: false, error: error.message });
+    }
+    return true;
+  }
+});
+
+// Function to send a message
+function sendMessage(message) {
+  if (!message) {
+    throw new Error("메시지가 비어있습니다.");
+  }
+  
+  console.log('Attempting to send message:', message);
+  
+  // Try different input selectors for different chat platforms
+  let inputElement = null;
+  let sendButton = null;  // Initialize sendButton variable here
+  
+  // ChatGPT selectors
+  const chatgptSelectors = [
+    'textarea[data-id="root"]', 
+    'textarea[placeholder="Send a message"]',
+    'div[role="textbox"]',
+    '.chat-input textarea'
+  ];
+  
+  // Claude selectors
+  const claudeSelectors = [
+    'div[contenteditable="true"]',
+    '.cl-textgenerationtextarea-input',
+    '.chat-input div[contenteditable]',
+    'footer textarea', // Claude의 새로운 DOM 구조
+    '.editor-wrapper textarea', // 또 다른 가능한 selector
+    'textarea[placeholder*="메시지"]', // 한국어 클로드
+    'textarea[placeholder*="message"]' // 영어 클로드
+  ];
+  
+  // Try all possible selectors
+  const allSelectors = [...chatgptSelectors, ...claudeSelectors];
+  
+  for (const selector of allSelectors) {
+    const element = document.querySelector(selector);
+    if (element) {
+      inputElement = element;
+      console.log('Found input element with selector:', selector);
+      break;
+    }
+  }
+  
+  if (!inputElement) {
+    throw new Error("입력 필드를 찾을 수 없습니다.");
+  }
+
+  // Claude에 최적화된 방법 시도 (keyboard events만 사용)
+  const isClaudePage = window.location.href.includes('claude.ai');
+  if (isClaudePage) {
+    console.log('Detected Claude page, trying specialized keyboard method');
+    const result = sendMessageWithKeyboard(inputElement, message);
+    if (result) {
+      console.log('Used specialized Claude keyboard method');
+      return;
+    }
+  }
+  
+  // Focus the input element
+  inputElement.focus();
+  
+  // Set the value for textarea elements
+  if (inputElement.tagName === 'TEXTAREA') {
+    inputElement.value = message;
+    
+    // Trigger input event to activate the send button
+    inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+  } 
+  // Set innerHTML for contenteditable divs (Claude)
+  else if (inputElement.getAttribute('contenteditable') === 'true') {
+    inputElement.innerHTML = message;
+    
+    // Trigger input event
+    inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+    inputElement.dispatchEvent(new Event('change', { bubbles: true }));
+    
+    // Claude에서 한국어 메시지 입력 후 추가 이벤트 발생 시도
+    // keyup 및 keydown 이벤트도 트리거
+    inputElement.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }));
+    inputElement.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+    inputElement.dispatchEvent(new KeyboardEvent('input', { bubbles: true }));
+  }
+  
+  // Common send button selectors
+  const sendButtonSelectors = [
+    'button[data-testid="send-button"]',
+    'button.chat-send-button',
+    'button[aria-label="Send message"]',
+    'button.send',
+    'button[type="submit"]',
+    'form button',
+    '.chat-input button',
+    'button.primary',
+    '.send-button',
+    // 클로드 특화 선택자
+    'footer button',  // 클로드 푸터의 전송 버튼
+    'footer div[role="button"]', // 역할 속성 사용
+    'footer svg', // SVG 아이콘 직접 클릭
+    '.editor-wrapper button', // 에디터 주변 버튼
+    'button:has(svg)' // SVG를 포함한 버튼 (이 선택자는 일부 브라우저에서 작동하지 않을 수 있음)
+  ];
+  
+  // 단순히 버튼 목록을 순회하는 대신 특별한 로직 추가
+  // 클로드 전송 버튼을 더 정확하게 찾기 위한 시도
+  
+  // 1. 먼저 일반적인 버튼 선택자로 시도
+  for (const selector of sendButtonSelectors) {
+    try {
+      const buttons = document.querySelectorAll(selector);
+      if (buttons.length > 0) {
+        // 가장 아래에 있는 버튼이 전송 버튼일 가능성이 높음
+        for (const button of buttons) {
+          // 버튼의 영역 확인 (보이는지 여부)
+          const rect = button.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) {
+            // 텍스트 내용이나 버튼 위치로 판단
+            if (
+              button.textContent?.includes('send') ||
+              button.textContent?.includes('전송') ||
+              button.innerHTML?.includes('plane') ||
+              button.innerHTML?.includes('send') ||
+              button.innerHTML?.includes('arrow') ||
+              (button.classList.contains('send') || button.classList.contains('submit') || 
+               button.classList.contains('primary')) ||
+              // 입력 필드 옆에 있는지 확인
+              (inputElement && Math.abs(button.getBoundingClientRect().left - 
+                                  (inputElement.getBoundingClientRect().right + 50)) < 100)
+            ) {
+              sendButton = button;
+              console.log('Found good send button candidate with selector:', selector);
+              break;
+            }
+          }
         }
-        currentElement = currentElement.parentElement;
+      }
+      if (sendButton) break;
+    } catch (e) {
+      console.error('Error finding button with selector:', selector, e);
+    }
+  }
+  
+  // 2. 만약 일반 선택자로 찾지 못했다면, 위치 기반 추론 (클로드에 효과적)
+  if (!sendButton) {
+    console.log('No button found with standard selectors, trying position-based detection');
+    // 페이지에서 모든 버튼 요소 찾기
+    const allButtons = document.querySelectorAll('button, div[role="button"], span[role="button"]');
+    
+    // 입력 필드 주변에 있는지 확인
+    if (inputElement) {
+      const inputRect = inputElement.getBoundingClientRect();
+      
+      // 입력 필드 근처에서 가장 적합한 버튼 후보 찾기
+      let bestCandidate = null;
+      let minDistance = Infinity;
+      
+      for (const btn of allButtons) {
+        const btnRect = btn.getBoundingClientRect();
+        
+        // 버튼이 보이는지 확인
+        if (btnRect.width > 0 && btnRect.height > 0) {
+          // 버튼이 화면에 보이는지 확인
+          if (btnRect.top > 0 && btnRect.bottom < window.innerHeight) {
+            // 입력 필드 오른쪽 또는 아래에 있는지 확인
+            const horizontalProximity = Math.abs(btnRect.left - inputRect.right);
+            const verticalProximity = Math.abs(btnRect.top - inputRect.bottom);
+            
+            // 가중치를 적용한 거리 계산
+            const weightedDistance = horizontalProximity + verticalProximity * 0.5;
+            
+            if (weightedDistance < minDistance) {
+              minDistance = weightedDistance;
+              bestCandidate = btn;
+            }
+          }
+        }
       }
       
-      // 방법 1: 클래스로 확인
-      if (container.classList.contains('message-user') || 
-          container.classList.contains('user-message') ||
-          container.classList.contains('human-message') ||
-          container.querySelector('.user-message-content') !== null) {
-        isHuman = true;
+      if (bestCandidate && minDistance < 200) { // 거리 임계값 설정
+        sendButton = bestCandidate;
+        console.log('Found button using position-based detection, distance:', minDistance);
       }
+    }
+    
+    // 3. 마지막 수단: 페이지 하단에 있는 SVG를 포함한 요소 찾기 (클로드 특화)
+    if (!sendButton) {
+      console.log('Trying to find SVG in footer area');
+      const svgElements = document.querySelectorAll('svg');
+      let footerSvg = null;
       
-      // 방법 2: 데이터 속성으로 확인
-      if (!isHuman && container.hasAttribute('data-message-author-role')) {
-        isHuman = container.getAttribute('data-message-author-role') === 'user' || 
-                 container.getAttribute('data-message-author-role') === 'human';
-      }
-      
-      // 방법 3: 부모 요소의 클래스로 확인
-      if (!isHuman && container.parentElement) {
-        isHuman = container.parentElement.classList.contains('user-message') || 
-                  container.parentElement.classList.contains('human-message');
-      }
-      
-      // 방법 4: 텍스트 내용으로 확인 (Human: 또는 Claude: 로 시작하는 텍스트)
-      if (!isHuman && containerText.startsWith('Human:')) {
-        isHuman = true;
-      } else if (containerText.startsWith('Claude:') || containerText.startsWith('Assistant:')) {
-        isHuman = false;
-      }
-      
-      // 새로운 Claude 인터페이스용 추가 확인 방법
-      if (!isHuman && parentClasses.some(cls => cls.includes('user') || cls.includes('human'))) {
-        isHuman = true;
-      } else if (parentClasses.some(cls => cls.includes('claude') || cls.includes('assistant'))) {
-        isHuman = false;
-      }
-      
-      // 메시지 텍스트 추출
-      let messageText = '';
-      let messageContent = null;
-      
-      // 메시지 콘텐츠 요소 찾기 시도
-      const contentSelectors = [
-        '.message-content', 
-        '.claude-message-content', 
-        '.user-message-content',
-        '.whitespace-pre-wrap',
-        '[role="paragraph"]',
-        'p'
-      ];
-      
-      for (const selector of contentSelectors) {
-        const element = container.querySelector(selector);
-        if (element) {
-          messageContent = element;
+      // 가장 아래에 있는 svg 요소를 찾음
+      for (const svg of svgElements) {
+        const rect = svg.getBoundingClientRect();
+        // 화면에 보이는 SVG이고, 페이지 하단 30% 영역에 있는지 확인
+        if (rect.width > 0 && rect.height > 0 && rect.top > window.innerHeight * 0.7) {
+          footerSvg = svg;
           break;
         }
       }
       
-      // 메시지 컨텐츠 요소를 찾지 못한 경우 컨테이너 자체를 사용
-      if (!messageContent) {
-        messageContent = container;
-      }
-      
-      if (messageContent) {
-        // 코드 블록, 텍스트 등 다양한 형식 처리
-        const codeBlocks = messageContent.querySelectorAll('pre code, pre, code');
-        
-        if (codeBlocks.length > 0) {
-          // 코드 블록이 있는 경우
-          try {
-            // 복잡한 DOM 구조에서 텍스트와 코드 블록을 추출하는 재귀 함수
-            const extractTextAndCode = (element) => {
-              if (!element) return '';
-              
-              // 텍스트 노드인 경우
-              if (element.nodeType === Node.TEXT_NODE) {
-                return element.textContent;
-              }
-              
-              // 코드 블록인 경우
-              if (element.tagName === 'PRE' || element.tagName === 'CODE' || element.querySelector('pre, code')) {
-                const codeElement = element.tagName === 'CODE' ? element : element.querySelector('code') || element;
-                const language = codeElement.className.replace('language-', '').trim() || '';
-                return `\n\`\`\`${language}\n${codeElement.textContent}\n\`\`\`\n`;
-              }
-              
-              // 복합 요소인 경우 재귀적으로 처리
-              return Array.from(element.childNodes)
-                .map(child => extractTextAndCode(child))
-                .join('');
-            };
-            
-            messageText = extractTextAndCode(messageContent);
-          } catch (error) {
-            console.error('[Claude Extractor] 코드 블록 처리 중 오류:', error);
-            messageText = messageContent.textContent;
+      if (footerSvg) {
+        // SVG의 부모 요소 중에서 클릭 가능한 요소 찾기
+        let clickableParent = footerSvg;
+        for (let i = 0; i < 3; i++) { // 최대 3단계 부모까지 확인
+          if (clickableParent.parentElement) {
+            clickableParent = clickableParent.parentElement;
+            // 클릭 가능한 요소인지 확인
+            if (clickableParent.tagName === 'BUTTON' || 
+                clickableParent.getAttribute('role') === 'button' ||
+                clickableParent.onclick ||
+                window.getComputedStyle(clickableParent).cursor === 'pointer') {
+              sendButton = clickableParent;
+              console.log('Found clickable parent of SVG in footer');
+              break;
+            }
+          } else {
+            break;
           }
-        } else {
-          // 일반 텍스트만 있는 경우
-          messageText = messageContent.textContent;
+        }
+        
+        // 클릭 가능한 부모를 찾지 못했다면 SVG 자체를 클릭
+        if (!sendButton) {
+          sendButton = footerSvg;
+          console.log('Using footer SVG directly as send button');
         }
       }
-      
-      // 메시지가 의미 있는 내용을 가지고 있는지 확인
-      const trimmedText = messageText.trim();
-      if (trimmedText.length > 0) {
-        // 중복 메시지 방지를 위한 간단한 해시 생성
-        const messageHash = `${isHuman ? 'user' : 'assistant'}-${trimmedText.substring(0, 100)}`;
-        
-        // 중복 메시지 확인 (마지막 메시지와 동일한지)
-        const isDuplicate = conversations.length > 0 && 
-                          conversations[conversations.length - 1].role === (isHuman ? 'user' : 'assistant') &&
-                          conversations[conversations.length - 1].content === trimmedText;
-        
-        if (!isDuplicate) {
-          // 대화 객체 생성
-          conversations.push({
-            role: isHuman ? 'user' : 'assistant',
-            content: trimmedText
-          });
-        }
-      }
+    }
+  }
+  
+  // If no send button found, try to submit via keyboard event
+  if (!sendButton) {
+    console.log('No send button found, trying keyboard event');
+    // Try to submit with Enter key
+    const enterEvent = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key: 'Enter',
+      code: 'Enter',
+      keyCode: 13,
+      which: 13,
+      shiftKey: false,
+      ctrlKey: false,
+      metaKey: false
     });
     
-    // 대화가 추출되지 않았거나 너무 적게 추출된 경우 (단일 메시지만 있는 경우)
-    if (conversations.length === 0) {
-      console.error('[Claude Extractor] 대화를 추출할 수 없습니다. 페이지 구조가 변경되었을 수 있습니다.');
-      return {
-        success: false,
-        error: '대화를 추출할 수 없습니다. 페이지 구조가 변경되었거나 대화가 없습니다.',
-        debugInfo: {
-          url: window.location.href,
-          documentTitle: document.title,
-          bodyClasses: document.body.className
-        }
-      };
-    }
-    
-    // 만약 현재 대화만 추출하는 경우, 가장 최근 교환만 반환
-    if (currentOnly && conversations.length >= 2) {
-      const lastIdx = conversations.length - 1;
-      return {
-        success: true,
-        conversations: [
-          conversations[lastIdx - 1],
-          conversations[lastIdx]
-        ]
-      };
-    }
-    
-    return { success: true, conversations };
-  } catch (error) {
-    console.error('Claude 대화 추출 중 오류 발생:', error);
-    return { success: false, error: error.message };
-  }
-}
-
-// 대화를 다양한 형식으로 변환
-function formatConversation(conversations, format) {
-  if (format === 'json') {
-    const data = {
-      conversations,
-      timestamp: new Date().toISOString(),
-      source: 'claude_conversation_extractor'
-    };
-    return JSON.stringify(data, null, 2);
-  } else if (format === 'markdown') {
-    return conversations.map(conv => {
-      const role = conv.role === 'user' ? '## Human' : '## Claude';
-      return `${role}:\n\n${conv.content}\n\n`;
-    }).join('');
-  } else { // 기본값: txt
-    return conversations.map(conv => {
-      const role = conv.role === 'user' ? 'Human' : 'Claude';
-      return `${role}: ${conv.content}\n\n`;
-    }).join('');
-  }
-}
-
-// 파일 다운로드 함수
-function downloadConversation(content, format) {
-  const date = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const extension = format === 'json' ? 'json' : 
-                   format === 'markdown' ? 'md' : 'txt';
-  const filename = `claude_conversation_${date}.${extension}`;
-  
-  const blob = new Blob([content], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  
-  URL.revokeObjectURL(url);
-}
-
-// 자동 저장 시작
-function startAutoSave() {
-  if (autoSaveTimer) {
-    clearInterval(autoSaveTimer);
-  }
-  
-  if (autoSaveEnabled) {
-    console.log(`자동 저장 활성화: ${autoSaveInterval}분 간격`);
-    autoSaveTimer = setInterval(performAutoSave, autoSaveInterval * 60 * 1000);
-  }
-}
-
-// 자동 저장 수행
-function performAutoSave() {
-  const result = extractClaudeConversation(false);
-  if (result.success) {
-    const content = formatConversation(result.conversations, 'json');
-    downloadConversation(content, 'json');
-    
-    // 사용자에게 알림
-    const notification = document.createElement('div');
-    notification.textContent = '대화가 자동 저장되었습니다.';
-    notification.style.position = 'fixed';
-    notification.style.top = '20px';
-    notification.style.right = '20px';
-    notification.style.backgroundColor = 'rgba(76, 175, 80, 0.9)';
-    notification.style.color = 'white';
-    notification.style.padding = '10px 20px';
-    notification.style.borderRadius = '4px';
-    notification.style.zIndex = '9999';
-    document.body.appendChild(notification);
-    
-    // 3초 후 알림 제거
-    setTimeout(() => {
-      document.body.removeChild(notification);
-    }, 3000);
-  }
-}
-
-// 메시지 리스너
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  if (request.action === "extractConversation") {
-    const result = extractClaudeConversation(request.currentOnly);
-    
-    if (result.success) {
-      const content = formatConversation(result.conversations, request.format);
-      downloadConversation(content, request.format);
-    }
-    
-    sendResponse(result);
-    return true;
-  } 
-  else if (request.action === "updateAutoSaveSettings") {
-    autoSaveEnabled = request.enabled;
-    autoSaveInterval = request.interval;
-    startAutoSave();
-    sendResponse({ success: true });
-    return true;
-  }
-  else if (request.action === "debugPageStructure") {
-    // 페이지 구조 디버깅 정보 수집 및 콘솔 출력
-    debugPageStructure();
-    sendResponse({ success: true });
-    return true;
-  }
-});
-
-// 현재 페이지 구조를 확인하고 디버그 정보 출력
-function debugPageStructure() {
-  console.log('[Claude Extractor] 페이지 구조 디버깅:');
-  
-  // 이미지에서 발견된 DOM 구조의 클래스명 포함
-  const selectors = [
-    // 일반 선택자
-    '.claude-conversation-message',
-    '[data-message-id]',
-    '.message-content',
-    '.message',
-    '.message-container',
-    '.conversation-message',
-    '.chat-message',
-    // 새로 발견된 선택자
-    '.whitespace-pre-wrap',
-    '.break-words',
-    '.data-test-render-count',
-    '.font-claude-message',
-    '.sticky.bottom-0',
-    '.absolute.bottom-0',
-    '[aria-hidden="true"]',
-    '.grid-gap-2',
-    '[data-message]',
-    '[role="paragraph"]'
-  ];
-  
-  selectors.forEach(selector => {
-    try {
-      const elements = document.querySelectorAll(selector);
-      console.log(`[Claude Extractor] ${selector}: ${elements.length}개 요소 발견`);
-      
-      // 첫 번째 요소의 텍스트 내용 샘플 표시
-      if (elements.length > 0) {
-        const sampleText = elements[0].textContent.substring(0, 50).replace(/\n/g, ' ') + 
-                          (elements[0].textContent.length > 50 ? '...' : '');
-        console.log(`[Claude Extractor] 샘플 텍스트: "${sampleText}"`);
-      }
-    } catch (error) {
-      console.error(`[Claude Extractor] 선택자 ${selector} 검사 중 오류:`, error);
-    }
-  });
-  
-  // 페이지 URL 및 기타 정보 출력
-  console.log('[Claude Extractor] 현재 URL:', window.location.href);
-  console.log('[Claude Extractor] 현재 도메인:', window.location.hostname);
-  console.log('[Claude Extractor] 경로:', window.location.pathname);
-  console.log('[Claude Extractor] Body 클래스:', document.body.className);
-  console.log('[Claude Extractor] HTML 클래스:', document.documentElement.className);
-  console.log('[Claude Extractor] 페이지 타이틀:', document.title);
-  
-  // 가장 긴 텍스트를 가진 요소 찾기 (잠재적인 메시지 컨테이너)
-  const allElements = document.querySelectorAll('div, p, span');
-  let longestTextElement = null;
-  let longestTextLength = 0;
-  
-  allElements.forEach(el => {
-    const textLength = el.textContent.length;
-    if (textLength > longestTextLength && textLength < 10000) {
-      longestTextLength = textLength;
-      longestTextElement = el;
-    }
-  });
-  
-  if (longestTextElement) {
-    console.log('[Claude Extractor] 가장 긴 텍스트 요소:', longestTextElement);
-    console.log('[Claude Extractor] 텍스트 길이:', longestTextLength);
-    console.log('[Claude Extractor] 샘플:', longestTextElement.textContent.substring(0, 100) + '...');
-    console.log('[Claude Extractor] 클래스:', longestTextElement.className);
-  }
-}
-
-// 페이지가 완전히 로드된 후 지연 시간을 두고 초기화하는 함수
-function delayedInitialization(retryCount = 0, maxRetries = 5) {
-  console.log(`[Claude Extractor] 초기화 시도 #${retryCount + 1}`);
-  
-  // 디버그 정보 출력
-  debugPageStructure();
-  
-  // 간단한 테스트 추출을 시도
-  const testResult = extractClaudeConversation(true);
-  if (testResult.success && testResult.conversations && testResult.conversations.length > 0) {
-    console.log('[Claude Extractor] 메시지 추출 테스트 성공!', testResult.conversations.length, '개 메시지 발견');
-    return; // 성공하면 중단
-  }
-  
-  // 최대 재시도 횟수에 도달했는지 확인
-  if (retryCount >= maxRetries) {
-    console.log('[Claude Extractor] 최대 초기화 시도 횟수에 도달했습니다. 페이지 새로고침 또는 확장 프로그램 재설치가 필요할 수 있습니다.');
+    inputElement.dispatchEvent(enterEvent);
     return;
   }
   
-  // 실패한 경우 재시도 (지수 백오프 적용)
-  const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s, 8s, 16s
-  console.log(`[Claude Extractor] ${delay}ms 후에 다시 시도합니다...`);
-  setTimeout(() => delayedInitialization(retryCount + 1, maxRetries), delay);
-}
-
-// 전역 상태 - 스크립트가 로드되었는지 확인
-const SCRIPT_ID = 'claude-extractor-' + Math.random().toString(36).substring(2, 9);
-let scriptLoaded = false;
-
-// 다른 인스턴스가 이미 실행 중인지 확인
-function checkForDuplicates() {
-  if (window[SCRIPT_ID]) {
-    console.warn('[Claude Extractor] 이미 다른 인스턴스가 실행 중입니다. 이 인스턴스는 비활성화됩니다.');
-    return true;
-  }
-  
-  // 이 인스턴스를 전역 공간에 등록
-  window[SCRIPT_ID] = true;
-  return false;
-}
-
-// 초기화 로직
-function initialize() {
-  // 중복 인스턴스 체크
-  if (checkForDuplicates()) return;
-  
-  // 스크립트 로드 플래그 설정
-  scriptLoaded = true;
-  
-  // 콘솔에 로드 메시지 출력
-  console.log('[Claude Extractor] Claude Conversation Extractor v1.1 로드됨');
-  console.log('[Claude Extractor] 스크립트 ID:', SCRIPT_ID);
-  console.log('[Claude Extractor] 현재 URL:', window.location.href);
-  
-  // 저장된 자동 저장 설정 불러오기
-  try {
-    chrome.storage.sync.get(['autoSaveEnabled', 'autoSaveInterval'], function(data) {
-      if (data) {
-        autoSaveEnabled = data.autoSaveEnabled || false;
-        autoSaveInterval = data.autoSaveInterval || 5;
-        startAutoSave();
-      }
-    });
-  } catch (error) {
-    console.error('[Claude Extractor] 스토리지 접근 오류:', error);
-  }
-  
-  // 페이지가 완전히 로드된 후 초기화
-  if (document.readyState === 'complete') {
-    // 즉시 초기화 시작
-    delayedInitialization();
+  // Click the send button
+  if (sendButton) {
+    console.log('Clicking send button:', sendButton.tagName, sendButton.className);
+    
+    // 여러 이벤트 트리거로 시도
+    try {
+      // 1. 표준 클릭 메서드
+      sendButton.click();
+      
+      // 2. 마우스 이벤트 시뮬레이션
+      sendButton.dispatchEvent(new MouseEvent('click', {
+        view: window,
+        bubbles: true,
+        cancelable: true
+      }));
+      
+      // 3. mousedown/mouseup 이벤트 시뮬레이션
+      sendButton.dispatchEvent(new MouseEvent('mousedown', {
+        view: window,
+        bubbles: true,
+        cancelable: true
+      }));
+      
+      sendButton.dispatchEvent(new MouseEvent('mouseup', {
+        view: window,
+        bubbles: true,
+        cancelable: true
+      }));
+      
+      console.log('Successfully triggered click events on button');
+    } catch (e) {
+      console.error('Error clicking button:', e);
+    }
   } else {
-    // 페이지 로드를 기다림
-    window.addEventListener('load', function() {
-      // 페이지 로드 후 약간의 지연 시간을 두고 초기화 (프레임워크가 DOM을 업데이트할 시간 제공)
-      setTimeout(() => delayedInitialization(), 1000);
-    });
-  }
-  
-  // DOM 변경 감지 (대화 업데이트 등)
-  try {
-    const observer = new MutationObserver(function(mutations) {
-      console.log('[Claude Extractor] DOM 변경 감지됨');
-    });
-    
-    // 5초 후에 DOM 관찰 시작 (너무 많은 업데이트 방지)
-    setTimeout(() => {
-      observer.observe(document.body, { childList: true, subtree: true });
-    }, 5000);
-  } catch (error) {
-    console.error('[Claude Extractor] MutationObserver 오류:', error);
-  }
-  
-  // 페이지에 확장 프로그램이 로드되었음을 알리는 마커 추가
-  try {
-    const marker = document.createElement('div');
-    marker.id = 'claude-extractor-marker';
-    marker.style.display = 'none';
-    marker.dataset.scriptId = SCRIPT_ID;
-    marker.dataset.timestamp = new Date().toISOString();
-    document.body.appendChild(marker);
-  } catch (error) {
-    console.error('[Claude Extractor] 마커 추가 오류:', error);
+    console.log('No send button available, using keyboard event as fallback');
   }
 }
 
-// 페이지에 스크립트가 이미 로드되었는지 확인하는 함수
-function isScriptAlreadyLoaded() {
-  return !!document.getElementById('claude-extractor-marker');
-}
-
-// 초기화 즉시 실행
-initialize();
-
-// 백그라운드 스크립트로부터의 메시지 처리
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  // 스크립트가 로드되었는지 확인하는 메시지
-  if (request.action === "scriptLoaded") {
-    console.log('[Claude Extractor] 백그라운드로부터 scriptLoaded 메시지 수신');
-    sendResponse({
-      success: true, 
-      scriptId: SCRIPT_ID,
-      url: window.location.href,
-      alreadyLoaded: scriptLoaded,
-      timestamp: new Date().toISOString()
-    });
-    return true;
+// Function to extract conversation
+function extractConversation() {
+  console.log('Starting conversation extraction');
+  // 1. Get the thread container - handling multiple possible DOM structures
+  let threadContainer = null;
+  
+  // For ChatGPT structure
+  const chatgptContainer = document.querySelector('div[class*="react-scroll-to-bottom"] > div > div');
+  
+  // For Claude structure - extended selectors
+  const claudeContainers = [
+    document.querySelector('.chat-content, .cl-msgs-container'),
+    document.querySelector('.cl-thread'),
+    document.querySelector('.cl-thread-container'),
+    document.querySelector('[class*="thread"]'),
+    document.querySelector('main > div > div'),
+    document.querySelector('main'),
+    document.querySelector('[class*="conversation-container"]'),
+    document.querySelector('[class*="message-list"]')
+  ].filter(Boolean); // Remove null/undefined
+  
+  // Find the first container with children
+  const claudeContainer = claudeContainers.find(container => 
+    container && container.children && container.children.length > 2
+  );
+  
+  // Set the appropriate container
+  if (chatgptContainer) {
+    threadContainer = chatgptContainer;
+    console.log('Using ChatGPT container');
+  } else if (claudeContainer) {
+    threadContainer = claudeContainer;
+    console.log('Using Claude container:', claudeContainer.className);
+  } else {
+    // Try a more generic approach for any chat interface
+    console.log('Trying generic container approach');
+    const possibleContainers = document.querySelectorAll('main div, .chat-container, .message-container');
+    for (const container of possibleContainers) {
+      // Look for a container with multiple child elements that likely contains messages
+      if (container.children.length > 3) {
+        threadContainer = container;
+        break;
+      }
+    }
   }
   
-  // 기존 메시지 핸들러 유지
-  if (request.action === "extractConversation") {
-    const result = extractClaudeConversation(request.currentOnly);
+  if (!threadContainer) {
+    console.error('Thread container not found!');
+    // Try to log what is available in the DOM
+    console.log('Document body HTML structure (first 1000 chars):', document.body.innerHTML.substring(0, 1000));
+    console.log('All potential containers:', document.querySelectorAll('main, [class*="chat"], [class*="message"], [class*="thread"]'));
+    throw new Error("대화 스레드를 찾을 수 없습니다.");
+  }
+  
+  console.log('Thread container found with children count:', threadContainer.children.length);
+  
+  // 2. Extract all message blocks - with broader selector patterns
+  const messageBlocks = Array.from(threadContainer.querySelectorAll(
+    // Common message container classes/attributes across different chat platforms
+    '.message, .chat-message, .message-container, div[class*="message"], div[class*="group"], ' +
+    'div[role="listitem"], div[data-message], div[data-testid*="message"], ' +
+    'div[class*="human"], div[class*="assistant"], div[class*="user"], ' +
+    'div[data-message-author-role], div[class*="bubble"]'
+  ));
+  
+  console.log('Initial message blocks found:', messageBlocks.length);
+  
+  // If no specific message blocks were found, try more aggressive approaches
+  if (messageBlocks.length === 0) {
+    console.log('No specific message blocks found, trying additional selectors...');
     
-    if (result.success) {
-      const content = formatConversation(result.conversations, request.format);
-      downloadConversation(content, request.format);
+    // 1. Try with more generic selectors for Claude
+    const claudeMessageSelectors = [
+      '.cl-message',
+      '.cl-message-container',
+      '[class*="message-container"]',
+      '[class*="message_"]',
+      '[class*="Message_"]',
+      '.cl-user-message, .cl-assistant-message',
+      '[data-message]',
+      'main > div > div > div' // Very generic last resort
+    ];
+    
+    for (const selector of claudeMessageSelectors) {
+      const foundMessages = threadContainer.querySelectorAll(selector);
+      if (foundMessages && foundMessages.length > 0) {
+        console.log(`Found ${foundMessages.length} messages using selector: ${selector}`);
+        messageBlocks.push(...Array.from(foundMessages));
+        break;
+      }
     }
     
-    sendResponse(result);
-    return true;
-  } 
-  else if (request.action === "updateAutoSaveSettings") {
-    autoSaveEnabled = request.enabled;
-    autoSaveInterval = request.interval;
-    startAutoSave();
-    sendResponse({ success: true });
-    return true;
+    // 2. If still nothing, get direct children of the thread container
+    if (messageBlocks.length === 0) {
+      console.log('No specific message blocks found, using direct children');
+      const directChildren = Array.from(threadContainer.children).filter(child => {
+        // Filter out any obvious non-message elements
+        return (
+          child.textContent.trim() && 
+          !child.className.includes('typing') && 
+          !child.className.includes('input') && 
+          !child.className.includes('composer')
+        );
+      });
+      
+      if (directChildren.length > 0) {
+        messageBlocks.push(...directChildren);
+        console.log('Added direct children as message blocks, new count:', messageBlocks.length);
+      }
+      
+      // 3. Last resort - use all divs with text
+      if (messageBlocks.length === 0) {
+        console.log('No direct children found, using all divs with content');
+        const allDivsWithContent = threadContainer.querySelectorAll('div');
+        const filteredDivs = Array.from(allDivsWithContent).filter(div => {
+          // Take only divs that have text and look like they could be messages
+          const text = div.textContent.trim();
+          return text.length > 20 && !div.className.includes('typing') && 
+                 !div.querySelector('input') && !div.querySelector('textarea');
+        });
+        
+        if (filteredDivs.length > 0) {
+          // Take only the most likely candidates
+          // Sort by text length - messages are usually longer
+          filteredDivs.sort((a, b) => 
+            b.textContent.trim().length - a.textContent.trim().length
+          );
+          
+          // Take top 20 - normally a conversation doesn't have hundreds of messages displayed
+          const topDivs = filteredDivs.slice(0, 20);
+          messageBlocks.push(...topDivs);
+          console.log('Added top divs with content as message blocks, new count:', messageBlocks.length);
+        }
+      }
+    }
   }
-  else if (request.action === "debugPageStructure") {
-    // 페이지 구조 디버깅 정보 수집 및 콘솔 출력
-    debugPageStructure();
-    sendResponse({ 
-      success: true,
-      scriptId: SCRIPT_ID,
-      url: window.location.href,
+  
+  if (messageBlocks.length === 0) {
+    console.log('DOM structure:', threadContainer.outerHTML.substring(0, 500));
+    throw new Error("메시지를 찾을 수 없습니다.");
+  }
+  
+  // 3. Process each message block
+  const conversation = {
+    title: document.title.replace(" - ChatGPT", "").replace(" - Claude", ""),
+    create_time: new Date().toISOString(),
+    update_time: new Date().toISOString(),
+    mapping: {},
+    messages: []
+  };
+  
+  let messageId = 1;
+  
+  // Function to recursively get all text content, preserving some structure
+  function getTextContent(element) {
+    if (!element) return '';
+    
+    // If it's a code block, we want to preserve its formatting
+    if (element.tagName === 'PRE' || 
+        element.className.includes('code') || 
+        element.parentElement?.tagName === 'CODE' ||
+        element.querySelector('code')) {
+      return element.innerHTML;
+    }
+    
+    // For regular text, recursively get all text content
+    return Array.from(element.childNodes).map(node => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        return node.textContent;
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        // Handle special elements
+        if (node.tagName === 'BR') return '\n';
+        if (node.tagName === 'P') return getTextContent(node) + '\n';
+        if (node.tagName === 'DIV' && !node.className.includes('chat-message')) return getTextContent(node) + '\n';
+        if (node.tagName === 'LI') return '- ' + getTextContent(node) + '\n';
+        if (node.tagName === 'UL' || node.tagName === 'OL') return getTextContent(node) + '\n';
+        if (node.tagName === 'H1') return '# ' + getTextContent(node) + '\n';
+        if (node.tagName === 'H2') return '## ' + getTextContent(node) + '\n';
+        if (node.tagName === 'H3') return '### ' + getTextContent(node) + '\n';
+        if (node.tagName === 'STRONG' || node.tagName === 'B') return '**' + getTextContent(node) + '**';
+        if (node.tagName === 'EM' || node.tagName === 'I') return '*' + getTextContent(node) + '*';
+        return getTextContent(node);
+      }
+      return '';
+    }).join('');
+  }
+  
+  messageBlocks.forEach((block, index) => {
+    // Determine if it's a user or assistant message using multiple possible indicators
+    
+    // ChatGPT specific indicators
+    const hasChatGPTImg = block.querySelector('img[alt="ChatGPT"]');
+    const hasUserImg = block.querySelector('img[alt="User"]');
+    
+    // Role attribute indicators
+    const hasAssistantRole = block.querySelector('[data-message-author-role="assistant"], [data-testid*="assistant"]') ||
+                           block.getAttribute('data-message-author-role') === 'assistant';
+    const hasUserRole = block.querySelector('[data-message-author-role="user"], [data-testid*="user"]') ||
+                       block.getAttribute('data-message-author-role') === 'user';
+    
+    // Class name indicators
+    const hasAssistantClass = block.className.includes('assistant') || 
+                             block.className.includes('bot') || 
+                             block.className.includes('ai');
+    const hasUserClass = block.className.includes('user') || 
+                        block.className.includes('human');
+    
+    // Position indicator (in many interfaces user messages are on the right)
+    const possibleUserAlign = window.getComputedStyle(block).textAlign === 'right' || 
+                             window.getComputedStyle(block).alignSelf === 'flex-end';
+    
+    // Combine all indicators
+    const isAssistantMessage = hasChatGPTImg || hasAssistantRole || hasAssistantClass;
+    const isUserMessage = hasUserImg || hasUserRole || hasUserClass || (possibleUserAlign && !isAssistantMessage);
+    
+    let role = 'unknown';
+    
+    // Skip if we can't determine the role
+    if (!isUserMessage && !isAssistantMessage) {
+      // Try to infer role based on position if this is not the first message
+      if (index > 0 && conversation.messages.length > 0) {
+        // If the last message was from the user, this is likely from the assistant
+        const lastMessageId = conversation.messages[conversation.messages.length - 1];
+        const lastMessage = conversation.mapping[lastMessageId];
+        if (lastMessage && lastMessage.role === 'user') {
+          role = 'assistant';
+        } else {
+          role = 'user';
+        }
+      } else if (index === 0) {
+        // First message is typically from the system or assistant
+        role = 'assistant';
+      } else {
+        // If we still can't determine, use alternating pattern
+        role = (index % 2 === 0) ? 'user' : 'assistant';
+      }
+    } else {
+      role = isUserMessage ? 'user' : 'assistant';
+    }
+    
+    console.log(`Message ${index}, determined role: ${role}`);
+    
+    // Extract message content with improved content detection
+    let contentElement = null;
+    
+    // Try different possible selectors based on various chat platforms
+    const contentSelectors = [
+      '[data-message-text="true"]',
+      '.markdown',
+      'div[class*="prose"]',
+      '.message-content',
+      '.chat-content',
+      '.message-text',
+      '.content',
+      'div[class*="content"]',
+      'div[class*="text"]',
+      'p',
+      'span'
+    ];
+    
+    // Try each selector until we find a match
+    for (const selector of contentSelectors) {
+      const element = block.querySelector(selector);
+      if (element && element.textContent.trim()) {
+        contentElement = element;
+        console.log(`Found content with selector: ${selector}`);
+        break;
+      }
+    }
+    
+    // If no specific content element was found, use the message block itself
+    if (!contentElement) {
+      contentElement = block;
+      console.log('Using block as content element');
+    }
+    
+    // Extract both HTML content and text content with special handling
+    const content = contentElement.innerHTML;
+    const textContent = getTextContent(contentElement).trim();
+    
+    // Skip empty messages
+    if (!textContent) {
+      console.log('Skipping empty message');
+      return;
+    }
+    
+    const message = {
+      id: `message-${messageId}`,
+      role: role,
+      content: content,
+      text_content: textContent,
       timestamp: new Date().toISOString()
-    });
-    return true;
+    };
+    
+    // Add to the mapping and messages
+    conversation.mapping[message.id] = message;
+    conversation.messages.push(message.id);
+    
+    messageId++;
+  });
+  
+  // Special case: no messages found
+  if (conversation.messages.length === 0) {
+    console.log('No valid messages found after processing');
+    throw new Error("유효한 메시지를 추출할 수 없습니다.");
   }
-  else if (request.action === "checkAlive") {
-    sendResponse({ 
-      alive: true, 
-      scriptId: SCRIPT_ID,
-      timestamp: new Date().toISOString()
-    });
-    return true;
-  }
-});
+  
+  console.log(`Successfully extracted ${conversation.messages.length} messages`);
+  return conversation;
+}
+
+// Function to convert conversation to Markdown
+function convertToMarkdown(conversation) {
+  let markdown = `# ${conversation.title}\n\n`;
+  markdown += `생성 시간: ${new Date(conversation.create_time).toLocaleString()}\n\n`;
+  
+  conversation.messages.forEach(messageId => {
+    const message = conversation.mapping[messageId];
+    const sender = message.role === 'user' ? '**사용자**' : '**AI**';
+    
+    markdown += `## ${sender} - ${new Date(message.timestamp).toLocaleString()}\n\n`;
+    markdown += `${message.text_content}\n\n`;
+    markdown += `---\n\n`;
+  });
+  
+  return markdown;
+}
+
+// Function to convert conversation to plain text
+function convertToText(conversation) {
+  let text = `${conversation.title}\n\n`;
+  text += `생성 시간: ${new Date(conversation.create_time).toLocaleString()}\n\n`;
+  
+  conversation.messages.forEach(messageId => {
+    const message = conversation.mapping[messageId];
+    const sender = message.role === 'user' ? '사용자' : 'AI';
+    
+    text += `[${sender}] - ${new Date(message.timestamp).toLocaleString()}\n`;
+    text += `${message.text_content}\n\n`;
+  });
+  
+  return text;
+}
+
+// Log that the content script has loaded at the end
+console.log("AI Chat Helper - 콘텐츠 스크립트 로드 완료");

@@ -1,80 +1,75 @@
-# AI Chat Helper: ChatGPT & Claude 대화 도우미
+# ChatGPT Conversation Helper
 
-이 Chrome 확장 프로그램은 ChatGPT와 Claude와의 대화를 JSON, Markdown, 텍스트 형식으로 내보내고, 원하는 시간에 메시지를 자동으로 전송할 수 있게 해줍니다.
+A Chrome extension that helps you extract conversations from ChatGPT, schedule messages, and apply custom styling.
 
-## 주요 기능
+## Features
 
-### 대화 내보내기
-- ChatGPT와 Claude 페이지에서 현재 대화 내용을 추출
-- 세 가지 형식(JSON, Markdown, 텍스트)으로 대화 내용 내보내기
-- 사용자와 AI 메시지를 구분하여 저장
-- 대화 시간 정보 포함
-- CSS가 적용된 텍스트도 정확히 추출 (특수 스타일링 텍스트 지원)
+1. **대화 내보내기 (Export Conversations)**
+   - JSON, Markdown, or plain text format
+   - Preserves the structure of conversations
+   - Includes timestamps and role information
 
-### 예약 메시지 기능
-- 원하는 시간에 메시지 자동 전송
-- 여러 개의 메시지 예약 가능
-- 예약된 메시지 목록 관리
+2. **예약 메시지 (Scheduled Messages)**
+   - Schedule messages to be sent at a specific time
+   - Messages will be sent automatically when the time comes
+   - Messages are stored locally and can be managed
 
-## 설치 방법
+3. **스타일 적용 (Apply Custom Styles)**
+   - Dark mode for better reading experience
+   - Compact mode for more efficient use of screen space
+   - Custom accent colors
+   - Advanced CSS customization
 
-1. 이 저장소를 다운로드하거나 클론합니다.
-2. Chrome 브라우저에서 `chrome://extensions`로 이동합니다.
-3. 우측 상단의 "개발자 모드"를 활성화합니다.
-4. "압축해제된 확장 프로그램을 로드합니다" 버튼을 클릭합니다.
-5. 프로젝트 폴더를 선택합니다.
+## Installation
 
-## 사용 방법
+1. Clone or download this repository
+2. Open Chrome and navigate to `chrome://extensions/`
+3. Enable "Developer mode" (top-right corner)
+4. Click "Load unpacked" and select the extension directory
+5. The extension icon should appear in your browser toolbar
 
-### 대화 내보내기
-1. ChatGPT나 Claude 페이지(https://chat.openai.com, https://chatgpt.com 또는 https://claude.ai)에 접속합니다.
-2. 대화를 진행합니다.
-3. 브라우저 상단의 확장 프로그램 아이콘을 클릭합니다.
-4. "대화 내보내기" 탭을 선택합니다.
-5. 원하는 형식(JSON, Markdown, 텍스트)을 선택합니다.
-6. "현재 대화 내보내기" 버튼을 클릭합니다.
-7. 저장 위치를 선택하면 파일이 다운로드됩니다.
+## Icon Files
 
-### 예약 메시지 사용
-1. ChatGPT나 Claude 페이지에 접속합니다.
-2. 브라우저 상단의 확장 프로그램 아이콘을 클릭합니다.
-3. "예약 메시지" 탭을 선택합니다.
-4. "예약 메시지 설정" 버튼을 클릭합니다.
-5. 새 탭에서 예약 메시지 설정 페이지가 열립니다.
-6. 메시지 내용과 전송 시간을 입력합니다.
-7. "메시지 예약하기" 버튼을 클릭합니다.
-8. 예약된 시간에 메시지가 자동으로 전송됩니다.
+You'll need to add your own icons to the `images` directory:
+- `icon16.png` (16x16 px)
+- `icon48.png` (48x48 px)
+- `icon128.png` (128x128 px)
 
-## 지원 형식
+You can create simple placeholder icons with any image editing software or use online icon generators.
 
-### JSON 형식
-대화 내용을 구조화된 JSON 형식으로 저장합니다. 메시지 ID, 역할(사용자/AI), 메시지 내용, 시간 정보 등이 포함됩니다.
+## Usage
 
-### Markdown 형식
-대화 내용을 가독성 좋은 Markdown 형식으로 저장합니다. 메시지 작성자를 명확히 구분하며, 코드 블록과 서식이 보존됩니다.
+1. Navigate to a ChatGPT page (`chat.openai.com` or `chatgpt.com`)
+2. Click the extension icon in your browser toolbar
+3. Use the different tabs to access the extension's features
 
-### 텍스트 형식
-대화 내용을 단순한 텍스트 형식으로 저장합니다. 메시지 작성자와 시간 정보만 포함됩니다.
+### 대화 내보내기 (Export Conversations)
 
-## 특징 및 장점
+1. Select the format you want (JSON, Markdown, or Text)
+2. Click "현재 대화 내보내기" (Export Current Conversation)
+3. Choose a location to save the file
 
-- **다중 플랫폼 지원**: ChatGPT와 Claude AI 모두 지원
-- **정확한 텍스트 추출**: 복잡한 서식이나 CSS가 적용된 텍스트도 정확히 추출
-- **메시지 예약 기능**: 원하는 시간에 메시지 자동 전송
-- **사용자 친화적 인터페이스**: 직관적인 탭 기반 UI
-- **오프라인 저장 및 분석**: 대화 내역을 로컬에 저장하여 나중에 참조 가능
+### 예약 메시지 (Scheduled Messages)
 
-## 주의사항
+1. Click "예약 메시지 설정" (Schedule Message Setup)
+2. Enter your message and select a time
+3. Click "메시지 예약하기" (Schedule Message)
+4. The message will be sent automatically at the scheduled time
 
-- 이 확장 프로그램은 ChatGPT와 Claude 웹 인터페이스의 HTML 구조에 의존합니다. 웹 인터페이스가 크게 변경될 경우 확장 프로그램이 제대로 작동하지 않을 수 있습니다.
-- 매우 긴 대화나 복잡한 형식(수학 방정식, 복잡한 코드 블록 등)은 완벽하게 추출되지 않을 수 있습니다.
-- 예약된 메시지는 브라우저가 열려 있고 해당 채팅 페이지에 접속해 있을 때만 전송됩니다.
+### 스타일 적용 (Apply Custom Styles)
 
-## 개인정보 보호
+1. Select the style options you want (Dark mode, Compact mode)
+2. Choose an accent color
+3. Add any custom CSS if needed
+4. Click "스타일 적용하기" (Apply Style)
 
-이 확장 프로그램은 다음과 같은 개인정보 보호 원칙을 따릅니다:
+## Development Notes
 
-- 모든 데이터 처리는 사용자의 브라우저 내에서만 이루어집니다.
-- 대화 내용은 사용자가 명시적으로 "내보내기" 버튼을 클릭할 때만 저장됩니다.
-- 예약된 메시지는 로컬 스토리지에만 저장되며, 어떠한 데이터도 외부 서버로 전송되지 않습니다.
-- 확장 프로그램은 로컬 다운로드만 생성하며, 모든 데이터는 사용자의 컴퓨터에만 저장됩니다.
+- The extension uses Manifest V3
+- Content scripts are used to interact with the ChatGPT page
+- Background script handles alarms for scheduled messages
+- Storage is used to save settings and scheduled messages
+
+## Credits
+
+Created as a custom solution for enhancing the ChatGPT experience.
