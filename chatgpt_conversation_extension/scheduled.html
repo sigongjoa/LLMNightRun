@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ChatGPT 예약 메시지</title>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #10a37f;
+      text-align: center;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      resize: vertical;
+    }
+    input[type="datetime-local"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .button {
+      background-color: #10a37f;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 4px 2px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    .scheduled-list {
+      margin-top: 30px;
+    }
+    .scheduled-item {
+      background-color: #f9f9f9;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      position: relative;
+    }
+    .remove-btn {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      position: absolute;
+      right: 10px;
+      top: 10px;
+    }
+    .scheduled-time {
+      font-weight: bold;
+      color: #10a37f;
+    }
+    .scheduled-message {
+      margin-top: 5px;
+      white-space: pre-wrap;
+    }
+    .status {
+      text-align: center;
+      margin: 10px 0;
+      font-style: italic;
+      color: #666;
+    }
+    .error {
+      color: #e74c3c;
+    }
+  </style>
+</head>
+<body>
+  <h1>ChatGPT 예약 메시지</h1>
+  
+  <div class="status" id="status">ChatGPT 페이지에서 사용 가능합니다.</div>
+  
+  <div class="form-group">
+    <label for="message">메시지 내용:</label>
+    <textarea id="message" placeholder="예약할 메시지 내용을 입력하세요..."></textarea>
+  </div>
+  
+  <div class="form-group">
+    <label for="schedule-time">예약 시간:</label>
+    <input type="datetime-local" id="schedule-time">
+  </div>
+  
+  <button id="add-schedule-btn" class="button">메시지 예약하기</button>
+  
+  <div class="scheduled-list">
+    <h2>예약된 메시지</h2>
+    <div id="scheduled-items">
+      <!-- 예약된 메시지 항목들이 여기에 추가됩니다 -->
+      <div class="scheduled-item" style="display:none;">
+        <button class="remove-btn">삭제</button>
+        <div class="scheduled-time"></div>
+        <div class="scheduled-message"></div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="scheduled.js"></script>
+</body>
+</html>

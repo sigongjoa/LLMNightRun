@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI Chat Helper</title>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      width: 300px;
+      padding: 10px;
+    }
+    .button {
+      background-color: #10a37f;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 14px;
+      margin: 4px 2px;
+      cursor: pointer;
+      border-radius: 4px;
+      width: 100%;
+    }
+    h2 {
+      color: #10a37f;
+      text-align: center;
+    }
+    .status {
+      margin-top: 10px;
+      text-align: center;
+      font-style: italic;
+      color: #666;
+    }
+    .format-options {
+      margin: 10px 0;
+    }
+    label {
+      display: block;
+      margin: 5px 0;
+    }
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #ddd;
+      margin-bottom: 15px;
+    }
+    .tab {
+      padding: 8px 15px;
+      cursor: pointer;
+      background-color: #f1f1f1;
+      border: 1px solid #ddd;
+      border-bottom: none;
+      border-radius: 4px 4px 0 0;
+      margin-right: 5px;
+    }
+    .tab.active {
+      background-color: #10a37f;
+      color: white;
+      border-color: #10a37f;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <h2>AI Chat Helper</h2>
+  
+  <div class="tabs">
+    <div class="tab active" data-tab="export">대화 내보내기</div>
+    <div class="tab" data-tab="schedule">예약 메시지</div>
+  </div>
+  
+  <div id="export-tab" class="tab-content active">
+    <div class="format-options">
+      <label>
+        <input type="radio" name="format" value="json" checked> JSON 형식
+      </label>
+      <label>
+        <input type="radio" name="format" value="markdown"> Markdown 형식
+      </label>
+      <label>
+        <input type="radio" name="format" value="text"> 텍스트 형식
+      </label>
+    </div>
+    
+    <button id="export-btn" class="button">현재 대화 내보내기</button>
+  </div>
+  
+  <div id="schedule-tab" class="tab-content">
+    <div style="margin-bottom: 15px;">
+      <p>원하는 시간에 메시지를 예약할 수 있습니다.</p>
+    </div>
+    <button id="open-schedule-btn" class="button">예약 메시지 설정</button>
+  </div>
+  
+  <div id="status" class="status">AI 채팅 페이지에서 사용 가능합니다.</div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
