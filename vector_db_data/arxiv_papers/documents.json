@@ -1,0 +1,245 @@
+{
+  "5931d381-3534-4c02-891f-f3e2b9fbee11": {
+    "id": "5931d381-3534-4c02-891f-f3e2b9fbee11",
+    "text": "Towards a Multi-Agent Vision-Language System for Zero-Shot Novel Hazardous Object Detection for Autonomous Driving Safety Detecting anomalous hazards in visual data, particularly in video streams, is\na critical challenge in autonomous driving. Existing models often struggle with\nunpredictable, out-of-label hazards due to their reliance on predefined object\ncategories. In this paper, we propose a multimodal approach that integrates\nvision-language reasoning with zero-shot object detection to improve hazard\nidentification and explanation. Our pipeline consists of a Vision-Language\nModel (VLM), a Large Language Model (LLM), in order to detect hazardous objects\nwithin a traffic scene. We refine object detection by incorporating OpenAI's\nCLIP model to match predicted hazards with bounding box annotations, improving\nlocalization accuracy. To assess model performance, we create a ground truth\ndataset by denoising and extending the foundational COOOL\n(Challenge-of-Out-of-Label) anomaly detection benchmark dataset with complete\nnatural language descriptions for hazard annotations. We define a means of\nhazard detection and labeling evaluation on the extended dataset using cosine\nsimilarity. This evaluation considers the semantic similarity between the\npredicted hazard description and the annotated ground truth for each video.\nAdditionally, we release a set of tools for structuring and managing\nlarge-scale hazard detection datasets. Our findings highlight the strengths and\nlimitations of current vision-language-based approaches, offering insights into\nfuture improvements in autonomous hazard detection systems. Our models,\nscripts, and data can be found at https://github.com/mi3labucm/COOOLER.git hazard detection language video hazards driving vision scene models object hazardous dataset autonomous objects evaluation",
+    "metadata": {
+      "authors": [
+        "Shashank Shriram",
+        "Srinivasa Perisetla",
+        "Aryan Keskar",
+        "Harsha Krishnaswamy",
+        "Tonko Emil Westerhof Bossen",
+        "Andreas Møgelmose",
+        "Ross Greer"
+      ],
+      "categories": [
+        "cs.CV",
+        "cs.AI"
+      ],
+      "entry_id": "2504.13399v1",
+      "id": "http://arxiv.org/abs/2504.13399v1",
+      "pdf_url": "http://arxiv.org/pdf/2504.13399v1",
+      "published": "2025-04-18T01:25:02+00:00",
+      "summary": "Detecting anomalous hazards in visual data, particularly in video streams, is\na critical challenge in autonomous driving. Existing models often struggle with\nunpredictable, out-of-label hazards due to their reliance on predefined object\ncategories. In this paper, we propose a multimodal approach that integrates\nvision-language reasoning with zero-shot object detection to improve hazard\nidentification and explanation. Our pipeline consists of a Vision-Language\nModel (VLM), a Large Language Model (LLM), in order to detect hazardous objects\nwithin a traffic scene. We refine object detection by incorporating OpenAI's\nCLIP model to match predicted hazards with bounding box annotations, improving\nlocalization accuracy. To assess model performance, we create a ground truth\ndataset by denoising and extending the foundational COOOL\n(Challenge-of-Out-of-Label) anomaly detection benchmark dataset with complete\nnatural language descriptions for hazard annotations. We define a means of\nhazard detection and labeling evaluation on the extended dataset using cosine\nsimilarity. This evaluation considers the semantic similarity between the\npredicted hazard description and the annotated ground truth for each video.\nAdditionally, we release a set of tools for structuring and managing\nlarge-scale hazard detection datasets. Our findings highlight the strengths and\nlimitations of current vision-language-based approaches, offering insights into\nfuture improvements in autonomous hazard detection systems. Our models,\nscripts, and data can be found at https://github.com/mi3labucm/COOOLER.git",
+      "title": "Towards a Multi-Agent Vision-Language System for Zero-Shot Novel Hazardous Object Detection for Autonomous Driving Safety",
+      "updated": "2025-04-18T01:25:02+00:00",
+      "file_path": "D:\\LLMNightRun_feature\\arxiv_module\\papers\\2504.13399v1_Towards_a_Multi-Agent_Vision-Language_System_for_Z.pdf",
+      "keywords": [
+        {
+          "keyword": "hazard",
+          "score": 0.5,
+          "tfidf_score": 0.0,
+          "textrank_score": 1.0
+        },
+        {
+          "keyword": "detection",
+          "score": 0.23226110067910222,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.46452220135820443
+        },
+        {
+          "keyword": "language",
+          "score": 0.1802373213786917,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.3604746427573834
+        },
+        {
+          "keyword": "video",
+          "score": 0.15660312406799334,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.3132062481359867
+        },
+        {
+          "keyword": "hazards",
+          "score": 0.13844013864643298,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.27688027729286596
+        },
+        {
+          "keyword": "driving",
+          "score": 0.13532545333052734,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.2706509066610547
+        },
+        {
+          "keyword": "vision",
+          "score": 0.12992671502486272,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.25985343004972544
+        },
+        {
+          "keyword": "scene",
+          "score": 0.0947391586608652,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.1894783173217304
+        },
+        {
+          "keyword": "models",
+          "score": 0.0697093485906034,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.1394186971812068
+        },
+        {
+          "keyword": "object",
+          "score": 0.06425267126067347,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.12850534252134693
+        },
+        {
+          "keyword": "hazardous",
+          "score": 0.05975182543336048,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.11950365086672096
+        },
+        {
+          "keyword": "dataset",
+          "score": 0.04493247502445057,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.08986495004890115
+        },
+        {
+          "keyword": "autonomous",
+          "score": 0.03734787461861422,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.07469574923722844
+        },
+        {
+          "keyword": "objects",
+          "score": 0.024851551067425807,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.049703102134851615
+        },
+        {
+          "keyword": "evaluation",
+          "score": 0.0,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.0
+        }
+      ],
+      "extractive_summary": "Towards a Multi Agent Vision Language System for Zero Shot Novel Hazardous Object Detection for Autonomous Driving Safety Shashank Shriram1, Srinivasa Perisetla1, Aryan Keskar1, Harsha Krishnaswamy1, Tonko Emil Westerhof Bossen1,2, Andreas Møgelmose2, Ross Greer1 Machine Intelligence, Interaction, and Imagination (Mi3) Laboratory 1University of California, Merced 2Aalborg Universitet Abstract  Detecting anomalous hazards in visual data, partic  ularly in video streams, is a critical challenge in autonomous driving. Our pipeline consists of a Vision Language Model (VLM), a Large Language Model (LLM), in order to detect hazardous objects within a traffic scene. This dataset extension includes denoising and preprocessing of the COOOL videos, hazard annotations, and definition of an open set method of evaluation to use in our experiments to validate our methods of anomaly detection and description. The dataset within this benchmark includes 200 short video clips capturing diverse traffic scenes featuring anomalies and hazards and annotated bounding boxes for all objects within the scene. 4) Publicly available, open set methods of evaluation to human annotated ground truth hazard descriptions which include cosine similarity and embedding based caption analysis By bridging vision language understanding with improved hazard detection, this research enhances the ability of au  tonomous vehicles to recognize real world anomalies through the use of VLMs, LLMs, CLIP and a new evaluation bench  1To clarify our terminology, we use benchmark to refer to a standardized dataset, task, and means of evaluation. These de  scriptions are then inputted into a LLM, in our case OpenAI s GPT 4o mini, to extract all potentially hazardous objects and to rank them based on what is deemed most hazardous and least hazardous according to the model through the following prompts: System Prompt:  You are an AI assistant that identifies hazards and anomalies within descriptions of frames from a traffic scene video  User Prompt:  List1:  List of Descriptions , List out all the potential hazardous objects and anomalies from most hazardous to least hazardous in the traffic scene and give me very short description of what the object is doing. The resulting ranked list is referred to as Critical Object Set (COS) which contains objects that are both hazardous and present in the driving scene. COOOLER (Challenge Out Of Label with Expanded Rep  resentations The Challenge of Out of Label with Expanded Representa  tions (COOOLER) dataset extension builds upon the COOOL benchmark, aiming to enhance the quality and effectiveness ofhazard detection in autonomous driving systems and providing new methods of model evaluation. C ONCLUDING REMARKS This research advances hazard detection in autonomous driving by integrating the zero shot reasoning of Vision  Language Models (VLMs) and Large Language Models (LLMs) for the open set recognition of novel hazards beyond predefined categories. Yang,  Insight: Enhancing autonomous driving safety through vision language models on context  aware hazard detection and edge case evaluation,  arXiv e prints , pp.",
+      "llm_summary": ""
+    },
+    "created_at": "2025-04-21T15:14:59.952018"
+  },
+  "7ff9ea01-eed7-4679-ad9f-f6a159c23f0a": {
+    "id": "7ff9ea01-eed7-4679-ad9f-f6a159c23f0a",
+    "text": "Analyzing LLMs' Knowledge Boundary Cognition Across Languages Through the Lens of Internal Representations While understanding the knowledge boundaries of LLMs is crucial to prevent\nhallucination, research on knowledge boundaries of LLMs has predominantly\nfocused on English. In this work, we present the first study to analyze how\nLLMs recognize knowledge boundaries across different languages by probing their\ninternal representations when processing known and unknown questions in\nmultiple languages. Our empirical studies reveal three key findings: 1) LLMs'\nperceptions of knowledge boundaries are encoded in the middle to middle-upper\nlayers across different languages. 2) Language differences in knowledge\nboundary perception follow a linear structure, which motivates our proposal of\na training-free alignment method that effectively transfers knowledge boundary\nperception ability across languages, thereby helping reduce hallucination risk\nin low-resource languages; 3) Fine-tuning on bilingual question pair\ntranslation further enhances LLMs' recognition of knowledge boundaries across\nlanguages. Given the absence of standard testbeds for cross-lingual knowledge\nboundary analysis, we construct a multilingual evaluation suite comprising\nthree representative types of knowledge boundary data. Our code and datasets\nare publicly available at\nhttps://github.com/DAMO-NLP-SG/LLM-Multilingual-Knowledge-Boundaries. performance language languages english khmer chinese training knowledge ood probes thai across question al. vietnamese",
+    "metadata": {
+      "authors": [
+        "Chenghao Xiao",
+        "Hou Pong Chan",
+        "Hao Zhang",
+        "Mahani Aljunied",
+        "Lidong Bing",
+        "Noura Al Moubayed",
+        "Yu Rong"
+      ],
+      "categories": [
+        "cs.CL"
+      ],
+      "entry_id": "2504.13816v1",
+      "file_path": "D:\\LLMNightRun_feature\\arxiv_module\\papers\\2504.13816v1_Analyzing_LLMs__Knowledge_Boundary_Cognition_Acros.pdf",
+      "id": "http://arxiv.org/abs/2504.13816v1",
+      "pdf_url": "http://arxiv.org/pdf/2504.13816v1",
+      "published": "2025-04-18T17:44:12+00:00",
+      "summary": "While understanding the knowledge boundaries of LLMs is crucial to prevent\nhallucination, research on knowledge boundaries of LLMs has predominantly\nfocused on English. In this work, we present the first study to analyze how\nLLMs recognize knowledge boundaries across different languages by probing their\ninternal representations when processing known and unknown questions in\nmultiple languages. Our empirical studies reveal three key findings: 1) LLMs'\nperceptions of knowledge boundaries are encoded in the middle to middle-upper\nlayers across different languages. 2) Language differences in knowledge\nboundary perception follow a linear structure, which motivates our proposal of\na training-free alignment method that effectively transfers knowledge boundary\nperception ability across languages, thereby helping reduce hallucination risk\nin low-resource languages; 3) Fine-tuning on bilingual question pair\ntranslation further enhances LLMs' recognition of knowledge boundaries across\nlanguages. Given the absence of standard testbeds for cross-lingual knowledge\nboundary analysis, we construct a multilingual evaluation suite comprising\nthree representative types of knowledge boundary data. Our code and datasets\nare publicly available at\nhttps://github.com/DAMO-NLP-SG/LLM-Multilingual-Knowledge-Boundaries.",
+      "title": "Analyzing LLMs' Knowledge Boundary Cognition Across Languages Through the Lens of Internal Representations",
+      "updated": "2025-04-18T17:44:12+00:00",
+      "keywords": [
+        {
+          "keyword": "performance",
+          "score": 0.5,
+          "tfidf_score": 0.0,
+          "textrank_score": 1.0
+        },
+        {
+          "keyword": "language",
+          "score": 0.10159981494608102,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.20319962989216203
+        },
+        {
+          "keyword": "languages",
+          "score": 0.09807717066335808,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.19615434132671616
+        },
+        {
+          "keyword": "english",
+          "score": 0.08169049674135039,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.16338099348270077
+        },
+        {
+          "keyword": "khmer",
+          "score": 0.059672412140217714,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.11934482428043543
+        },
+        {
+          "keyword": "chinese",
+          "score": 0.04353576766748271,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.08707153533496542
+        },
+        {
+          "keyword": "training",
+          "score": 0.04323719150391872,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.08647438300783744
+        },
+        {
+          "keyword": "knowledge",
+          "score": 0.03747365511243454,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.07494731022486908
+        },
+        {
+          "keyword": "ood",
+          "score": 0.028464403504407904,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.05692880700881581
+        },
+        {
+          "keyword": "probes",
+          "score": 0.018904848442556382,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.037809696885112765
+        },
+        {
+          "keyword": "thai",
+          "score": 0.01844033797793475,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.0368806759558695
+        },
+        {
+          "keyword": "across",
+          "score": 0.014795754025645428,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.029591508051290856
+        },
+        {
+          "keyword": "question",
+          "score": 0.008840396635764265,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.01768079327152853
+        },
+        {
+          "keyword": "al.",
+          "score": 4.768519805060648e-05,
+          "tfidf_score": 0.0,
+          "textrank_score": 9.537039610121296e-05
+        },
+        {
+          "keyword": "vietnamese",
+          "score": 0.0,
+          "tfidf_score": 0.0,
+          "textrank_score": 0.0
+        }
+      ],
+      "extractive_summary": "2) Language differences in knowledge boundary perception follow a linear structure, which motivates our proposal of a training free alignment method that effectively transfers knowledge boundary perception ability across languages, thereby helping reduce hallucination risk in low resource languages; 3) Fine tuning on bilingual question pair translation further enhances LLMs  recognition of knowledge boundaries across languages. ...Unknown Question in EnglishKnown Question in English Known Question in Lao Unknown Question in LaoLLM EmbeddingLayer 1Layer 2Layer LFigure 1: Our goal is to analyze LLMs  cognition of knowledge boundaries across different languages by in  specting their representations of knowledge boundaries in multiple languages. Experiments ( 5) show that language dif  ference for knowledge boundary is encoded in a linear structure, and training free alignment meth  ods like as mean shifting and linear projection can effectively transfer the knowledge boundary per  ception across languages. 0 5 10 15 20 25 Layer Num0.7250.7500.7750.8000.8250.8500.875Accuracy Performance Comparison: train on Khmer, zero shot on others after linear projection English Performance Chinese Performance Vietnamese Performance Thai Performance Khmer performance Indonesian Performance Malay PerformanceFigure 5: Performance of layer wise probes trained on Khmer for different languages post projection. 0 5 10 15 20 25 Layer Num0.7500.7750.8000.8250.8500.8750.9000.925Accuracy Probes train on English, zero shot on others English Performance Chinese Performance Vietnamese Performance Thai Performance Khmer Performance Indonesian Performance Malay Performance 0 5 10 15 20 25 Layer Num0.7500.7750.8000.8250.8500.8750.9000.9250.950 Probes train on Chinese, zero shot on others English Performance Chinese Performance Vietnamese Performance Thai Performance Khmer Performance Indonesian Performance Malay PerformanceProbes Trained on English and Chinese, Zero shot on Others (after km en SFT) Figure 6: After SFT ed on Khmer English translation pairs, Qwen2.5 7B exhibits unexpected enhancement in Chinese representations, which otherwise would achieve  0.90or lower accuracy across probes. 6 Training based Enhancement Having shown the promising performance of align  ing representations across language subspaces and the weak to strong generalization in language pairs, we further investigate whether training on specific languages can enhance performance that general  izes to others. This improve  ment holds across language families and bilin  gual pair selections: fine tuning Llama 3.1 8B on Khmer  Thai or Lao  English pairs enhances upper layer performance by  10  (Figures 11, 12), indicating the upper layer  expression spaces  across languages has been better aligned. For instance, Qwen2.5 fine tuned on Khmer  English pairs exhibits emergent alignment favoring Chinese representations (Figure 6), significantly improving performance with probes trained in other languages (full results in Figure 14). We conduct the following experi  ments with English, Thai and Chinese: To construct non parallel samples to compute language means, we sample  7k examples per language from our SeaRefuse training set, which are non parallel as all questions are grounded in different language s contexts collected from different seed datasets. 0 5 10 15 20 250.750.800.850.90Accuracy Probes train on English, zero shot on others English Performance Chinese Performance Vietnamese Performance Thai Performance Khmer Performance Indonesian Performance Malay Performance 0 5 10 15 20 250.80.9Accuracy Probes train on Chinese, zero shot on others English Performance Chinese Performance Vietnamese Performance Thai Performance Khmer Performance Indonesian Performance Malay Performance 0 5 10 15 20 250.750.800.850.90Accuracy Probes train on Vietnamese, zero shot on others English Performance Chinese Performance Vietnamese Performance Thai Performance Khmer Performance Indonesian Performance Malay Performance 0 5 10 15 20 250.750.800.850.90Accuracy Probes train on Thai, zero shot on others English Performance Chinese Performance Vietnamese Performance Thai Performance Khmer Performance Indonesian Performance Malay Performance 0 5 10 15 20 250.80.9Accuracy Probes train on Khmer, zero shot on others English Performance Chinese Performance Vietnamese Performance Thai Performance Khmer Performance Indonesian Performance Malay Performance 0 5 10 15 20 250.750.800.850.90Accuracy Probes train on Indonesian, zero shot on others English Performance Chinese Performance Vietnamese Performance Thai Performance Khmer Performance Indonesian Performance Malay Performance 0 5 10 15 20 25 Layer Num0.750.800.850.90Accuracy Probes train on Malay, zero shot on others English Performance Chinese Performance Vietnamese Performance Thai Performance Khmer Performance Indonesian Performance Malay PerformanceProbes Zero shot Predicting all Languages after Linear Projection (Model after km en SFT) Figure 14: Full transferability results for probes trained on all languages, after Qwen2.5 7B has been fine tuned on Khmer English translation.",
+      "llm_summary": ""
+    },
+    "created_at": "2025-04-21T15:18:57.818976"
+  }
+}
