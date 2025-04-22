@@ -1,0 +1,30 @@
+{
+  "session_id": "sample_session_001",
+  "date": "2025-04-22",
+  "logs": [
+    {
+      "role": "user",
+      "content": "FastAPI에서 PDF 업로드 후 텍스트를 추출하려고 하는데, PyMuPDF로 처리해도 한글이 깨져서 나와."
+    },
+    {
+      "role": "assistant",
+      "content": "PyMuPDF에서 한글이 깨지는 경우, 폰트 문제일 수 있습니다. `text = page.get_text('text')` 대신 `'blocks'` 또는 `'rawdict'` 모드로 추출해 보세요. 예:\n\n```python\nblocks = page.get_text('blocks')\n```\n\n또한, `fitz.TOOLS.set_aa_level(0)` 설정으로 렌더링 문제를 완화할 수 있습니다."
+    },
+    {
+      "role": "user",
+      "content": "오, blocks로 하니까 텍스트는 나오는데 줄바꿈이 엉망이야. 깔끔하게 한 문단으로 이어지게 하려면 어떻게 해?"
+    },
+    {
+      "role": "assistant",
+      "content": "각 블록의 내용을 정렬하고, 좌표 기준으로 같은 줄에 있는 텍스트를 병합해보세요. 예:\n\n```python\nblocks.sort(key=lambda b: (b[1], b[0]))\ntext = ' '.join([b[4] for b in blocks])\n```"
+    },
+    {
+      "role": "user",
+      "content": "텍스트 추출 잘 됐어. 그럼 이제 업로드된 PDF에서 텍스트 뽑고 저장하는 FastAPI 엔드포인트 하나 만들어줘."
+    },
+    {
+      "role": "assistant",
+      "content": "아래는 FastAPI용 PDF 업로드 및 텍스트 추출 엔드포인트입니다:\n\n```python\n@app.post(\"/upload-pdf\")\nasync def upload_pdf(file: UploadFile = File(...)):\n    contents = await file.read()\n    with open(\"temp.pdf\", \"wb\") as f:\n        f.write(contents)\n    doc = fitz.open(\"temp.pdf\")\n    result = []\n    for page in doc:\n        blocks = page.get_text(\"blocks\")\n        blocks.sort(key=lambda b: (b[1], b[0]))\n        result.append(' '.join([b[4] for b in blocks]))\n    return {\"text\": '\\n'.join(result)}\n```"
+    }
+  ]
+}

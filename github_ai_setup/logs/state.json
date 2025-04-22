@@ -1,0 +1,8 @@
+{
+  "state": "error",
+  "timestamp": "2025-04-22 00:19:15",
+  "details": {
+    "repo_path": "data/repos\\karpathy_micrograd"
+  },
+  "error": "가상 환경 설정 실패: Command '['data/repos\\\\karpathy_micrograd\\\\venv\\\\Scripts\\\\pip.exe', 'install', '--upgrade', 'pip']' returned non-zero exit status 1."
+}

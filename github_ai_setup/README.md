@@ -27,14 +27,6 @@
 ## 설치 방법
 
 ```bash
-# 레포지토리 클론
-git clone <repository_url>
-cd LLMNightRun_feature
-
-# 가상 환경 생성 및 활성화
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
 # 필요한 패키지 설치
 pip install -r requirements.txt
 ```
@@ -85,48 +77,26 @@ python main.py --repo https://github.com/username/ai-model-repo --config my_conf
 
 ## 테스트
 
-이 프로젝트는 단위 테스트 및 통합 테스트를 포함하고 있습니다. 테스트를 실행하려면:
+테스트를 실행하려면:
 
 ```bash
-# 모든 테스트 실행
-python test_code/run_tests.py all
-
-# 단위 테스트만 실행
-python test_code/run_tests.py unit
-
-# 통합 테스트만 실행
-python test_code/run_tests.py integration
+python run_tests.py
 ```
-
-테스트 코드는 `test_code` 디렉토리에 있으며 다음과 같이 구성됩니다:
-
-- `unit/`: 개별 모듈에 대한 단위 테스트
-- `integration/`: 워크플로우 전체에 대한 통합 테스트
 
 ## 디렉토리 구조
 
 ```
-LLMNightRun_feature/
+github_ai_setup/
 ├── configs/             # 설정 파일
-├── data/                # 데이터 저장소
-│   ├── cache/           # 캐시 데이터
-│   ├── processed/       # 전처리된 데이터
-│   └── repos/           # 다운로드된 레포지토리
-├── logs/                # 로그 파일
-│   └── tensorboard/     # TensorBoard 로그
-├── models/              # 모델 저장소
-│   └── checkpoints/     # 모델 체크포인트
+│   └── default_config.yaml # 기본 설정 파일
 ├── src/                 # 소스 코드
 │   ├── data/            # 데이터 처리 모듈
 │   ├── models/          # 모델 관련 모듈
 │   ├── utils/           # 유틸리티 모듈
 │   └── visualization/   # 시각화 모듈
-├── test_code/           # 테스트 코드
-│   ├── unit/            # 단위 테스트
-│   ├── integration/     # 통합 테스트
-│   └── run_tests.py     # 테스트 실행 스크립트
-├── visualizations/      # 시각화 결과
-└── main.py              # 메인 실행 파일
+├── tests/               # 테스트 코드
+├── main.py              # 메인 실행 파일
+└── run_tests.py         # 테스트 실행 스크립트
 ```
 
 ## 상태 관리
@@ -143,7 +113,3 @@ LLMNightRun_feature/
 8. `error`: 오류 발생
 
 오류가 발생한 경우, 로그 파일과 상태 파일(logs/state.json)에서 자세한 정보를 확인할 수 있습니다.
-
-## 라이선스
-
-[MIT License](LICENSE)

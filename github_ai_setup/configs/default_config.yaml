@@ -1,0 +1,60 @@
+# GitHub AI 모델 환경 설정 및 학습 도구 기본 설정
+
+# 상태 관리 설정
+state_file: "logs/state.json"
+
+# GitHub 설정
+github:
+  repo_dir: "data/repos"
+  # auth_token: "" # GitHub 인증 토큰 (선택 사항)
+
+# 환경 설정
+environment:
+  venv_dir: "venv"
+  use_conda: false
+  python_version: "3.8"
+  # cuda_version: "11.7" # CUDA 버전 (선택 사항)
+  force_reinstall: false
+
+# 데이터 처리 설정
+data:
+  data_dir: "data/processed"
+  cache_dir: "data/cache"
+  max_samples: 1000
+  preprocessing_steps:
+    - name: "split_data"
+      type: "builtin"
+      params:
+        train_ratio: 0.8
+        val_ratio: 0.1
+        test_ratio: 0.1
+        seed: 42
+        method: "random"
+    
+    - name: "normalize"
+      type: "builtin"
+      params:
+        method: "zscore"
+
+# 학습 설정
+training:
+  model_dir: "models"
+  tensorboard_dir: "logs/tensorboard"
+  checkpoint_dir: "models/checkpoints"
+  model_type: "pytorch"  # "pytorch", "tensorflow", "scikit-learn" 중 하나
+  epochs: 10
+  batch_size: 32
+  hyperparameters:
+    learning_rate: 0.001
+    weight_decay: 0.0001
+    dropout: 0.2
+
+# 시각화 설정
+visualization:
+  output_dir: "visualizations"
+  tensorboard_dir: "logs/tensorboard"
+  plot_types:
+    - "training_history"
+    - "model_performance"
+    - "data_distribution"
+  format: "png"
