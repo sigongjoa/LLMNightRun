@@ -1,0 +1,45 @@
+arxiv_module:
+  data_dir: data/arxiv
+  max_results: 20
+  use_vector_db: true
+conversation:
+  default_format: json
+  max_history: 100
+  storage_dir: data/conversations
+core:
+  data_dir: data
+  debug: false
+  log_dir: logs
+  log_level: INFO
+github_ai_setup:
+  data_dir: data/github_ai
+  default_framework: pytorch
+  default_model_type: classification
+github_docs:
+  default_output_dir: data/github_docs
+  include_code_snippets: true
+  templates_dir: github_docs/templates
+gui:
+  font_size: 10
+  save_layout: true
+  theme: light
+  window_size:
+  - 900
+  - 700
+local_llm:
+  base_url: http://127.0.0.1:1234
+  enabled: true
+  max_tokens: 1000
+  model_id: deepseek-r1-distill-qwen-7b
+  temperature: 0.7
+  timeout: 30
+  top_p: 0.9
+plugin_system:
+  auto_discover: true
+  enabled_plugins: []
+  plugins_dir: plugins
+vector_db:
+  default_encoder: default
+  dimension: 768
+  sentence_transformer_model: all-MiniLM-L6-v2
+  storage_dir: data/vector_db

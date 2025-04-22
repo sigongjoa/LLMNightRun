@@ -1,0 +1,243 @@
+2025-04-22 15:36:23,445 - main - INFO - Logging initialized
+2025-04-22 15:36:23,728 - main - ERROR - Application error: attempted relative import beyond top-level package
+Traceback (most recent call last):
+  File "D:\LLMNightRun\main.py", line 106, in main
+    from gui import LLMNightRunApp
+  File "D:\LLMNightRun\gui\__init__.py", line 7, in <module>
+    from .app import LLMNightRunApp
+  File "D:\LLMNightRun\gui\app.py", line 13, in <module>
+    from ..core.logging import get_logger
+ImportError: attempted relative import beyond top-level package
+2025-04-22 15:39:18,235 - main - INFO - 로깅 초기화됨
+2025-04-22 15:39:19,311 - main - ERROR - 애플리케이션 로드 실패: attempted relative import beyond top-level package
+Traceback (most recent call last):
+  File "D:\LLMNightRun\run.py", line 325, in main
+    from gui.app import LLMNightRunApp
+  File "D:\LLMNightRun\gui\__init__.py", line 7, in <module>
+    from gui.app import LLMNightRunApp
+  File "D:\LLMNightRun\gui\app.py", line 16, in <module>
+    from local_llm.api import get_status as llm_get_status, chat as llm_chat
+  File "D:\LLMNightRun\local_llm\__init__.py", line 7, in <module>
+    from .client import LLMClient
+  File "D:\LLMNightRun\local_llm\client.py", line 12, in <module>
+    from ..core.logging import get_logger
+ImportError: attempted relative import beyond top-level package
+2025-04-22 15:42:11,562 - main - INFO - 로깅 초기화됨
+2025-04-22 15:42:13,354 - main - ERROR - 애플리케이션 로드 실패: attempted relative import beyond top-level package
+Traceback (most recent call last):
+  File "D:\LLMNightRun\run.py", line 325, in main
+    from gui.app import LLMNightRunApp
+  File "D:\LLMNightRun\gui\__init__.py", line 7, in <module>
+    from gui.app import LLMNightRunApp
+  File "D:\LLMNightRun\gui\app.py", line 18, in <module>
+    from vector_db import VectorDB, Document
+  File "D:\LLMNightRun\vector_db\__init__.py", line 7, in <module>
+    from .core import VectorDB, Document
+  File "D:\LLMNightRun\vector_db\core.py", line 15, in <module>
+    from .encoders import Encoder, DefaultEncoder
+  File "D:\LLMNightRun\vector_db\encoders\__init__.py", line 8, in <module>
+    from .default import DefaultEncoder
+  File "D:\LLMNightRun\vector_db\encoders\default.py", line 13, in <module>
+    from ...core.logging import get_logger
+ImportError: attempted relative import beyond top-level package
+2025-04-22 15:48:30,451 - main - INFO - 로깅 초기화됨
+2025-04-22 15:52:42,869 - main - INFO - Logging initialized
+2025-04-22 15:52:43,576 - conversation - INFO - 대화 관리자 초기화됨: data/conversations
+2025-04-22 15:52:43,617 - vector_db - INFO - 벡터 데이터베이스 초기화됨: data/vector_db (차원: 768)
+2025-04-22 15:52:43,619 - gui - INFO - 벡터 DB 초기화됨
+2025-04-22 15:52:43,622 - plugin_system - INFO - 0개 플러그인 로드됨
+2025-04-22 15:52:43,624 - gui - INFO - 플러그인 로드됨
+2025-04-22 15:52:43,645 - local_llm - INFO - LLM 서비스 연결됨, 모델 ID: deepseek-r1-distill-qwen-7b
+2025-04-22 15:52:44,731 - gui - ERROR - LLM 연결 확인 중 오류 발생: main thread is not in main loop
+2025-04-22 15:52:47,747 - gui - INFO - GUI 애플리케이션 초기화됨
+2025-04-22 15:52:47,747 - main - INFO - Starting application
+2025-04-22 15:53:07,017 - gui - INFO - 애플리케이션 종료됨
+2025-04-22 15:53:23,237 - main - INFO - Logging initialized
+2025-04-22 15:53:23,720 - conversation - INFO - 대화 관리자 초기화됨: data/conversations
+2025-04-22 15:53:23,726 - vector_db - INFO - 벡터 데이터베이스 초기화됨: data/vector_db (차원: 768)
+2025-04-22 15:53:23,726 - gui - INFO - 벡터 DB 초기화됨
+2025-04-22 15:53:23,726 - plugin_system - INFO - 0개 플러그인 로드됨
+2025-04-22 15:53:23,727 - gui - INFO - 플러그인 로드됨
+2025-04-22 15:53:23,732 - local_llm - INFO - LLM 서비스 연결됨, 모델 ID: deepseek-r1-distill-qwen-7b
+2025-04-22 15:53:24,820 - gui - ERROR - LLM 연결 확인 중 오류 발생: main thread is not in main loop
+2025-04-22 15:53:25,900 - gui - INFO - GUI 애플리케이션 초기화됨
+2025-04-22 15:53:25,901 - main - INFO - Starting application
+2025-04-22 16:02:19,615 - gui - INFO - 애플리케이션 종료됨
+2025-04-22 16:02:31,755 - main - INFO - Logging initialized
+2025-04-22 16:02:32,277 - conversation - INFO - 대화 관리자 초기화됨: data/conversations
+2025-04-22 16:02:32,286 - gui - INFO - GUI 애플리케이션 초기화됨
+2025-04-22 16:02:32,287 - main - INFO - Starting application
+2025-04-22 16:02:42,724 - gui - INFO - 애플리케이션 종료됨
+2025-04-22 16:07:34,107 - main - INFO - Logging initialized
+2025-04-22 16:07:35,012 - conversation - INFO - 대화 관리자 초기화됨: data/conversations
+2025-04-22 16:07:35,014 - vector_db - INFO - 벡터 데이터베이스 초기화됨: data/vector_db (차원: 768)
+2025-04-22 16:07:35,014 - gui - INFO - 벡터 DB 초기화됨
+2025-04-22 16:07:35,015 - plugin_system - INFO - 0개 플러그인 로드됨
+2025-04-22 16:07:35,015 - gui - INFO - 플러그인 로드됨
+2025-04-22 16:07:35,021 - local_llm - INFO - LLM 서비스 연결됨, 모델 ID: deepseek-r1-distill-qwen-7b
+2025-04-22 16:07:36,113 - gui - ERROR - LLM 연결 확인 중 오류 발생: main thread is not in main loop
+2025-04-22 16:07:41,915 - gui - INFO - GUI 애플리케이션 초기화됨
+2025-04-22 16:07:41,916 - main - INFO - Starting application
+2025-04-22 16:10:42,210 - gui - INFO - 애플리케이션 종료됨
+2025-04-22 16:11:43,068 - main - INFO - Logging initialized
+2025-04-22 16:11:43,543 - conversation - INFO - 대화 관리자 초기화됨: data/conversations
+2025-04-22 16:11:43,544 - vector_db - INFO - 벡터 데이터베이스 초기화됨: data/vector_db (차원: 768)
+2025-04-22 16:11:43,544 - gui - INFO - 벡터 DB 초기화됨
+2025-04-22 16:11:43,544 - plugin_system - INFO - 0개 플러그인 로드됨
+2025-04-22 16:11:43,544 - gui - INFO - 플러그인 로드됨
+2025-04-22 16:11:43,549 - local_llm - INFO - LLM 서비스 연결됨, 모델 ID: deepseek-r1-distill-qwen-7b
+2025-04-22 16:11:45,240 - gui - INFO - GUI 애플리케이션 초기화됨
+2025-04-22 16:11:45,241 - main - INFO - Starting application
+2025-04-22 16:20:59,519 - gui - INFO - 애플리케이션 종료됨
+2025-04-22 16:21:03,628 - main - INFO - Logging initialized
+2025-04-22 16:21:04,279 - main - ERROR - Application error: attempted relative import beyond top-level package
+Traceback (most recent call last):
+  File "D:\LLMNightRun\main.py", line 113, in main
+    from gui import LLMNightRunApp
+  File "D:\LLMNightRun\gui\__init__.py", line 7, in <module>
+    from gui.app import LLMNightRunApp
+  File "D:\LLMNightRun\gui\app.py", line 24, in <module>
+    from gui.app_modules_tab import ModulesTabInterface
+  File "D:\LLMNightRun\gui\app_modules_tab.py", line 15, in <module>
+    from gui.components.modules.arxiv_tab import ArxivTab
+  File "D:\LLMNightRun\gui\components\modules\arxiv_tab.py", line 15, in <module>
+    from arxiv_module import search_papers, download_paper, ArxivManager
+  File "D:\LLMNightRun\arxiv_module\__init__.py", line 7, in <module>
+    from .search import search_papers, get_paper_details
+  File "D:\LLMNightRun\arxiv_module\search.py", line 13, in <module>
+    from ..core.logging import get_logger
+ImportError: attempted relative import beyond top-level package
+2025-04-22 16:35:17,905 - main - INFO - Logging initialized
+2025-04-22 16:35:18,411 - main - ERROR - Application error: attempted relative import beyond top-level package
+Traceback (most recent call last):
+  File "D:\LLMNightRun\main.py", line 113, in main
+    from gui import LLMNightRunApp
+  File "D:\LLMNightRun\gui\__init__.py", line 7, in <module>
+    from gui.app import LLMNightRunApp
+  File "D:\LLMNightRun\gui\app.py", line 24, in <module>
+    from gui.app_modules_tab import ModulesTabInterface
+  File "D:\LLMNightRun\gui\app_modules_tab.py", line 16, in <module>
+    from gui.components.modules.github_ai_setup_tab import GitHubAISetupTab
+  File "D:\LLMNightRun\gui\components\modules\github_ai_setup_tab.py", line 16, in <module>
+    from github_ai_setup.analyzer import analyze_repository, get_ai_config_status
+  File "D:\LLMNightRun\github_ai_setup\__init__.py", line 7, in <module>
+    from .analyzer import analyze_repository, get_ai_config_status
+  File "D:\LLMNightRun\github_ai_setup\analyzer.py", line 12, in <module>
+    from ..core.logging import get_logger
+ImportError: attempted relative import beyond top-level package
+2025-04-22 16:38:20,168 - main - INFO - Logging initialized
+2025-04-22 16:38:20,838 - main - ERROR - Application error: No module named 'github_docs.generator'
+Traceback (most recent call last):
+  File "D:\LLMNightRun\main.py", line 113, in main
+    from gui import LLMNightRunApp
+  File "D:\LLMNightRun\gui\__init__.py", line 7, in <module>
+    from gui.app import LLMNightRunApp
+  File "D:\LLMNightRun\gui\app.py", line 24, in <module>
+    from gui.app_modules_tab import ModulesTabInterface
+  File "D:\LLMNightRun\gui\app_modules_tab.py", line 17, in <module>
+    from gui.components.modules.github_docs_tab import GitHubDocsTab
+  File "D:\LLMNightRun\gui\components\modules\github_docs_tab.py", line 15, in <module>
+    from github_docs.code_analyzer import analyze_repository, get_repository_structure, find_entry_points
+  File "D:\LLMNightRun\github_docs\__init__.py", line 7, in <module>
+    from .generator import DocumentGenerator
+ModuleNotFoundError: No module named 'github_docs.generator'
+2025-04-22 16:41:36,078 - main - INFO - Logging initialized
+2025-04-22 16:41:37,762 - main - ERROR - Application error: cannot import name 'generate_documentation' from 'github_docs.templates' (D:\LLMNightRun\github_docs\templates.py)
+Traceback (most recent call last):
+  File "D:\LLMNightRun\main.py", line 113, in main
+    from gui import LLMNightRunApp
+  File "D:\LLMNightRun\gui\__init__.py", line 7, in <module>
+    from gui.app import LLMNightRunApp
+  File "D:\LLMNightRun\gui\app.py", line 24, in <module>
+    from gui.app_modules_tab import ModulesTabInterface
+  File "D:\LLMNightRun\gui\app_modules_tab.py", line 17, in <module>
+    from gui.components.modules.github_docs_tab import GitHubDocsTab
+  File "D:\LLMNightRun\gui\components\modules\github_docs_tab.py", line 16, in <module>
+    from github_docs.templates import get_available_templates, generate_documentation
+ImportError: cannot import name 'generate_documentation' from 'github_docs.templates' (D:\LLMNightRun\github_docs\templates.py)
+2025-04-22 16:45:20,766 - main - INFO - Logging initialized
+2025-04-22 16:45:21,322 - gui.components.github_docs_tab - INFO - GitHub 문서 탭 초기화됨
+2025-04-22 16:45:21,665 - github_ai_setup.manager - INFO - GitHub AI 설정 관리자 초기화됨
+2025-04-22 16:45:21,717 - gui.components.github_ai_setup_tab - INFO - GitHub AI 설정 탭 초기화됨
+2025-04-22 16:45:21,722 - vector_db - INFO - 벡터 데이터베이스 초기화됨: data/vector_db (차원: 768)
+2025-04-22 16:45:21,722 - arxiv_module.manager - INFO - 벡터 DB 연결 성공
+2025-04-22 16:45:21,723 - arxiv_module.manager - INFO - Arxiv 관리자 초기화됨 (벡터 DB 사용: True)
+2025-04-22 16:45:21,733 - gui.components.arxiv_tab - INFO - Arxiv 탭 초기화됨
+2025-04-22 16:45:21,734 - gui.modules_tab - INFO - 모듈 통합 탭 인터페이스 초기화됨
+2025-04-22 16:45:21,735 - conversation - INFO - 대화 관리자 초기화됨: data/conversations
+2025-04-22 16:45:21,735 - vector_db - INFO - 벡터 데이터베이스 초기화됨: data/vector_db (차원: 768)
+2025-04-22 16:45:21,736 - gui - INFO - 벡터 DB 초기화됨
+2025-04-22 16:45:21,736 - plugin_system - INFO - 0개 플러그인 로드됨
+2025-04-22 16:45:21,736 - gui - INFO - 플러그인 로드됨
+2025-04-22 16:45:21,751 - local_llm - INFO - LLM 서비스 연결됨, 모델 ID: deepseek-r1-distill-qwen-7b
+2025-04-22 16:45:23,901 - gui - INFO - GUI 애플리케이션 초기화됨
+2025-04-22 16:45:23,902 - main - INFO - Starting application
+2025-04-22 16:58:15,220 - gui - INFO - 애플리케이션 종료됨
+2025-04-22 16:58:17,558 - main - INFO - Logging initialized
+2025-04-22 16:58:19,477 - gui.components.github_docs_tab - INFO - GitHub 문서 탭 초기화됨
+2025-04-22 16:58:19,478 - github_ai_setup.manager - INFO - GitHub AI 설정 관리자 초기화됨
+2025-04-22 16:58:19,488 - gui.components.github_ai_setup_tab - INFO - GitHub AI 설정 탭 초기화됨
+2025-04-22 16:58:19,490 - vector_db - INFO - 벡터 데이터베이스 초기화됨: data/vector_db (차원: 768)
+2025-04-22 16:58:19,491 - arxiv_module.manager - INFO - 벡터 DB 연결 성공
+2025-04-22 16:58:19,491 - arxiv_module.manager - INFO - Arxiv 관리자 초기화됨 (벡터 DB 사용: True)
+2025-04-22 16:58:19,499 - gui.components.arxiv_tab - INFO - Arxiv 탭 초기화됨
+2025-04-22 16:58:19,501 - vector_db - INFO - 벡터 데이터베이스 초기화됨: data/vector_db (차원: 768)
+2025-04-22 16:58:19,501 - gui.components.vector_db_tab - INFO - 벡터 DB 초기화됨
+2025-04-22 16:58:19,511 - gui.components.vector_db_tab - INFO - 벡터 DB 탭 초기화됨
+2025-04-22 16:58:19,532 - gui.components.ab_test_tab - INFO - A/B 테스트 탭 초기화됨
+2025-04-22 16:58:19,532 - gui.modules_tab - INFO - 모듈 통합 탭 인터페이스 초기화됨
+2025-04-22 16:58:19,533 - conversation - INFO - 대화 관리자 초기화됨: data/conversations
+2025-04-22 16:58:19,534 - vector_db - INFO - 벡터 데이터베이스 초기화됨: data/vector_db (차원: 768)
+2025-04-22 16:58:19,534 - gui - INFO - 벡터 DB 초기화됨
+2025-04-22 16:58:19,534 - plugin_system - INFO - 0개 플러그인 로드됨
+2025-04-22 16:58:19,536 - gui - INFO - 플러그인 로드됨
+2025-04-22 16:58:19,540 - local_llm - INFO - LLM 서비스 연결됨, 모델 ID: deepseek-r1-distill-qwen-7b
+2025-04-22 16:58:22,119 - gui - INFO - GUI 애플리케이션 초기화됨
+2025-04-22 16:58:22,120 - main - INFO - Starting application
+2025-04-22 16:58:27,393 - local_llm - INFO - LLM 서비스 연결됨, 모델 ID: deepseek-r1-distill-qwen-7b
+2025-04-22 16:58:27,475 - local_llm - INFO - LLM 서비스 연결됨, 모델 ID: deepseek-r1-distill-qwen-7b
+2025-04-22 16:59:11,314 - gui - INFO - 애플리케이션 종료됨
+2025-04-22 17:05:04,418 - main - INFO - Logging initialized
+2025-04-22 17:05:05,120 - gui.components.github_docs_tab - INFO - GitHub 문서 탭 초기화됨
+2025-04-22 17:05:05,122 - github_ai_setup.manager - INFO - GitHub AI 설정 관리자 초기화됨
+2025-04-22 17:05:05,134 - gui.components.github_ai_setup_tab - INFO - GitHub AI 설정 탭 초기화됨
+2025-04-22 17:05:05,136 - vector_db - INFO - 벡터 데이터베이스 초기화됨: data/vector_db (차원: 768)
+2025-04-22 17:05:05,136 - arxiv_module.manager - INFO - 벡터 DB 연결 성공
+2025-04-22 17:05:05,136 - arxiv_module.manager - INFO - Arxiv 관리자 초기화됨 (벡터 DB 사용: True)
+2025-04-22 17:05:05,146 - gui.components.arxiv_tab - INFO - Arxiv 탭 초기화됨
+2025-04-22 17:05:05,147 - vector_db - INFO - 벡터 데이터베이스 초기화됨: data/vector_db (차원: 768)
+2025-04-22 17:05:05,147 - gui.components.vector_db_tab - INFO - 벡터 DB 초기화됨
+2025-04-22 17:05:05,159 - gui.components.vector_db_tab - INFO - 벡터 DB 탭 초기화됨
+2025-04-22 17:05:05,185 - gui.components.ab_test_tab - INFO - A/B 테스트 탭 초기화됨
+2025-04-22 17:05:05,185 - gui.modules_tab - INFO - 모듈 통합 탭 인터페이스 초기화됨
+2025-04-22 17:05:05,186 - conversation - INFO - 대화 관리자 초기화됨: data/conversations
+2025-04-22 17:05:05,189 - vector_db - INFO - 벡터 데이터베이스 초기화됨: data/vector_db (차원: 768)
+2025-04-22 17:05:05,189 - gui - INFO - 벡터 DB 초기화됨
+2025-04-22 17:05:05,189 - plugin_system - INFO - 0개 플러그인 로드됨
+2025-04-22 17:05:05,189 - gui - INFO - 플러그인 로드됨
+2025-04-22 17:05:05,213 - local_llm - INFO - LLM 서비스 연결됨, 모델 ID: deepseek-r1-distill-qwen-7b
+2025-04-22 17:12:35,073 - gui - INFO - GUI 애플리케이션 초기화됨
+2025-04-22 17:12:35,074 - main - INFO - Starting application
+2025-04-22 17:12:36,862 - gui - INFO - 애플리케이션 종료됨
+2025-04-22 17:12:38,620 - main - INFO - Logging initialized
+2025-04-22 17:12:39,347 - gui.components.github_docs_tab - INFO - GitHub 문서 탭 초기화됨
+2025-04-22 17:12:39,348 - github_ai_setup.manager - INFO - GitHub AI 설정 관리자 초기화됨
+2025-04-22 17:12:39,357 - gui.components.github_ai_setup_tab - INFO - GitHub AI 설정 탭 초기화됨
+2025-04-22 17:12:39,359 - vector_db - INFO - 벡터 데이터베이스 초기화됨: data/vector_db (차원: 768)
+2025-04-22 17:12:39,359 - arxiv_module.manager - INFO - 벡터 DB 연결 성공
+2025-04-22 17:12:39,359 - arxiv_module.manager - INFO - Arxiv 관리자 초기화됨 (벡터 DB 사용: True)
+2025-04-22 17:12:39,457 - gui.components.arxiv_tab - INFO - Arxiv 탭 초기화됨
+2025-04-22 17:12:39,460 - vector_db - INFO - 벡터 데이터베이스 초기화됨: data/vector_db (차원: 768)
+2025-04-22 17:12:39,461 - gui.components.vector_db_tab - INFO - 벡터 DB 초기화됨
+2025-04-22 17:12:39,486 - gui.components.vector_db_tab - INFO - 벡터 DB 탭 초기화됨
+2025-04-22 17:12:39,504 - gui.components.ab_test_tab - INFO - A/B 테스트 탭 초기화됨
+2025-04-22 17:12:39,506 - gui.modules_tab - INFO - 모듈 통합 탭 인터페이스 초기화됨
+2025-04-22 17:12:39,506 - conversation - INFO - 대화 관리자 초기화됨: data/conversations
+2025-04-22 17:12:39,507 - vector_db - INFO - 벡터 데이터베이스 초기화됨: data/vector_db (차원: 768)
+2025-04-22 17:12:39,507 - gui - INFO - 벡터 DB 초기화됨
+2025-04-22 17:12:39,507 - plugin_system - INFO - 0개 플러그인 로드됨
+2025-04-22 17:12:39,507 - gui - INFO - 플러그인 로드됨
+2025-04-22 17:12:39,527 - local_llm - INFO - LLM 서비스 연결됨, 모델 ID: deepseek-r1-distill-qwen-7b
+2025-04-22 17:12:40,860 - gui - INFO - GUI 애플리케이션 초기화됨
+2025-04-22 17:12:40,861 - main - INFO - Starting application
+2025-04-22 17:15:42,538 - gui - INFO - 애플리케이션 종료됨

@@ -1,0 +1,7 @@
+# 필수 패키지
+numpy>=1.19.0
+requests>=2.25.0
+pyyaml>=5.4.0
+
+# 선택적 패키지 (고급 기능)
+# sentence-transformers>=2.2.0  # 고급 벡터 인코딩에 필요

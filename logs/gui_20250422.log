@@ -1,0 +1,71 @@
+2025-04-22 15:52:43,619 - gui - INFO - 벡터 DB 초기화됨
+2025-04-22 15:52:43,624 - gui - INFO - 플러그인 로드됨
+2025-04-22 15:52:44,731 - gui - ERROR - LLM 연결 확인 중 오류 발생: main thread is not in main loop
+2025-04-22 15:52:47,747 - gui - INFO - GUI 애플리케이션 초기화됨
+2025-04-22 15:53:07,017 - gui - INFO - 애플리케이션 종료됨
+2025-04-22 15:53:23,726 - gui - INFO - 벡터 DB 초기화됨
+2025-04-22 15:53:23,727 - gui - INFO - 플러그인 로드됨
+2025-04-22 15:53:24,820 - gui - ERROR - LLM 연결 확인 중 오류 발생: main thread is not in main loop
+2025-04-22 15:53:25,900 - gui - INFO - GUI 애플리케이션 초기화됨
+2025-04-22 16:02:19,615 - gui - INFO - 애플리케이션 종료됨
+2025-04-22 16:02:32,286 - gui - INFO - GUI 애플리케이션 초기화됨
+2025-04-22 16:02:42,724 - gui - INFO - 애플리케이션 종료됨
+2025-04-22 16:07:35,014 - gui - INFO - 벡터 DB 초기화됨
+2025-04-22 16:07:35,015 - gui - INFO - 플러그인 로드됨
+2025-04-22 16:07:36,113 - gui - ERROR - LLM 연결 확인 중 오류 발생: main thread is not in main loop
+2025-04-22 16:07:41,915 - gui - INFO - GUI 애플리케이션 초기화됨
+2025-04-22 16:10:42,210 - gui - INFO - 애플리케이션 종료됨
+2025-04-22 16:11:43,544 - gui - INFO - 벡터 DB 초기화됨
+2025-04-22 16:11:43,544 - gui - INFO - 플러그인 로드됨
+2025-04-22 16:11:45,240 - gui - INFO - GUI 애플리케이션 초기화됨
+2025-04-22 16:20:59,519 - gui - INFO - 애플리케이션 종료됨
+2025-04-22 16:45:21,322 - gui.components.github_docs_tab - INFO - GitHub 문서 탭 초기화됨
+2025-04-22 16:45:21,717 - gui.components.github_ai_setup_tab - INFO - GitHub AI 설정 탭 초기화됨
+2025-04-22 16:45:21,733 - gui.components.arxiv_tab - INFO - Arxiv 탭 초기화됨
+2025-04-22 16:45:21,734 - gui.modules_tab - INFO - 모듈 통합 탭 인터페이스 초기화됨
+2025-04-22 16:45:21,736 - gui - INFO - 벡터 DB 초기화됨
+2025-04-22 16:45:21,736 - gui - INFO - 플러그인 로드됨
+2025-04-22 16:45:23,901 - gui - INFO - GUI 애플리케이션 초기화됨
+2025-04-22 16:58:15,220 - gui - INFO - 애플리케이션 종료됨
+2025-04-22 16:58:19,477 - gui.components.github_docs_tab - INFO - GitHub 문서 탭 초기화됨
+2025-04-22 16:58:19,488 - gui.components.github_ai_setup_tab - INFO - GitHub AI 설정 탭 초기화됨
+2025-04-22 16:58:19,499 - gui.components.arxiv_tab - INFO - Arxiv 탭 초기화됨
+2025-04-22 16:58:19,501 - gui.components.vector_db_tab - INFO - 벡터 DB 초기화됨
+2025-04-22 16:58:19,511 - gui.components.vector_db_tab - INFO - 벡터 DB 탭 초기화됨
+2025-04-22 16:58:19,532 - gui.components.ab_test_tab - INFO - A/B 테스트 탭 초기화됨
+2025-04-22 16:58:19,532 - gui.modules_tab - INFO - 모듈 통합 탭 인터페이스 초기화됨
+2025-04-22 16:58:19,534 - gui - INFO - 벡터 DB 초기화됨
+2025-04-22 16:58:19,536 - gui - INFO - 플러그인 로드됨
+2025-04-22 16:58:22,119 - gui - INFO - GUI 애플리케이션 초기화됨
+2025-04-22 16:59:11,314 - gui - INFO - 애플리케이션 종료됨
+2025-04-22 17:05:05,120 - gui.components.github_docs_tab - INFO - GitHub 문서 탭 초기화됨
+2025-04-22 17:05:05,134 - gui.components.github_ai_setup_tab - INFO - GitHub AI 설정 탭 초기화됨
+2025-04-22 17:05:05,146 - gui.components.arxiv_tab - INFO - Arxiv 탭 초기화됨
+2025-04-22 17:05:05,147 - gui.components.vector_db_tab - INFO - 벡터 DB 초기화됨
+2025-04-22 17:05:05,159 - gui.components.vector_db_tab - INFO - 벡터 DB 탭 초기화됨
+2025-04-22 17:05:05,185 - gui.components.ab_test_tab - INFO - A/B 테스트 탭 초기화됨
+2025-04-22 17:05:05,185 - gui.modules_tab - INFO - 모듈 통합 탭 인터페이스 초기화됨
+2025-04-22 17:05:05,189 - gui - INFO - 벡터 DB 초기화됨
+2025-04-22 17:05:05,189 - gui - INFO - 플러그인 로드됨
+2025-04-22 17:12:35,073 - gui - INFO - GUI 애플리케이션 초기화됨
+2025-04-22 17:12:36,862 - gui - INFO - 애플리케이션 종료됨
+2025-04-22 17:12:39,347 - gui.components.github_docs_tab - INFO - GitHub 문서 탭 초기화됨
+2025-04-22 17:12:39,357 - gui.components.github_ai_setup_tab - INFO - GitHub AI 설정 탭 초기화됨
+2025-04-22 17:12:39,457 - gui.components.arxiv_tab - INFO - Arxiv 탭 초기화됨
+2025-04-22 17:12:39,461 - gui.components.vector_db_tab - INFO - 벡터 DB 초기화됨
+2025-04-22 17:12:39,486 - gui.components.vector_db_tab - INFO - 벡터 DB 탭 초기화됨
+2025-04-22 17:12:39,504 - gui.components.ab_test_tab - INFO - A/B 테스트 탭 초기화됨
+2025-04-22 17:12:39,506 - gui.modules_tab - INFO - 모듈 통합 탭 인터페이스 초기화됨
+2025-04-22 17:12:39,507 - gui - INFO - 벡터 DB 초기화됨
+2025-04-22 17:12:39,507 - gui - INFO - 플러그인 로드됨
+2025-04-22 17:12:40,860 - gui - INFO - GUI 애플리케이션 초기화됨
+2025-04-22 17:15:42,538 - gui - INFO - 애플리케이션 종료됨
+2025-04-22 17:15:45,109 - gui.components.github_docs_tab - INFO - GitHub 문서 탭 초기화됨
+2025-04-22 17:15:45,120 - gui.components.github_ai_setup_tab - INFO - GitHub AI 설정 탭 초기화됨
+2025-04-22 17:15:45,133 - gui.components.arxiv_tab - INFO - Arxiv 탭 초기화됨
+2025-04-22 17:15:45,134 - gui.components.vector_db_tab - INFO - 벡터 DB 초기화됨
+2025-04-22 17:15:45,143 - gui.components.vector_db_tab - INFO - 벡터 DB 탭 초기화됨
+2025-04-22 17:15:45,164 - gui.components.ab_test_tab - INFO - A/B 테스트 탭 초기화됨
+2025-04-22 17:15:45,164 - gui.modules_tab - INFO - 모듈 통합 탭 인터페이스 초기화됨
+2025-04-22 17:15:45,166 - gui - INFO - 벡터 DB 초기화됨
+2025-04-22 17:15:45,167 - gui - INFO - 플러그인 로드됨

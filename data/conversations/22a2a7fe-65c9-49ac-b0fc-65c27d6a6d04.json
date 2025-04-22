@@ -1,0 +1,27 @@
+{
+  "conversation_id": "22a2a7fe-65c9-49ac-b0fc-65c27d6a6d04",
+  "title": "새 대화",
+  "created_at": "2025-04-22T16:58:22.118645",
+  "updated_at": "2025-04-22T16:58:29.164316",
+  "metadata": {},
+  "messages": [
+    {
+      "message_id": "bb8bcd4c-aa22-4d00-bdb1-c1ab56bac15c",
+      "role": "user",
+      "content": "dfdf",
+      "timestamp": "2025-04-22T16:58:27.302497"
+    },
+    {
+      "message_id": "aa7e7a57-5565-4cab-ae8a-2fd4311b2c58",
+      "role": "assistant",
+      "content": "<think>\n\n</think>\n\nIt seems like your message might be incomplete or unclear. Could you clarify or provide more context so I can assist you better? 😊",
+      "timestamp": "2025-04-22T16:58:28.885118"
+    },
+    {
+      "message_id": "f8d5785f-9afa-4bd5-a4b9-f474f751ed0e",
+      "role": "assistant",
+      "content": "<think>\n\n</think>\n\nIt seems like your message might be incomplete or unclear. Could you clarify or provide more context so I can assist you better? 😊",
+      "timestamp": "2025-04-22T16:58:29.164316"
+    }
+  ]
+}
