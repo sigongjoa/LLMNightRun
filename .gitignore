@@ -8,3 +8,4 @@ __pycache__/
 .idea/
 *.ipynb_checkpoints/
 arxiv_module/nltk_data/
+github_ai_setup/data/repos/
