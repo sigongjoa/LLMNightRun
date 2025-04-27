@@ -1,0 +1,19 @@
+
+PyQt6>=6.5.0
+transformers>=4.30.0
+huggingface_hub>=0.16.4
+torch>=2.0.0
+numpy>=1.24.0
+pandas>=2.0.0
+langchain>=0.0.267
+sentence-transformers>=2.2.2
+faiss-cpu>=1.7.4
+pyyaml>=6.0
+python-dotenv>=1.0.0
+# 추가된 라이브러리
+gpt4all>=2.0.0
+llama-cpp-python>=0.2.0
+PyMuPDF>=1.22.0  # PDF 파일 처리용
+tqdm>=4.65.0  # 프로그레스바
+requests>=2.31.0  # 다운로드 및 API 요청용
+    

@@ -1,0 +1,20 @@
+{
+  "898a5d5f-3647-4416-9452-60d1de6b8c79": {
+    "id": "898a5d5f-3647-4416-9452-60d1de6b8c79",
+    "name": "My Collection",
+    "description": "efe",
+    "created_at": 1745551815.836132,
+    "updated_at": 1745551815.836132,
+    "document_count": 0,
+    "index_status": "empty"
+  },
+  "8e47c732-539f-4080-9c3d-a03a7f411a95": {
+    "id": "8e47c732-539f-4080-9c3d-a03a7f411a95",
+    "name": "df",
+    "description": "",
+    "created_at": 1745571952.4803782,
+    "updated_at": 1745571952.4803782,
+    "document_count": 0,
+    "index_status": "empty"
+  }
+}

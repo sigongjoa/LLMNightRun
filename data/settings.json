@@ -1,0 +1,26 @@
+{
+  "default_model": "Qwen/Qwen2.5-3B",
+  "theme": "system",
+  "code_listener": {
+    "enabled": true,
+    "auto_execute": false,
+    "languages_allowed": [
+      "python",
+      "javascript",
+      "bash"
+    ]
+  },
+  "ui": {
+    "font_size": "medium",
+    "show_timestamps": true,
+    "show_model_info": true,
+    "max_conversation_display": 10
+  },
+  "advanced": {
+    "max_tokens": 2048,
+    "temperature": 0.7,
+    "top_p": 1.0,
+    "frequency_penalty": 0.0,
+    "presence_penalty": 0.0
+  }
+}

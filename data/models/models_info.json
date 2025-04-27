@@ -1,0 +1,19 @@
+{
+  "Qwen/Qwen2.5-3B": {
+    "id": "Qwen/Qwen2.5-3B",
+    "name": "Qwen2.5-3B",
+    "description": "Alibaba's Qwen2.5-3B model - small and efficient for general text generation.",
+    "size": "1.9GB",
+    "ram_required": "6GB",
+    "parameters": "3B",
+    "quant": "None",
+    "type": "huggingface",
+    "is_installed": true,
+    "is_loaded": true,
+    "model_type": "transformers",
+    "runtime": {
+      "status": "loaded",
+      "last_activity": 1745588707.7077386
+    }
+  }
+}
